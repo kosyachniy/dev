@@ -33,14 +33,14 @@ def get(src):
 def tag():
 	text=get(url)
 	text=text[text.find(contain)+indent:]
-	text=text[text.find(start):]
+	text=text[text.find(start)+1:]
 	return text[:text.find(stop)]
 
 def cont():
 	f=True
 	a=tag()
 	while f:
-		text=get(adr)+' '+a
+		text=get(adr)+'\n#'+a
 		if len(text)<=140:
 			f=False
 	return text

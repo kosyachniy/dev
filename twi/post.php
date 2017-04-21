@@ -13,20 +13,29 @@ $OAUTH_TOKEN = "4100776272-4VpvJNSkyhG9kWXfhRHyI3eTEeBRYRABiIqzusU";
 $OAUTH_SECRET = "RHcdHHf0TyHBxtfxHyRCgmB41r7c6gnVgUHH7SEf1Uqi9";
 */
 
+$url='http://t30p.ru/';
+$contain='Тренды твиттера';
+$start='">';
+$stop='</a>';
+$indent1=3;
+$indent2=150;
+
+
 $tag=$_GET['t'];
 if (!$tag)
 	{
-	$str=file_get_contents("http://t30p.ru/");
-	$nom=strpos($str,'Тренды твиттера');
-	$str=substr($str,$nom);
-	$str=substr($str,strpos($str,"\">")+3,150);
-	$tag=substr($str, 0, strpos($str,'</a>'));
+	$str=file_get_contents($url);
+	$str=substr($str,strpos($str,$contain));
+	$str=substr($str,strpos($str,$start)+$indent1,$indent2);
+	$tag=substr($str,0,strpos($str,$stop));
 	}
 
-$connection = new TwitterOAuth($CONSUMER_KEY, $CONSUMER_SECRET, $OAUTH_TOKEN, $OAUTH_SECRET);
-$content = $connection->get('account/verify_credentials');
+$connection = new TwitterOAuth($CONSUMER_KEY,$CONSUMER_SECRET,$OAUTH_TOKEN,$OAUTH_SECRET);
+$content=$connection->get('account/verify_credentials');
 
-do {$quote=file_get_contents("http://api.forismatic.com/api/1.0/?method=getQuote&format=text&language=ru");} while (mb_strlen($quote,'utf8')>(138-mb_strlen($tag,'utf8')));
+do
+	{$quote=file_get_contents("http://api.forismatic.com/api/1.0/?method=getQuote&format=text&language=ru");}
+while (mb_strlen($quote,'utf8')>(138-mb_strlen($tag,'utf8')));
 //if(strlen($quote)>170) $quote = substr($quote, 0, 164)."...";
 $quote.='
 #'.$tag;
