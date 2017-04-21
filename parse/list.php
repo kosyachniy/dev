@@ -1,10 +1,11 @@
 <?php
-$file=fopen('db.txt','w');
-
+$href='db.txt';
 $link='http://russian2015.ucoz.com/publ/podgotovka_k_ogeh_po_russkomu_jazyku/5-';
 $str='/publ/podgotovka_k_ogeh_po_russkomu_jazyku/szhatoe_izlozhenie_po_tekstu';
 $not='#comments';
 $n=9;
+
+$file=fopen($href,'w');
 
 for ($i=1; $i<=$n; $i++)
   {

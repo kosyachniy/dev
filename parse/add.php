@@ -1,10 +1,18 @@
 <?php
+$href='db.txt';
+$start='http://russian2015.ucoz.com';
+$str='style="text-align: justify;">';
+$first='Исходный текст';
+$second=['Пример сжатого изложения','<em>Сжатое изложение</em>','<strong>Сжатое изложение</strong>','Сжатое изложение</span>','Пример сжатого&nbsp;изложения'];
+$stop='';
+$plus=strlen($str)+30;
+
 include('func.php');
 $db=db();
 $time=date('d.m.Y H:i:s');
 $user=$_SERVER['REMOTE_ADDR'];
 //set_time_limit(200);
-$file=fopen('db.txt', 'r');
+$file=fopen($href, 'r');
 
 $i=0;
 while (!feof($file))
@@ -13,12 +21,6 @@ while (!feof($file))
   $link[$i]=fgets($file);
   }
 fclose($file);
-$start='http://russian2015.ucoz.com';
-$str='style="text-align: justify;">';
-$first='Исходный текст';
-$second=['Пример сжатого изложения','<em>Сжатое изложение</em>','<strong>Сжатое изложение</strong>','Сжатое изложение</span>','Пример сжатого&nbsp;изложения'];
-$stop='';
-$plus=strlen($str)+30;
 
 for ($i=1; $i<=count($link)-1; $i++)
   {
