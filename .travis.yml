@@ -1,8 +1,15 @@
-language: php
+language: python
 python:
-  - '5.4'
-  - '5.5'
-  - '5.6'
-  - '7.0'
-  - '7.1'
-script: twi/php/text.php
+  - "2.6"
+  - "2.7"
+  - "3.2"
+  - "3.3"
+  - "3.4"
+  - "3.5"
+  - "3.5-dev"
+  - "3.6"
+  - "3.6-dev"
+  - "3.7-dev"
+  - "nightly"
+install: "pip install -r requirements.txt"
+script: sort/TimSort.py
