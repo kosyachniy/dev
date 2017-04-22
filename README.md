@@ -6,6 +6,7 @@
 -----
 
 [Travis CI](https://travis-ci.org/kosyachniy/dev/)
+
 .travis.yml | Язык программирования
 ---|---
 install: "pip install -r requirements.txt" | Python
