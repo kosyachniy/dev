@@ -1,4 +1,4 @@
-import tweepy, codecs, sys
+import tweepy, codecs, sys, os
 if sys.version_info[0]>=3:
 	from urllib.request import urlretrieve, urlopen
 else:
@@ -47,6 +47,9 @@ def cont():
 
 # отправка текстового твита
 api.update_status(cont())
+
+path=os.path.join(os.path.abspath(os.path.dirname(__file__)),db)
+os.remove(path)
 
 # получение логина и имени юзера | print(api.me().screen_name, api.me().name)
 # фоловим другого юзера | api.get_user('muzhig').follow()
