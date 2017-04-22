@@ -1,7 +1,7 @@
 # Разработка
 
-Действие | Код
+Код | Действие
 ---|---
-Получить requerements.txt | ``` pip freeze > requirements.txt ```
+``` pip freeze > requirements.txt ``` | Получить requerements.txt
 
 [Разметка README.md](http://coddism.com/zametki/razmetka_readmemd_v_github)
