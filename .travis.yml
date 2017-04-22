@@ -1,4 +1,4 @@
 language: php
 python:
   - '5.4'
-script: twi/python/text.py
+script: twi/php/text.php
