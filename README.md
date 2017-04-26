@@ -3,7 +3,7 @@
 
 [Разметка README.md](http://coddism.com/zametki/razmetka_readmemd_v_github)
 
------
+---
 
 [Travis CI](https://travis-ci.org/kosyachniy/dev/)
 
@@ -12,9 +12,10 @@
 install: "pip install -r requirements.txt" | Python
 
 language: 
+
 script: 
 
------
+---
 
 Код | Действие
 ---|---
