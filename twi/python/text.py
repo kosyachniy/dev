@@ -1,4 +1,4 @@
-import tweepy, codecs, sys, os
+import tweepy, sys, os, ssl, chardet
 if sys.version_info[0]>=3:
 	from urllib.request import urlretrieve, urlopen
 else:
@@ -8,15 +8,15 @@ consumer_key='8Y2o5PjasQkVmvoxVQBLyVs4F'
 consumer_secret='2r4KPBm8kCcKsNrwkzSQRH4IkDqbxhVrgVcAmvfoyfXbZUNm1L'
 access_key='3110781773-4I27iEchYIxqZmIQOgt18b2ehZUHkdEpWKRPuRO'
 access_secret='OZj9w6TRUQoeVCgk3pShYOTFWasvSx3ebgOXn6lJQyngy'
-
-#consumer_key='jARMeUTgjWhDSWOSbs0pfQYz4'
-#consumer_secret='stRnOnA3KRpaCI3hjyJyo0eLedQNflQ4FuvudvXj37mSLX7tPa'
-#access_key='4100776272-4VpvJNSkyhG9kWXfhRHyI3eTEeBRYRABiIqzusU'
-#access_secret='RHcdHHf0TyHBxtfxHyRCgmB41r7c6gnVgUHH7SEf1Uqi9'
+'''
+consumer_key='jARMeUTgjWhDSWOSbs0pfQYz4'
+consumer_secret='stRnOnA3KRpaCI3hjyJyo0eLedQNflQ4FuvudvXj37mSLX7tPa'
+access_key='4100776272-4VpvJNSkyhG9kWXfhRHyI3eTEeBRYRABiIqzusU'
+access_secret='RHcdHHf0TyHBxtfxHyRCgmB41r7c6gnVgUHH7SEf1Uqi9'
+'''
 
 url='http://t30p.ru/'
 adr='http://api.forismatic.com/api/1.0/?method=getQuote&format=text&language=ru'
-db='db.uple'
 contain='Тренды твиттера'
 start='#'
 stop='<'
@@ -27,9 +27,10 @@ auth.set_access_token(access_key,access_secret)
 api=tweepy.API(auth)
 
 def get(src):
-	urlretrieve(src,db)
-	with codecs.open(db,'r','utf-8') as file:
-		return file.read()
+	context=ssl._create_unverified_context()
+	with urlopen(src,context=context) as site:
+		text=site.read()
+		return text.decode(chardet.detect(text)['encoding'])
 
 def tag():
 	text=get(url)
@@ -48,9 +49,6 @@ def cont():
 
 # отправка текстового твита
 api.update_status(cont())
-
-path=os.path.join(os.path.abspath(os.path.dirname(__file__)),db)
-os.remove(path)
 
 # получение логина и имени юзера | print(api.me().screen_name, api.me().name)
 # фоловим другого юзера | api.get_user('muzhig').follow()
