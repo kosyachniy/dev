@@ -14,17 +14,12 @@ consumer_secret='stRnOnA3KRpaCI3hjyJyo0eLedQNflQ4FuvudvXj37mSLX7tPa'
 access_key='4100776272-4VpvJNSkyhG9kWXfhRHyI3eTEeBRYRABiIqzusU'
 access_secret='RHcdHHf0TyHBxtfxHyRCgmB41r7c6gnVgUHH7SEf1Uqi9'
 '''
-
 url='http://t30p.ru/'
 adr='http://api.forismatic.com/api/1.0/?method=getQuote&format=text&language=ru'
 contain='Тренды твиттера'
 start='#'
 stop='<'
 indent=20
-
-auth=tweepy.OAuthHandler(consumer_key,consumer_secret)
-auth.set_access_token(access_key,access_secret)
-api=tweepy.API(auth)
 
 def get(src):
 	context=ssl._create_unverified_context()
@@ -47,8 +42,21 @@ def cont():
 			f=False
 	return text
 
-# отправка текстового твита
-api.update_status(cont())
+def post(text):
+	if not text:
+		text=cont()
 
-# получение логина и имени юзера | print(api.me().screen_name, api.me().name)
-# фоловим другого юзера | api.get_user('muzhig').follow()
+	auth=tweepy.OAuthHandler(consumer_key,consumer_secret)
+	auth.set_access_token(access_key,access_secret)
+	api=tweepy.API(auth)
+
+#Отправка текстового твита
+	api.update_status(text)
+
+	return text
+
+if __name__=='__main__':
+	post('')
+
+#Получение логина и имени юзера | print(api.me().screen_name, api.me().name)
+#Фоловим другого юзера | api.get_user('muzhig').follow()

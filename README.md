@@ -7,7 +7,8 @@ MarkDown
 
 Код | Действие
 ---|---
-``` \<br\> ``` | Энтер
+``` <br> ``` | Энтер
+
 
 Travis CI
 ---
@@ -22,11 +23,13 @@ language:
 script: 
 ```
 
+
 Терминал
 ---
 Код | Действие
 ---|---
 ``` pip freeze > requirements.txt ``` | Получить requerements.txt
+
 
 Режимы файлов
 ---
