@@ -10,4 +10,5 @@ def get(src):
 		text=site.read()
 		return text.decode(chardet.detect(text)['encoding'])
 
-print(get(input()))
+if __name__=='__main__':
+	print(get(input()))

@@ -13,5 +13,6 @@ def get(src):
 		with codecs.open(db,'w','utf-8') as file:
 			print(text.decode(chardet.detect(text)['encoding']),file=file)
 
-get(input())
-print('OK')
+if __name__=='__main__':
+	get(input())
+	print('OK')

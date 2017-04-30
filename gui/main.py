@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QMainWindow, QWidget, QMessageBox, QPushButton, QApplication, QAction, qApp, QTextEdit, QLabel, QHBoxLayout, QVBoxLayout, QLineEdit, QGridLayout
+from PyQt5.QtWidgets import QMainWindow, QWidget, QPushButton, QApplication, QAction, qApp, QTextEdit, QLabel, QHBoxLayout, QVBoxLayout, QLineEdit, QGridLayout
 from PyQt5.QtGui import QFont, QIcon
 
 class main(QMainWindow):
@@ -32,15 +32,6 @@ class main(QMainWindow):
         sender=self.sender()
         if sender.text()=='Push me':
             self.statusBar().showMessage('123')
-#При закрытии окна спрашивает
-'''
-    def closeEvent(self, event):
-        reply = QMessageBox.question(self, 'Message', 'Are you sure to quit?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if reply == QMessageBox.Yes:
-            event.accept()
-        else:
-            event.ignore()
-'''
 
 class first(QWidget):
     def __init__(self):
@@ -69,24 +60,6 @@ class first(QWidget):
         grid.addWidget(reviewEdit, 3, 1, 5, 1)
 
         self.setLayout(grid)
-#Кнопки в нижнем углу
-        b1=QPushButton('OK',self)
-        b2=QPushButton('CANCEL',self)
-
-        hbox=QHBoxLayout()
-        hbox.addStretch(1)
-        hbox.addWidget(b1)
-        hbox.addWidget(b2)
-
-        vbox=QVBoxLayout()
-        vbox.addStretch(1)
-        vbox.addLayout(hbox)
-
-        self.setLayout(vbox)
-
-        self.setGeometry(300, 300, 250, 150)
-        self.setWindowTitle('UPLe')
-        self.show()
 
 if __name__ == '__main__':
     app=QApplication(sys.argv)

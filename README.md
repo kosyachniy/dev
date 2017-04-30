@@ -9,7 +9,7 @@
 
 .travis.yml | Язык программирования
 ---|---
-``` install: "pip install -r requirements.txt" ``` | Python
+``` install: "pip install -r requirements.txt" ``` | Python <br> \n 123
 
 ```
 language: 
