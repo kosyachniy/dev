@@ -6,9 +6,7 @@ def site(url='http://jenyay.net/'):
 	print(get(url))
 
 if __name__=='__main__':
-	t=False;
-	for i in sys.argv:
-		if t:
-			globals()[i]()
-		else:
-			t=True;
+	if len(sys.argv)==3:
+		globals()[sys.argv[1]](sys.argv[2])
+	else:
+		globals()[sys.argv[1]]()
