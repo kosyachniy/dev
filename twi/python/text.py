@@ -39,8 +39,7 @@ def cont():
 	return text
 
 def post(text):
-	if not 
-	text:
+	if not text:
 		text=cont()
 
 	auth=tweepy.OAuthHandler(consumer_key,consumer_secret)
