@@ -5,8 +5,7 @@ else:
 	from urllib import urlopen
 
 def get(src):
-	context=ssl._create_unverified_context()
-	with urlopen(src,context=context) as site:
+	with urlopen(src,context=ssl._create_unverified_context()) as site:
 		text=site.read()
 		return text.decode(chardet.detect(text)['encoding'])
 

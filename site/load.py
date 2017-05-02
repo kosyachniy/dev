@@ -4,11 +4,10 @@ if sys.version_info[0]>=3:
 else:
 	from urllib import urlopen
 
-db='db.uple'
+db='db.txt'
 
 def get(src):
-	context=ssl._create_unverified_context()
-	with urlopen(src,context=context) as site:
+	with urlopen(src,context=ssl._create_unverified_context()) as site:
 		text=site.read()
 		with codecs.open(db,'w','utf-8') as file:
 			print(text.decode(chardet.detect(text)['encoding']),file=file)
