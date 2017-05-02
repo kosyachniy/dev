@@ -1,0 +1,55 @@
+@charset "utf-8";
+
+/*@font-face {font-family: Blogger Sans; src: url(../../system/fonts/bs.ttf);}*/
+html {-webkit-text-size-adjust: none;}
+body {} /*cursor: url(../cur/cursor.cur), default;*/
+table {border-style: solid; border: 1px;}
+hr {height: 1px;}
+
+/**/
+
+/* Шрифты */
+
+body, button {} /*font-family: "Calibri"; font-size: 16px;*/
+
+/* Цвет */
+
+a:visited {color: blue;}
+body, table, span, button {background-color: #fff;}
+hr {background-color: grey;}
+
+/* Размеры */
+
+
+
+/* Позиционирование */
+
+ {position: absolute;}
+ {position: fixed;}
+ {position: relative;}
+
+/* Выравнивание */
+
+
+
+/* Отступы */
+
+html, body, div, ul, li, p {margin: 0; padding: 0;}
+
+/* Отображение */
+
+ {display: block;}
+ {display: none;}
+ {display: inline-block;}
+
+/* Декорации */
+
+button {text-decoration: none;}
+
+/* Обводка */
+
+table {border: 1px solid #000;}
+hr, button {border: 0;}
+
+/**/
+
