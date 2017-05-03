@@ -1,7 +1,7 @@
 import sys
 
 def site(url='http://jenyay.net/'):
-	sys.path.append('site')
+	sys.path.append('file/site')
 	from open import get
 	print(get(url))
 def twit(text=''):
