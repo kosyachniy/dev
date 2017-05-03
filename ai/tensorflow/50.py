@@ -14,7 +14,6 @@ np.random.seed(1)
 syn0 = 2*np.random.random((3,1)) - 1
 
 for iter in range(10000):
-
     # прямое распространение
     l0 = X
     l1 = tf.sigmoid(np.dot(l0,syn0))
