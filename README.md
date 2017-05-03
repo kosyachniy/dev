@@ -51,9 +51,9 @@ t | Открытие в текстовом режиме (является зна
 
 Языки программирования
 ---
-&nbsp; | [Python](https://github.com/kosyachniy/dev/wiki/Python) | [C++](https://github.com/kosyachniy/dev/wiki/C) | [PHP](https://github.com/kosyachniy/dev/wiki/PHP) | [Pascal](https://github.com/kosyachniy/dev/wiki/Pascal)
----|---|---|---|---
-Расширение | .py | .cpp<br>.h | .php | .pas
-Арифметические знаки | + - / // % * ** |  |  |
-Сложная арифметика | += -= /= //= %= *= **= |  |  |
-Присваивание | = | = | = | :=
+&nbsp; | [Python](https://github.com/kosyachniy/dev/wiki/Python) | [C++](https://github.com/kosyachniy/dev/wiki/C) | [PHP](https://github.com/kosyachniy/dev/wiki/PHP) | [Pascal](https://github.com/kosyachniy/dev/wiki/Pascal) | [JavaScript](https://github.com/kosyachniy/dev/wiki/JavaScript)
+---|---|---|---|---|---
+Расширение | .py | .cpp<br>.h | .php | .pas | .js
+Арифметические знаки | + - / // % * ** |  |  |  |
+Сложная арифметика | += -= /= //= %= *= **= |  |  |  |
+Присваивание | = | = | = | := | =
