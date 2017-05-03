@@ -79,3 +79,16 @@ t | Открытие в текстовом режиме (является зна
 Присваивание нескольких значений | да | нет |  |  |
 Тип исполнения | интерпретируемый | компилируемый | интерпретируемый | компилируемый | интерпретируемый
 Запуск | ```python _.py``` | ```gcc _.cpp -o _<br>./_``` | веб-страница<br>!!! веб-сервер |  | веб-страница
+Однострочные функции | List comprehension |  |  |  |
+Умножение строки на число | да |  |  |  |
+Подключение библиотек | ```import …```<br>```from … import … as …``` | ```#include <….h>```<br>```#include "….h"``` | ```include('…');``` |  |
+Если | if …:<br>&emsp;…<br>elif …:<br>&emsp;…<br>else:<br>&emsp;…if (…)<br>{<br>…<br>}<br>else<br>{<br>…<br>} | if (…)<br>{<br>…<br>}<br>elseif (…)<br>{<br>…<br>}<br>else<br>{<br>…<br>} |  |
+Цикл со счётчиком | for _ in _:<br>&emsp;… | for (…;…;…)<br>&emsp;{<br>&emsp;…<br>&emsp;} | for (…;…;…)<br>&emsp;{<br>&emsp;…<br>&emsp;} |  |
+Цикл с условием | while ...:<br>&emsp;... | while (...)<br>&emsp;{<br>&emsp;...<br>&emsp} | while (...)<br>&emsp;{<br>&emsp;...<br>&emsp} |  |
+Цикл с постусловием | нет | do<br>&emsp;{<br>&emsp;...<br>&emsp;}<br>while (...) |  |  |
+Выбор |  |  |  |  |
+Функция | def _(…, _=_):<br>&emsp;…<br>&emsp;return … | тип данных _(…)<br>&emsp;{<br>&emsp;…<br>&emsp;return _;<br>&emsp;} | function _(…)<br>&emsp;{<br>&emsp;…<br>&emsp;return _;<br>&emsp;} | function<br>procedure | 
+Объект | class _:<br>&emsp;def<br>&emsp;__init__(self,…,_=_):<br>&emsp;&emsp;…<br>&emsp;…<br>&emsp;__exit__(self,…,_=_):<br>&emsp;&emsp;... | class имя<br>{<br>public:<br>имя (…)<br>{<br>…<br>}<br>…<br>~имя ()<br>{<br>…<br>}<br>private:<br>…<br>protected:<br>…<br>} |  |  |
+Ввод | ```…=input()```<br>!!! Текст, для чисел ```int(...)``` | ```cin >> _ >> _;``` | нет |  |
+Вывод | ```print(…, end='...')``` | ```cout << _ << _ << endl;``` | ```print …;```<br>```echo …;``` |  |
+Исключения |  |  |  |  |
