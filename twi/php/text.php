@@ -1,5 +1,5 @@
 <?php
-require_once "twitter/twitteroauth.php";
+require_once '../../library/php/twitter/twitteroauth.php;
 
 $CONSUMER_KEY = "8Y2o5PjasQkVmvoxVQBLyVs4F";
 $CONSUMER_SECRET = "2r4KPBm8kCcKsNrwkzSQRH4IkDqbxhVrgVcAmvfoyfXbZUNm1L";

@@ -65,8 +65,8 @@ t | Открытие в текстовом режиме (является зна
 Переменная | указатель | переменная |  |  | 
 Начало индексации | 0 | 0 | 0 |  |
 Математика<br>(0.3+0.3+0.3=0.(9)) | да |  |  |  |
-Синтаксис | ```функция условия:<br>&emsp;функция(параметры)``` | ```функция (условия)<br>&emsp;{<br>&emsp;функция(параметры);<br>&emsp;}``` |  |  |
-Разметка | … | ```#include <iostream><br><br>using namespace std;<br><br>int main()<br>&emsp;{<br>&emsp;…<br>&emsp;return 0;<br>&emsp;}``` | <?php … ?> |  | …
+Синтаксис | функция условия:<br>&emsp;функция(параметры) | функция (условия)<br>&emsp;{<br>&emsp;функция(параметры);<br>&emsp;} |  |  |
+Разметка | … | #include <iostream><br><br>using namespace std;<br><br>int main()<br>&emsp;{<br>&emsp;…<br>&emsp;return 0;<br>&emsp;} | <?php<br>…<br>?> |  | …
 Строка | '...'<br>"..." | '...'<br>"..." | '...'<br>"..." | '...' |
 Комментарий | ```#```<br>```''' … '''```<br>```""" … """``` | ```//``` | ```//``` | ```//```<br>```{...}``` | 
 Название переменной | ```буквычисла``` | ```буквычисла```<br>!!! ```верблюжийРегистр``` | ```$буквычисла``` |  | 
@@ -82,13 +82,13 @@ t | Открытие в текстовом режиме (является зна
 Однострочные функции | List comprehension |  |  |  |
 Умножение строки на число | да |  |  |  |
 Подключение библиотек | ```import …```<br>```from … import … as …``` | ```#include <….h>```<br>```#include "….h"``` | ```include('…');``` |  |
-Если | if …:<br>&emsp;…<br>elif …:<br>&emsp;…<br>else:<br>&emsp;…if (…)<br>{<br>…<br>}<br>else<br>{<br>…<br>} | if (…)<br>{<br>…<br>}<br>elseif (…)<br>{<br>…<br>}<br>else<br>{<br>…<br>} |  |
+Если | if …:<br>&emsp;…<br>elif …:<br>&emsp;…<br>else:<br>&emsp;… | if (…)<br>{<br>…<br>}<br>else<br>{<br>…<br>} | if (…)<br>{<br>…<br>}<br>elseif (…)<br>{<br>…<br>}<br>else<br>{<br>…<br>} |  |
 Цикл со счётчиком | for _ in _:<br>&emsp;… | for (…;…;…)<br>&emsp;{<br>&emsp;…<br>&emsp;} | for (…;…;…)<br>&emsp;{<br>&emsp;…<br>&emsp;} |  |
-Цикл с условием | while ...:<br>&emsp;... | while (...)<br>&emsp;{<br>&emsp;...<br>&emsp} | while (...)<br>&emsp;{<br>&emsp;...<br>&emsp} |  |
+Цикл с условием | while ...:<br>&emsp;... | while (...)<br>&emsp;{<br>&emsp;...<br>&emsp;} | while (...)<br>&emsp;{<br>&emsp;...<br>&emsp;} |  |
 Цикл с постусловием | нет | do<br>&emsp;{<br>&emsp;...<br>&emsp;}<br>while (...) |  |  |
 Выбор |  |  |  |  |
 Функция | def _(…, _=_):<br>&emsp;…<br>&emsp;return … | тип данных _(…)<br>&emsp;{<br>&emsp;…<br>&emsp;return _;<br>&emsp;} | function _(…)<br>&emsp;{<br>&emsp;…<br>&emsp;return _;<br>&emsp;} | function<br>procedure | 
-Объект | class _:<br>&emsp;def<br>&emsp;__init__(self,…,_=_):<br>&emsp;&emsp;…<br>&emsp;…<br>&emsp;__exit__(self,…,_=_):<br>&emsp;&emsp;... | class имя<br>{<br>public:<br>имя (…)<br>{<br>…<br>}<br>…<br>~имя ()<br>{<br>…<br>}<br>private:<br>…<br>protected:<br>…<br>} |  |  |
-Ввод | ```…=input()```<br>!!! Текст, для чисел ```int(...)``` | ```cin >> _ >> _;``` | нет |  |
-Вывод | ```print(…, end='...')``` | ```cout << _ << _ << endl;``` | ```print …;```<br>```echo …;``` |  |
+Объект | class _:<br>&emsp;def<br>&emsp;\_\_init\_\_(self,…,_=_):<br>&emsp;&emsp;…<br>&emsp;…<br>&emsp;\_\_exit\_\_(self,…,_=_):<br>&emsp;&emsp;... | class имя<br>&emsp;{<br>&emsp;public:<br>&emsp;имя (…)<br>&emsp;&emsp;{<br>&emsp;&emsp;…<br>&emsp;&emsp;}<br>&emsp;…<br>&emsp;~имя ()<br>&emsp;&emsp;{<br>&emsp;&emsp;…<br>&emsp;&emsp;}<br>&emsp;private:<br>&emsp;…<br>&emsp;protected:<br>&emsp;…<br>&emsp;} |  |  |
+Ввод | ```…=input()```<br>!!! Текст, для чисел ```int(…)``` | ```cin >> _ >> _;``` | нет |  |
+Вывод | ```print(…, end='…')``` | ```cout << _ << _ << endl;``` | ```print …;```<br>```echo …;``` |  |
 Исключения |  |  |  |  |

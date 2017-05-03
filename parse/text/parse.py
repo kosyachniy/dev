@@ -8,7 +8,7 @@ endsigns='.!?'
 opensigns='(<\[\{'
 closesigns=')>\]\}'
 signs=endsigns+'\'":&*—+\-=`'
-allsigns=signs+opensigns+closesigns+',;\\|/–«»'
+allsigns=signs+opensigns+closesigns+',;…\\|/–«»'
 m=MorphAnalyzer()
 #m=MorphAnalyzer(lang='uk')
 
