@@ -8,26 +8,19 @@ interval=len(a)
 shift=0
 c=None
 while interval>=1:
-	print(interval,end=' ')
-	if interval%2:
-		t=True
-	else:
-		t=False
+	t=interval%2
 	interval//=2
-	contr=interval+shift-1
-	if t:
-		contr+=1
-	if contr>=len(a):
-		break
-	print(shift,contr)
+	contr=interval+shift
+	if not t:
+		contr-=1
 	if c==a[contr]:
 		break
 	c=a[contr]
-	print(c,' | ',b)
-	r=input()
-	while r!=c and r!=b:
-		r=input()
-	if r==c:
+	print('1 - ',c,'  |  2 - ',b)
+	r=int(input())
+	while r!=1 and r!=2:
+		r=int(input())
+	if r==1:
 		shift+=interval
 		if t:
 			shift+=1
@@ -35,4 +28,7 @@ while interval>=1:
 a.append(b)
 for i in range(shift+1,len(a))[::-1]:
 	a[i],a[i-1]=a[i-1],a[i]
-print(a)
+
+with open('db.txt','w') as file:
+	for i in a:
+		print(i,file=file)
