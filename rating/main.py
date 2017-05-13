@@ -8,14 +8,8 @@ interval=len(a)
 shift=0
 while interval>=1:
 	t=interval%2
-	if t:
-		i=(interval//2)+1
-	else:
-		i=interval//2
-	if i>len(a):
-		break
-	c=a[i+shift-1]
-	print('1 - ',c,'  |  2 - ',b)
+	i=(interval//2)+t
+	print('1 - ',a[i+shift-1],'  |  2 - ',b)
 	r=input()
 	while r!='1' and r!='2':
 		r=input()
