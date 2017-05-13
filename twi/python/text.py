@@ -3,8 +3,6 @@ if sys.version_info[0]>=3:
 	from urllib.request import urlretrieve, urlopen
 else:
 	from urllib import urlretrieve, urlopen
-sys.path.append('../../site')
-from open import get
 
 consumer_key='8Y2o5PjasQkVmvoxVQBLyVs4F'
 consumer_secret='2r4KPBm8kCcKsNrwkzSQRH4IkDqbxhVrgVcAmvfoyfXbZUNm1L'
@@ -23,6 +21,10 @@ start='#'
 stop='<'
 indent=20
 
+def get(src):
+	with urlopen(src,context=ssl._create_unverified_context()) as site:
+		text=site.read()
+		return text.decode(chardet.detect(text)['encoding'])
 def tag():
 	text=get(url)
 	text=text[text.find(contain)+indent:]

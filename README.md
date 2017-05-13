@@ -1,6 +1,12 @@
 # Разработка
 ![Travis CI](https://travis-ci.org/kosyachniy/dev.svg?branch=master)
 
+Не решено
+---
+№ | Ошибка
+---|---
+1 | ``` site/file ```, ``` twi/python``` - Функция get ошибка при запросе ``` http://api.forismatic.com/api/1.0/?method=getQuote&format=text&language=ru ```
+
 MarkDown
 ---
 [Разметка README.md](http://coddism.com/zametki/razmetka_readmemd_v_github)
