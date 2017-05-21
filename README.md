@@ -3,9 +3,9 @@
 
 Не решено
 ---
-№ | Ошибка
----|---
-1 | ``` site/file ```, ``` twi/python``` - Функция get ошибка при запросе ``` http://api.forismatic.com/api/1.0/?method=getQuote&format=text&language=ru ```
+№ | Ошибка | Решено
+---|---|---
+1 | ``` site/file ``` - Функция get ошибка при запросе ``` http://api.forismatic.com/api/1.0/?method=getQuote&format=text&language=ru ``` | ``` twi/python```
 
 MarkDown
 ---

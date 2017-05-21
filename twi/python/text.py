@@ -1,16 +1,13 @@
 import sys, os, ssl, chardet
 if sys.version_info[0]>=3:
-	from urllib.request import urlretrieve, urlopen, unquote
+	from urllib.request import urlopen, unquote, Request
 else:
-	from urllib import urlretrieve, urlopen, unquote
+	from urllib import urlopen, unquote
 from func import *
 
-adr='http://api.forismatic.com/api/1.0/?method=getQuote&format=text&language=ru'
-
 def get(src):
-	with urlopen(src,context=ssl._create_unverified_context()) as site:
-		text=site.read()
-		return text.decode(chardet.detect(text)['encoding'])
+	with urlopen(Request(src,None,{'User-Agent':''})) as site:
+		return site.read().decode('utf-8')
 
 def tag():
 	for j in api.trends_place(23424936)[0]['trends']:
@@ -20,12 +17,11 @@ def tag():
 	return api.trends_place(23424936)[0]['trends'][0]
 
 def cont():
-	f=True
-	while f:
-		text=get(adr)+'\n'+tag()
+	a=tag()
+	while True:
+		text=get('http://api.forismatic.com/api/1.0/?method=getQuote&format=text&language=ru')+'\n'+a
 		if len(text)<=140:
-			f=False
-	return text
+			return text
 
 def post(text):
 	if not text:
