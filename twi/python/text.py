@@ -1,16 +1,11 @@
 import sys, os, ssl, chardet
 if sys.version_info[0]>=3:
-	from urllib.request import urlretrieve, urlopen
+	from urllib.request import urlretrieve, urlopen, unquote
 else:
-	from urllib import urlretrieve, urlopen
+	from urllib import urlretrieve, urlopen, unquote
 from func import *
 
-url='http://t30p.ru/'
 adr='http://api.forismatic.com/api/1.0/?method=getQuote&format=text&language=ru'
-contain='Тренды твиттера'
-start='#'
-stop='<'
-indent=20
 
 def get(src):
 	with urlopen(src,context=ssl._create_unverified_context()) as site:
@@ -18,16 +13,16 @@ def get(src):
 		return text.decode(chardet.detect(text)['encoding'])
 
 def tag():
-	text=get(url)
-	text=text[text.find(contain)+indent:]
-	text=text[text.find(start)+1:]
-	return text[:text.find(stop)]
+	for j in api.trends_place(23424936)[0]['trends']:
+		cont=unquote(j['query'].replace('+',' '))
+		if '#' in cont:
+			return cont
+	return api.trends_place(23424936)[0]['trends'][0]
 
 def cont():
 	f=True
-	a=tag()
 	while f:
-		text=get(adr)+'\n#'+a
+		text=get(adr)+'\n'+tag()
 		if len(text)<=140:
 			f=False
 	return text
