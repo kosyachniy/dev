@@ -3,7 +3,7 @@ import csv,os
 
 def re(out,inp=''):
 #Чтение
-	#Определение out - строка или файл или имя файла как текст (по существованию)
+	#Определение out - строка или файл или имя файла как текст (по существованию) или сайт
 	if os.path.exists(out):
 		text=list()
 		if out[-4:-1]=='.csv':
@@ -23,3 +23,6 @@ def re(out,inp=''):
 	else:
 		with open(inp,'a',encoding='utf-8') as file:
 			print(text,file=file)
+
+if __name__=='__main__':
+	print(re(input(),input()))

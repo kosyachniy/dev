@@ -5,7 +5,8 @@
 ---
 № | Ошибка | Решено
 ---|---|---
-1 | ``` file/site ``` - Функция get ошибка при запросе ``` http://api.forismatic.com/api/1.0/?method=getQuote&format=text&language=ru ``` | ``` twi/python```
+1 | ``` twi/python/autofollow.py ``` может добавить только 81 элемент, потом ``` tweepy.error.TweepError: Not authorized. ``` |
+2 | ``` main.py ``` Ошибка при команде twit |
 
 API
 ---
