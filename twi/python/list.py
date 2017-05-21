@@ -1,13 +1,19 @@
 from func import *
-import time
 
-x=input()
-for i in api.followers(x):
-	if i.friends_count>=0.6*i.followers_count:
-		print(i.followers_count,i.friends_count,i.screen_name)
-'''
-api.get_user(x).follow()
-y=api.show_friendship(source_screen_name=x,target_screen_name='kosyachniy')[0]
-print(y.following,y.followed_by)
-'''
-#time.sleep(60)
+def lis(user):
+	a=list()
+	for i in api.followers(user):
+		name=i.screen_name
+		if name!='kosyachniy' and i.friends_count>=0.6*i.followers_count:
+			y=api.show_friendship(source_screen_name=name,target_screen_name='kosyachniy')[0]
+			if name not in a and y.following==False and y.followed_by==False:
+				a.append(name)
+	return a
+
+b=lis(input())
+for i in b:
+	b+=lis(i)
+
+with open('db2.txt','a') as file:
+	for i in b:
+		print(i,file=file)
