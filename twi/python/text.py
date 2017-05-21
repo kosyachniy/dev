@@ -2,7 +2,7 @@ import sys, os, ssl, chardet
 if sys.version_info[0]>=3:
 	from urllib.request import urlopen, unquote, Request
 else:
-	from urllib import urlopen, unquote
+	from urllib import urlopen, unquote, Request
 from func import *
 
 def get(src):

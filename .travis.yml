@@ -12,4 +12,4 @@ python:
   - "3.7-dev"
   - "nightly"
 install: "pip install -r requirements.txt"
-script: site/open.py
+script: csv/format.py
