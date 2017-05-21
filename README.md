@@ -5,14 +5,16 @@
 ---
 № | Ошибка | Решено
 ---|---|---
-1 | ``` site/file ``` - Функция get ошибка при запросе ``` http://api.forismatic.com/api/1.0/?method=getQuote&format=text&language=ru ``` | ``` twi/python```
+1 | ``` file/site ``` - Функция get ошибка при запросе ``` http://api.forismatic.com/api/1.0/?method=getQuote&format=text&language=ru ``` | ``` twi/python```
 
 API
 ---
 &nbsp; | Python | C++ | PHP
 ---|---|---|---
-Twitter | [TweePy](http://docs.tweepy.org/en/v3.5.0/api.html) |  |
 ИИ | [TensorFlow](https://www.tensorflow.org/api_docs/python/) |  |
+ВКонтакте |  |  |
+Twitter | [TweePy](http://docs.tweepy.org/en/v3.5.0/api.html) |  |
+InstaGram |  |  |
 
 MarkDown
 ---
