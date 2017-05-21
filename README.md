@@ -9,9 +9,10 @@
 
 API
 ---
-Язык программирования | API
----|---
-Python | [Twitter](http://docs.tweepy.org/en/v3.5.0/api.html)<br>[ИИ - Ten](https://www.tensorflow.org/api_docs/python/)
+&nbsp; | Python | C++ | PHP
+---|---|---|---
+Twitter | [TweePy](http://docs.tweepy.org/en/v3.5.0/api.html) |  |
+ИИ | [TensorFlow](https://www.tensorflow.org/api_docs/python/) |  |
 
 MarkDown
 ---
