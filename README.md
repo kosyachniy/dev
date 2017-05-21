@@ -22,7 +22,7 @@ Travis CI
 
 .travis.yml | Язык программирования
 ---|---
-``` install: "pip install -r requirements.txt" ``` | Python
+```language: python```<br>```python:```<br>```  - "2.6"```<br>```  - "2.7"```<br>```  - "3.2"```<br>```  - "3.3"```<br>```  - "3.4"```<br>```  - "3.5"```<br>```  - "3.5-dev"```<br>```  - "3.6"```<br>```  - "3.6-dev"```<br>```  - "3.7-dev"```<br>```  - "nightly"```<br>```install: "pip install -r requirements.txt"```<br>```script: ....py``` | Python
 
 ```
 language: 
