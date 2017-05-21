@@ -7,6 +7,12 @@
 ---|---|---
 1 | ``` site/file ``` - Функция get ошибка при запросе ``` http://api.forismatic.com/api/1.0/?method=getQuote&format=text&language=ru ``` | ``` twi/python```
 
+API
+---
+Язык программирования | API
+---|---
+Python | [Twitter](http://docs.tweepy.org/en/v3.5.0/api.html)<br>[ИИ - Ten](https://www.tensorflow.org/api_docs/python/)
+
 MarkDown
 ---
 [Разметка README.md](http://coddism.com/zametki/razmetka_readmemd_v_github)
