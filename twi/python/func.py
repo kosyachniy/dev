@@ -1,0 +1,16 @@
+import tweepy
+
+'''
+consumer_key='8Y2o5PjasQkVmvoxVQBLyVs4F'
+consumer_secret='2r4KPBm8kCcKsNrwkzSQRH4IkDqbxhVrgVcAmvfoyfXbZUNm1L'
+access_key='3110781773-4I27iEchYIxqZmIQOgt18b2ehZUHkdEpWKRPuRO'
+access_secret='OZj9w6TRUQoeVCgk3pShYOTFWasvSx3ebgOXn6lJQyngy'
+'''
+consumer_key='jARMeUTgjWhDSWOSbs0pfQYz4'
+consumer_secret='stRnOnA3KRpaCI3hjyJyo0eLedQNflQ4FuvudvXj37mSLX7tPa'
+access_key='4100776272-4VpvJNSkyhG9kWXfhRHyI3eTEeBRYRABiIqzusU'
+access_secret='RHcdHHf0TyHBxtfxHyRCgmB41r7c6gnVgUHH7SEf1Uqi9'
+
+auth=tweepy.OAuthHandler(consumer_key,consumer_secret)
+auth.set_access_token(access_key,access_secret)
+api=tweepy.API(auth)

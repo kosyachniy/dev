@@ -25,6 +25,7 @@ def get(src):
 	with urlopen(src,context=ssl._create_unverified_context()) as site:
 		text=site.read()
 		return text.decode(chardet.detect(text)['encoding'])
+
 def tag():
 	text=get(url)
 	text=text[text.find(contain)+indent:]
@@ -43,11 +44,10 @@ def cont():
 def post(text):
 	if not text:
 		text=cont()
-
+#Подключение
 	auth=tweepy.OAuthHandler(consumer_key,consumer_secret)
 	auth.set_access_token(access_key,access_secret)
 	api=tweepy.API(auth)
-
 #Отправка текстового твита
 	api.update_status(text)
 
