@@ -20,13 +20,26 @@ Travis CI
 ---
 [Travis CI](https://travis-ci.org/kosyachniy/dev/)
 
-.travis.yml | Язык программирования
----|---
-```language: python```<br>```python:```<br>```  - "2.6"```<br>```  - "2.7"```<br>```  - "3.2"```<br>```  - "3.3"```<br>```  - "3.4"```<br>```  - "3.5"```<br>```  - "3.5-dev"```<br>```  - "3.6"```<br>```  - "3.6-dev"```<br>```  - "3.7-dev"```<br>```  - "nightly"```<br>```install: "pip install -r requirements.txt"```<br>```script: ....py``` | Python
-
+### Python
 ```
-language: 
-script: 
+language: python
+python:
+  - "2.6"
+  - "2.7"
+  - "3.2"
+  - "3.3"
+  - "3.4"
+  - "3.5"
+  - "3.5-dev"
+  - "3.6"
+  - "3.6-dev"
+  - "3.7-dev"
+  - "nightly"
+cache: pip
+install:
+  - pip install -r requirements.txt
+script:
+  - ....py
 ```
 
 
