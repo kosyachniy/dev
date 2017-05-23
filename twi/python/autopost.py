@@ -21,13 +21,14 @@ def lis(user):
 				b.append(text)
 	return b
 
-way=lis('fozkahuckster')
+name='iwantyouuur'
+way=lis(name)
 while True:
-	if len(way)==0:
-		break
 	text=way[0]
-#	if len(way)<=1:
-#		way+=lis(api.followers(name)[0].screen_name)
+	if len(way)==1:
+		way+=lis(api.followers(name)[0].screen_name)
+	if len(way)==1:
+		break
 	try:
 		api.update_status(text)
 		print(text)

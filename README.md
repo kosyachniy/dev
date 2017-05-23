@@ -5,8 +5,10 @@
 ---
 № | Ошибка | Решено
 ---|---|---
-1 | ``` twi/python/autofollow.py ``` может добавить только 81 элемент, потом ``` tweepy.error.TweepError: Not authorized. ``` |
+1 | ``` twi/python/autofollow.py ``` Может добавить только 81 элемент, потом ``` tweepy.error.TweepError: Not authorized. ``` |
 2 | ``` main.py ``` Ошибка при команде twit |
+3 | ``` twi/python/autopost.py ``` Добавляет некоторые ретвиты и неправильно определяет количество ретвитов |
+4 | ``` twi/python ``` Спустя 81-82 итерации отключается от сервера | Добавить в except тип ошибки и переподключение
 
 API
 ---
