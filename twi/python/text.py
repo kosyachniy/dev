@@ -1,13 +1,11 @@
-import sys, os, ssl, chardet
+import sys, requests
 if sys.version_info[0]>=3:
-	from urllib.request import urlopen, unquote, Request
+	from urllib.request import unquote
 else:
-	from urllib import urlopen, unquote, Request
+	from urllib import unquote
 from func import *
 
-def get(src):
-	with urlopen(Request(src,None,{'User-Agent':''})) as site:
-		return site.read().decode('utf-8')
+get=lambda x: requests.get(x).text
 
 def tag():
 	for j in api.trends_place(23424936)[0]['trends']:
