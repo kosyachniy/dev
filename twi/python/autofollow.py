@@ -1,7 +1,7 @@
 from func import *
 import time
 
-def lis(user):
+def lis(user=api.followers()[0].screen_name):
 	a=list()
 	for i in api.followers(user):
 		name=i.screen_name
@@ -20,12 +20,11 @@ if not user:
 	user=api.followers('kosyachniy')[0].screen_name
 '''
 
-way=lis(api.followers('kosyachniy')[0].screen_name)
-
+way=lis()
 while True:
 	name=way[0]
-	if len(way)==1:
-		way+=lis(api.followers(name)[0].screen_name)
+	if len(way)<=1:
+		way+=lis(name)
 	api.get_user(name).follow()
 	print(name)
 	del way[0]

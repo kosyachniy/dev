@@ -6,7 +6,8 @@ else:
 
 def get(src):
 	with urlopen(Request(src,None,{'User-Agent':''}),context=ssl._create_unverified_context()) as site:
-		return site.read().decode('utf-8')
+		text=site.read()
+		return text.decode(chardet.detect(text)['encoding'])
 
 if __name__=='__main__':
 	print(get(input()))
