@@ -1,13 +1,7 @@
-import sys, ssl, chardet
-if sys.version_info[0]>=3:
-	from urllib.request import urlopen, Request
-else:
-	from urllib import urlopen, Request
+import requests
 
 def get(src):
-	with urlopen(Request(src,None,{'User-Agent':''}),context=ssl._create_unverified_context()) as site:
-		text=site.read()
-		return text.decode(chardet.detect(text)['encoding'])
+	return requests.get(src).text
 
 if __name__=='__main__':
-	print(get(input()))
+	print(get(input())

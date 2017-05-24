@@ -2,14 +2,17 @@ import requests, time
 from urllib.request import urlopen, unquote
 from func import *
 
+name='mashablegif' #lifehacker #iwantyouuur
+place=0 #2352824 #23424936
+
 #get=lambda x: requests.get(x).text
 
 def tag():
-	for j in api.trends_place(23424936)[0]['trends']:
+	for j in api.trends_place(place)[0]['trends']:
 		cont=unquote(j['query'].replace('+',' '))
 		if '#' in cont:
 			return cont
-	return api.trends_place(23424936)[0]['trends'][0]
+	return api.trends_place(place)[0]['trends'][0]
 
 def lis(user):
 	b=list()
@@ -21,7 +24,6 @@ def lis(user):
 				b.append(text)
 	return b
 
-name='iwantyouuur'
 way=lis(name)
 while True:
 	text=way[0]

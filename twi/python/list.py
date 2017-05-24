@@ -17,6 +17,6 @@ for i in b:
 	c+=lis(i)
 b+=c
 
-with open('db2.txt','a') as file:
+with open('db.txt','a') as file:
 	for i in b:
 		print(i,file=file)
