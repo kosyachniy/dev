@@ -25,10 +25,13 @@ def tag(place):
 
 def lpost(user):
 	a=list()
-	b=tag(23424936)+' '+tag(0)
+	b=tag(23424936)+' '+tag(2352824)
 	for i in api.user_timeline(user):
 		if not i.retweeted and not i.in_reply_to_user_id and not i.is_quote_status and not i.in_reply_to_user_id and not i.in_reply_to_status_id and i.favorite_count>=10:
-			text=i.text+'\n'+b
+			if i.text:
+				text=i.text+'\n'+b
+			else:
+				text=b
 			if len(text)<=140:
 				a.append(text)
 	return a
@@ -43,8 +46,6 @@ def luser(user):
 				a.append(name)
 	return a
 
-#Подписываться для накрутки, проверка языка
-
 #Подписываться на недавно подписавшихся меня ради фолловинга
 '''
 for i in api.followers('kosyachniy'):
@@ -57,17 +58,12 @@ if not user:
 
 #Удалять тех, кто в течении недели не подписался
 
-#Автопостинг твитов на базе интернета / популярных твитов
-
-
 #api.get_user(input()).id
 
 sname=list()
 with open('top.txt','r') as file:
 	for i in file:
 		sname.append(i[0:-1])
-
-print(lname)
 
 suser=luser(api.followers()[0].screen_name)
 spost=lpost(sname[0])
@@ -77,26 +73,32 @@ while True:
 	if len(spost)==1:
 		spost+=lpost(sname[0])
 	del sname[0]
-	if len(spost)==1:
-		print('Кончились посты!!!')
-		break
-	if len(sname)==0:
-		print('Кончились пользователи для копирования твитов!!!')
-		break
+
 	user=suser[0]
 	if len(suser)<=1:
 		suser+=luser(api.followers(user)[0].screen_name)
+
+	if len(spost)==1:
+		print('Кончились посты!!!')
+		break
+	elif len(sname)==0:
+		print('Кончились пользователи для копирования твитов!!!')
+		break
+
+#Автопостинг твитов на базе интернета / популярных твитов
 	try:
 		api.update_status(text)
 		print(text)
+	except tweepy.error.TweepError:
+		print('Ошибка при постинге!')
 	del spost[0]
-	except tweepy.error.TweepError:
-		print('Error')
+#Подписываться для накрутки, проверка языка
 	try:
-		api.get_user(name).follow()
-		print(name)
+		api.get_user(user).follow()
+		print(user)
 	except tweepy.error.TweepError:
-		print('Error')
+		print('Ошибка при фолловинге!')
 		api=auth()
 	del suser[0]
-	delay(60)
+
+	time.sleep(60)
