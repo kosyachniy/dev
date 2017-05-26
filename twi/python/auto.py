@@ -1,4 +1,4 @@
-import requests, time, tweepy
+import tweepy, time
 from urllib.request import unquote
 
 def auth(user='deepinmylife'):
@@ -46,20 +46,6 @@ def luser(user):
 				a.append(name)
 	return a
 
-#Подписываться на недавно подписавшихся меня ради фолловинга
-'''
-for i in api.followers('kosyachniy'):
-	if i.friends_count>=1000 and i.followers_count>=1000:
-		user=i.screen_name
-		break
-if not user:
-	user=api.followers('kosyachniy')[0].screen_name
-'''
-
-#Удалять тех, кто в течении недели не подписался
-
-#api.get_user(input()).id
-
 sname=list()
 with open('top.txt','r') as file:
 	for i in file:
@@ -73,26 +59,29 @@ tuser=True
 user=api.me().screen_name
 i=0
 while True:
-#Автопостинг твитов на базе интернета / популярных твитов
+#Автопостинг твитов на базе интернета / популярных твитов (твитить 2400 в день)
 	if tpost:
 		while len(spost)==0:
 			if len(sname)==0:
 				tpost=False
-				print('Твиты закончились!')
+				print('Закончились твиты!')
+				break
 			else:
 				spost+=lpost(sname[0])
 				del sname[0]
 
+	if tpost:
 		try:
 			api.update_status(spost[0])
 			print(spost[0])
 		except tweepy.error.TweepError:
 			print('Ошибка при постинге!')
 		del spost[0]
-#Подписываться для накрутки, проверка языка
+#Подписываться для накрутки, проверка языка (фолловинг 1 раз в минуту, список 1 раз в минуту)
 	if tuser:
 		user=suser[0]
 		del suser[0]
+
 	if len(suser)==0:
 		suser+=luser(api.followers(user)[i].screen_name)
 	if len(suser)==0:
@@ -106,6 +95,7 @@ while True:
 	else:
 		i=0
 		tuser=True
+
 	if tuser:
 		try:
 			api.get_user(user).follow()
@@ -113,5 +103,12 @@ while True:
 		except tweepy.error.TweepError:
 			print('Ошибка при фолловинге!')
 			api=auth()
+#Подписываться на недавно подписавшихся меня ради фолловинга (при каждой подписке)
+'''
+	for i in api.followers(me):
+		if i.friends_count>=1000 and i.followers_count>=1000 and i.frends_count*0.8>=i.followers_count and not followed_by:
+			api.get_user(i.screen_name).follow()
+'''
+#Удалять тех, кто в течении недели не подписался (1 раз в день)
 
 	time.sleep(60)
