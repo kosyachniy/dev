@@ -68,37 +68,50 @@ with open('top.txt','r') as file:
 suser=luser(api.followers()[0].screen_name)
 spost=lpost(sname[0])
 del sname[0]
+tpost=True
+tuser=True
+user=api.me().screen_name
+i=0
 while True:
-	text=spost[0]
-	if len(spost)==1:
-		spost+=lpost(sname[0])
-	del sname[0]
-
-	user=suser[0]
-	if len(suser)<=1:
-		suser+=luser(api.followers(user)[0].screen_name)
-
-	if len(spost)==1:
-		print('Кончились посты!!!')
-		break
-	elif len(sname)==0:
-		print('Кончились пользователи для копирования твитов!!!')
-		break
-
 #Автопостинг твитов на базе интернета / популярных твитов
-	try:
-		api.update_status(text)
-		print(text)
-	except tweepy.error.TweepError:
-		print('Ошибка при постинге!')
-	del spost[0]
+	if tpost:
+		while len(spost)==0:
+			if len(sname)==0:
+				tpost=False
+				print('Твиты закончились!')
+			else:
+				spost+=lpost(sname[0])
+				del sname[0]
+
+		try:
+			api.update_status(spost[0])
+			print(spost[0])
+		except tweepy.error.TweepError:
+			print('Ошибка при постинге!')
+		del spost[0]
 #Подписываться для накрутки, проверка языка
-	try:
-		api.get_user(user).follow()
-		print(user)
-	except tweepy.error.TweepError:
-		print('Ошибка при фолловинге!')
-		api=auth()
-	del suser[0]
+	if tuser:
+		user=suser[0]
+		del suser[0]
+	if len(suser)==0:
+		suser+=luser(api.followers(user)[i].screen_name)
+	if len(suser)==0:
+		print('Закончились пользователи!')
+		if i==10:
+			user=api.me().screen_name
+			i=0
+		else:
+			tuser=False
+			i+=1
+	else:
+		i=0
+		tuser=True
+	if tuser:
+		try:
+			api.get_user(user).follow()
+			print(user)
+		except tweepy.error.TweepError:
+			print('Ошибка при фолловинге!')
+			api=auth()
 
 	time.sleep(60)
