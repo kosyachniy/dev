@@ -1,6 +1,6 @@
 import threading
-from post import post
-from user import user
+from autopost import post
+from autofollow import user
 
 #Автопостинг твитов на базе интернета / популярных твитов (твитить 2400 в день)
 threading.Thread(target=post).start()

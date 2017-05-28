@@ -59,7 +59,7 @@ while True:
 #Автопостинг твитов на базе интернета / популярных твитов (твитить 2400 в день)
 	if tpost:
 		while len(spost)==0:
-			if len(sname)==0:
+			if len(sname)<=1:
 				tpost=False
 				print('Закончились твиты!')
 				break
