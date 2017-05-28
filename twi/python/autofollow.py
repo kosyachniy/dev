@@ -1,6 +1,7 @@
-from func import *
 import time
+from func import auth
 
+api=auth()
 me=api.me().screen_name
 
 def lis(user):
@@ -23,8 +24,6 @@ while True:
 		print(name)
 	except tweepy.error.TweepError:
 		print('Error')
-		auth=tweepy.OAuthHandler(consumer_key,consumer_secret)
-		auth.set_access_token(access_key,access_secret)
-		api=tweepy.API(auth)
+		api=auth()
 	del way[0]
 	time.sleep(60)

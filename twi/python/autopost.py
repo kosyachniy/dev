@@ -1,7 +1,8 @@
 import requests, time
 from urllib.request import urlopen, unquote
-from func import *
+from func import auth
 
+api=auth()
 name='mashablegif' #lifehacker #iwantyouuur
 place=0 #2352824 #23424936
 

@@ -1,17 +1,6 @@
-import tweepy, time
+import time
 from urllib.request import unquote
-
-def auth(user='deepinmylife'):
-	if (user=='deepinmylife'):
-		consumer_key='dyLgjQsoCQHxaLSk1baLOCEQe'
-		consumer_secret='tEnKUNJhNlj7JYTZ5pesIyFYhqQckqbEn84O7QcfTaYTb5bGTp'
-		access_key='3110781773-wiWQkS9564FBEjEb4pzwrPAJdIvtmQFuu4ofblj'
-		access_secret='H9u8EQG10XwQIP1vufpVqMZ4NgIpfWPcH0f6FuDq1UKA6'
-
-	aut=tweepy.OAuthHandler(consumer_key,consumer_secret)
-	aut.set_access_token(access_key,access_secret)
-	api=tweepy.API(aut)
-	return api
+from func import auth
 
 api=auth()
 me=api.me().screen_name
@@ -25,13 +14,16 @@ def tag(place):
 
 def lpost(user):
 	a=list()
-	b=tag(23424936)+' '+tag(2352824)
+	ru=tag(23424936)
+	us=tag(2352824)
 	for i in api.user_timeline(user):
 		if not i.retweeted and not i.in_reply_to_user_id and not i.is_quote_status and not i.in_reply_to_user_id and not i.in_reply_to_status_id and i.favorite_count>=10:
-			if i.text:
-				text=i.text+'\n'+b
+			if ru in i.text:
+				text=i.text+'\n'+us
 			else:
-				text=b
+				text=i.text+'\n'+ru+' '+us
+			#else: #Проверка пост - картинка?
+			#	text=b
 			if len(text)<=140:
 				a.append(text)
 	return a
@@ -58,7 +50,10 @@ tpost=True
 tuser=True
 user=api.me().screen_name
 i=0
+it=0
 while True:
+	if it%50==0:
+		api=auth()
 #Автопостинг твитов на базе интернета / популярных твитов (твитить 2400 в день)
 	if tpost:
 		while len(spost)==0:
@@ -102,7 +97,9 @@ while True:
 			print(user)
 		except tweepy.error.TweepError:
 			print('Ошибка при фолловинге!')
-			api=auth()
+			break
+
+	time.sleep(60)
 #Подписываться на недавно подписавшихся меня ради фолловинга (при каждой подписке)
 '''
 	for i in api.followers(me):
@@ -110,5 +107,3 @@ while True:
 			api.get_user(i.screen_name).follow()
 '''
 #Удалять тех, кто в течении недели не подписался (1 раз в день)
-
-	time.sleep(60)
