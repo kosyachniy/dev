@@ -43,8 +43,6 @@ with open('top.txt','r') as file:
 	for i in file:
 		sname.append(i[0:-1])
 spost=lpost(sname[0])
-puser=sname[0]
-del sname[0]
 tpost=True
 
 suser=luser(api.followers()[0].screen_name)
@@ -66,14 +64,13 @@ while True:
 				print('Закончились твиты!')
 				break
 			else:
-				spost+=lpost(sname[0])
-				puser=sname[0]
+				spost+=lpost(sname[1])
 				del sname[0]
 
 	if tpost:
 		try:
 			api.update_status(spost[0])
-			print('Post.',it,'.',puser)
+			print('Post.',sname[0])
 		except tweepy.error.TweepError:
 			print('Ошибка при постинге!')
 		del spost[0]
@@ -99,7 +96,7 @@ while True:
 	if tuser:
 		try:
 			api.get_user(user).follow()
-			print('Follow.',it,'.',user)
+			print('Follow.',user)
 		except tweepy.error.TweepError:
 			print('Ошибка при фолловинге!')
 			break

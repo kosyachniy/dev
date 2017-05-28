@@ -1,41 +1,64 @@
-import requests, time
-from urllib.request import urlopen, unquote
+import time
+from urllib.request import unquote
 from func import auth
 
 api=auth()
-name='mashablegif' #lifehacker #iwantyouuur
-place=0 #2352824 #23424936
 
-#get=lambda x: requests.get(x).text
-
-def tag():
+def tag(place):
 	for j in api.trends_place(place)[0]['trends']:
 		cont=unquote(j['query'].replace('+',' '))
 		if '#' in cont:
 			return cont
-	return api.trends_place(place)[0]['trends'][0]
+	return unquote(api.trends_place(place)[0]['trends'][0])
 
-def lis(user):
-	b=list()
-	a=tag()
+def lpost(user):
+	a=list()
+	ru=tag(23424936)
+	us=tag(2352824)
 	for i in api.user_timeline(user):
-		if not i.retweeted and not i.in_reply_to_user_id and not i.is_quote_status and not i.in_reply_to_user_id and not i.in_reply_to_status_id and i.favorite_count>=5:
-			text=i.text+'\n'+a
+		if not i.retweeted and not i.in_reply_to_user_id and not i.is_quote_status and not i.in_reply_to_user_id and not i.in_reply_to_status_id and i.favorite_count>=10:
+			if ru in i.text:
+				text=i.text+'\n'+us
+			else:
+				text=i.text+'\n'+ru+' '+us
+			#else: #Проверка пост - картинка?
+			#	text=b
 			if len(text)<=140:
-				b.append(text)
-	return b
+				a.append(text)
+	return a
 
-way=lis(name)
+sname=list()
+with open('top.txt','r') as file:
+	for i in file:
+		sname.append(i[0:-1])
+
+spost=lpost(sname[0])
+user=sname[0]
+del sname[0]
+tpost=False
+
+it=0
 while True:
-	text=way[0]
-	if len(way)==1:
-		way+=lis(api.followers(name)[0].screen_name)
-	if len(way)==1:
+	it+=1
+
+	while len(spost)==0:
+		if len(sname)==0:
+			tpost=True
+			print('Закончились твиты!')
+			break
+		else:
+			spost+=lpost(sname[0])
+			user=sname[0]
+			del sname[0]
+
+	if tpost:
 		break
+
 	try:
-		api.update_status(text)
-		print(text)
-		time.sleep(40)
+		api.update_status(spost[0])
+		print('Post.',it,'.',user)
 	except tweepy.error.TweepError:
-		print('Error')
-	del way[0]
+		print('Ошибка при постинге!')
+	del spost[0]
+
+	time.sleep(40)

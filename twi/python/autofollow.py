@@ -4,7 +4,7 @@ from func import auth
 api=auth()
 me=api.me().screen_name
 
-def lis(user):
+def luser(user):
 	a=list()
 	for i in api.followers(user):
 		name=i.screen_name
@@ -14,16 +14,44 @@ def lis(user):
 				a.append(name)
 	return a
 
-way=lis(api.followers()[0].screen_name)
-while True:
-	name=way[0]
-	if len(way)<=1:
-		way+=lis(api.followers(name)[0].screen_name)
-	try:
-		api.get_user(name).follow()
-		print(name)
-	except tweepy.error.TweepError:
-		print('Error')
-		api=auth()
-	del way[0]
-	time.sleep(60)
+def user():
+	tuser=True
+	user=api.me().screen_name
+	i=0
+	it=0
+
+	while True:
+		it+=1
+		if it%50==0:
+			api=auth()
+
+		if tuser:
+			user=suser[0]
+			del suser[0]
+
+		if len(suser)==0:
+			suser+=luser(api.followers(user)[i].screen_name)
+		if len(suser)==0:
+			print('Закончились пользователи!')
+			if i==10:
+				user=api.me().screen_name
+				i=0
+			else:
+				tuser=False
+				i+=1
+		else:
+			i=0
+			tuser=True
+
+		if tuser:
+			try:
+				api.get_user(user).follow()
+				print('Follow.',it,'.',user)
+			except tweepy.error.TweepError:
+				print('Ошибка при фолловинге!')
+				break
+
+		time.sleep(60)
+
+if __name__=='__main__':
+	user()
