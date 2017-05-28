@@ -10,7 +10,7 @@ def tag(place):
 		cont=unquote(j['query'].replace('+',' '))
 		if '#' in cont:
 			return cont
-	return api.trends_place(place)[0]['trends'][0]
+	return unquote(api.trends_place(place)[0]['trends'][0])
 
 def lpost(user):
 	a=list()
@@ -43,6 +43,7 @@ with open('top.txt','r') as file:
 	for i in file:
 		sname.append(i[0:-1])
 spost=lpost(sname[0])
+puser=sname[0]
 del sname[0]
 tpost=True
 
@@ -53,8 +54,10 @@ i=0
 
 it=0
 while True:
+	it+=1
 	if it%50==0:
 		api=auth()
+	print('--- Итерация:',it,'---')
 #Автопостинг твитов на базе интернета / популярных твитов (твитить 2400 в день)
 	if tpost:
 		while len(spost)==0:
@@ -64,12 +67,13 @@ while True:
 				break
 			else:
 				spost+=lpost(sname[0])
+				puser=sname[0]
 				del sname[0]
 
 	if tpost:
 		try:
 			api.update_status(spost[0])
-			print(spost[0])
+			print('Post.',it,'.',puser)
 		except tweepy.error.TweepError:
 			print('Ошибка при постинге!')
 		del spost[0]
@@ -95,7 +99,7 @@ while True:
 	if tuser:
 		try:
 			api.get_user(user).follow()
-			print(user)
+			print('Follow.',it,'.',user)
 		except tweepy.error.TweepError:
 			print('Ошибка при фолловинге!')
 			break

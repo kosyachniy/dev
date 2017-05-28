@@ -9,7 +9,7 @@ def tag(place):
 		cont=unquote(j['query'].replace('+',' '))
 		if '#' in cont:
 			return cont
-	return api.trends_place(place)[0]['trends'][0]
+	return unquote(api.trends_place(place)[0]['trends'][0])
 
 def lpost(user):
 	a=list()
@@ -27,29 +27,39 @@ def lpost(user):
 				a.append(text)
 	return a
 
-sname=list()
-with open('top.txt','r') as file:
-	for i in file:
-		sname.append(i[0:-1])
+def post():
+	sname=list()
+	with open('top.txt','r') as file:
+		for i in file:
+			sname.append(i[0:-1])
 
-spost=lpost(sname[0])
-del sname[0]
-tpost=True
-while True:
-	if tpost:
+	spost=lpost(sname[0])
+	user=sname[0]
+	del sname[0]
+	tpost=False
+
+	it=0
+	while True:
+		it+=1
+
 		while len(spost)==0:
 			if len(sname)==0:
-				tpost=False
+				tpost=True
 				print('Закончились твиты!')
 				break
 			else:
 				spost+=lpost(sname[0])
+				user=sname[0]
 				del sname[0]
 
-	if tpost:
+		if tpost:
+			break
+
 		try:
 			api.update_status(spost[0])
-			print(spost[0])
+			print('Post.',it,'.',user)
 		except tweepy.error.TweepError:
 			print('Ошибка при постинге!')
 		del spost[0]
+
+		time.sleep(40)
