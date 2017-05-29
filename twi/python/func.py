@@ -1,6 +1,6 @@
-import tweepy
-
 def auth(user='deepinmylife'):
+	import tweepy
+	
 	if user=='deepinmylife':
 		consumer_key='dyLgjQsoCQHxaLSk1baLOCEQe'
 		consumer_secret='tEnKUNJhNlj7JYTZ5pesIyFYhqQckqbEn84O7QcfTaYTb5bGTp'

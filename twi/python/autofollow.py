@@ -1,8 +1,10 @@
 import time, sys
 from func import auth
 
-def user(start):
-	api=auth()
+who='kosyachniy'
+
+def user(start=''):
+	api=auth(who)
 	me=api.me().screen_name
 
 	def luser(user):
@@ -26,14 +28,17 @@ def user(start):
 	while True:
 		it+=1
 		if it%50==0:
-			api=auth()
+			api=auth(who)
 
 		if tuser:
 			user=suser[0]
 			del suser[0]
 
 		if len(suser)==0:
-			suser+=luser(api.followers(user)[i].screen_name)
+			try:
+				suser+=luser(api.followers(user)[i].screen_name)
+			except tweepy.error.TweepError:
+				api=auth(who)
 		if len(suser)==0:
 			print('Закончились пользователи!')
 			if i==10:
