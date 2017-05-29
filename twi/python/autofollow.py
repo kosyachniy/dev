@@ -1,20 +1,23 @@
-import time
+import time, sys
 from func import auth
 
-api=auth()
-me=api.me().screen_name
+def user(start):
+	api=auth()
+	me=api.me().screen_name
 
-def luser(user):
-	a=list()
-	for i in api.followers(user):
-		name=i.screen_name
-		if name!=me and i.friends_count>=0.6*i.followers_count:
-			y=api.show_friendship(source_screen_name=name,target_screen_name=me)[0]
-			if name not in a and y.following==False and y.followed_by==False:
-				a.append(name)
-	return a
+	def luser(user):
+		a=list()
+		for i in api.followers(user):
+			name=i.screen_name
+			if name!=me and i.friends_count>=0.6*i.followers_count:
+				y=api.show_friendship(source_screen_name=name,target_screen_name=me)[0]
+				if name not in a and y.following==False and y.followed_by==False:
+					a.append(name)
+		return a
 
-def user():
+	if not start:
+		start=api.followers()[0].screen_name
+	suser=luser(start)
 	tuser=True
 	user=api.me().screen_name
 	i=0
@@ -54,4 +57,7 @@ def user():
 		time.sleep(60)
 
 if __name__=='__main__':
-	user()
+	if len(sys.argv)==2:
+		user(sys.argv[1])
+	else:
+		user()

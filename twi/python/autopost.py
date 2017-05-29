@@ -34,8 +34,6 @@ def post():
 			sname.append(i[0:-1])
 
 	spost=lpost(sname[0])
-	user=sname[0]
-	del sname[0]
 	tpost=False
 
 	it=0
@@ -43,13 +41,12 @@ def post():
 		it+=1
 
 		while len(spost)==0:
-			if len(sname)==0:
+			if len(sname)<=1:
 				tpost=True
 				print('Закончились твиты!')
 				break
 			else:
-				spost+=lpost(sname[0])
-				user=sname[0]
+				spost+=lpost(sname[1])
 				del sname[0]
 
 		if tpost:
@@ -57,7 +54,7 @@ def post():
 
 		try:
 			api.update_status(spost[0])
-			print('Post.',it,'.',user)
+			print('Post.',it,'.',sname[0])
 		except tweepy.error.TweepError:
 			print('Ошибка при постинге!')
 		del spost[0]
