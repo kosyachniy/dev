@@ -1,11 +1,10 @@
-import time, sys
+import time, sys, tweepy
 from func import auth
 
-who='kosyachniy'
+me='kosyachniy'
 
 def user(start=''):
-	api=auth(who)
-	me=api.me().screen_name
+	api=auth(me)
 
 	def luser(user):
 		a=list()
@@ -20,44 +19,41 @@ def user(start=''):
 	if not start:
 		start=api.followers()[0].screen_name
 	suser=luser(start)
-	tuser=True
-	user=api.me().screen_name
-	i=0
+	last=me
+	i=1 #Так как на индексе 0 - последний подписчик (я)
 	it=0
 
 	while True:
 		it+=1
 		if it%50==0:
-			api=auth(who)
-
-		if tuser:
-			user=suser[0]
-			del suser[0]
+			api=auth(me)
 
 		if len(suser)==0:
 			try:
-				suser+=luser(api.followers(user)[i].screen_name)
+				suser+=luser(api.followers(last)[i].screen_name)
 			except tweepy.error.TweepError:
-				api=auth(who)
+				api=auth(me)
 		if len(suser)==0:
 			print('Закончились пользователи!')
 			if i==10:
-				user=api.me().screen_name
+				last=me
 				i=0
+				continue
 			else:
-				tuser=False
 				i+=1
+				continue
 		else:
-			i=0
-			tuser=True
+			i=1
 
-		if tuser:
-			try:
-				api.get_user(user).follow()
-				print('Follow.',it,'.',user)
-			except tweepy.error.TweepError:
-				print('Ошибка при фолловинге!')
-				break
+		last=suser[0]
+		del suser[0]
+
+		try:
+			api.get_user(last).follow()
+			print('Follow.',it,'.',last)
+		except tweepy.error.TweepError:
+			print('Ошибка при фолловинге!')
+			#break
 
 		time.sleep(60)
 

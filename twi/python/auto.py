@@ -1,4 +1,4 @@
-import time
+import time, tweepy
 from urllib.request import unquote
 from func import auth
 
