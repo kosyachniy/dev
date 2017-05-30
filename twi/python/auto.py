@@ -1,4 +1,4 @@
-import time, tweepy
+import time, tweepy, threading
 from urllib.request import unquote
 from func import auth
 
@@ -97,7 +97,8 @@ while True:
 
 	try:
 		api.get_user(last).follow()
-		print('Follow.',it,'.',last)
+		api.send_direct_message(last,text='Привет! Давай знакомиться. Я взаимный)) Подписывайся - https://www.instagram.com/mr.poloz/')
+		print('Follow.',last)
 	except tweepy.error.TweepError:
 		print('Ошибка при фолловинге!')
 		#break

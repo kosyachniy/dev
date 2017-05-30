@@ -1,5 +1,7 @@
-from func import *
+from func import auth
 import time
+
+api=auth()
 
 with open('db.txt','r') as file:
 	for i in file:

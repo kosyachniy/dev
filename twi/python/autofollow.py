@@ -53,7 +53,6 @@ def user(start=''):
 			print('Follow. {}.'.format(it),last)
 		except tweepy.error.TweepError:
 			print('Ошибка при фолловинге!')
-			#break
 
 		time.sleep(60)
 
