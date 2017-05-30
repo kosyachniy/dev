@@ -50,7 +50,7 @@ def user(start=''):
 
 		try:
 			api.get_user(last).follow()
-			print('Follow.',it,'.',last)
+			print('Follow. {}.'.format(it),last)
 		except tweepy.error.TweepError:
 			print('Ошибка при фолловинге!')
 			#break

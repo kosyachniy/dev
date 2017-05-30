@@ -2,9 +2,8 @@ import time, tweepy
 from urllib.request import unquote
 from func import auth
 
-who='deepinmylife'
-api=auth(who)
-me=api.me().screen_name
+me='deepinmylife'
+api=auth(me)
 
 def tag(place):
 	for j in api.trends_place(place)[0]['trends']:
@@ -47,15 +46,15 @@ spost=lpost(sname[0])
 tpost=True
 
 suser=luser(api.followers()[0].screen_name)
-tuser=True
 user=api.me().screen_name
 i=0
 
 it=0
 while True:
+	time.sleep(60)
 	it+=1
 	if it%50==0:
-		api=auth(who)
+		api=auth(me)
 	print('--- Итерация:',it,'---')
 #Автопостинг твитов на базе интернета / популярных твитов (твитить 2400 в день)
 	if tpost:
@@ -76,36 +75,32 @@ while True:
 			print('Ошибка при постинге!')
 		del spost[0]
 #Подписываться для накрутки, проверка языка (фолловинг 1 раз в минуту, список 1 раз в минуту)
-	if tuser:
-		user=suser[0]
-		del suser[0]
-
 	if len(suser)==0:
 		try:
-			suser+=luser(api.followers(user)[i].screen_name)
+			suser+=luser(api.followers(last)[i].screen_name)
 		except tweepy.error.TweepError:
-			api=auth(who)
+			api=auth(me)
 	if len(suser)==0:
 		print('Закончились пользователи!')
 		if i==10:
-			user=api.me().screen_name
+			last=me
 			i=0
+			continue
 		else:
-			tuser=False
 			i+=1
+			continue
 	else:
-		i=0
-		tuser=True
+		i=1
 
-	if tuser:
-		try:
-			api.get_user(user).follow()
-			print('Follow.',user)
-		except tweepy.error.TweepError:
-			print('Ошибка при фолловинге!')
-			break
+	last=suser[0]
+	del suser[0]
 
-	time.sleep(60)
+	try:
+		api.get_user(last).follow()
+		print('Follow.',it,'.',last)
+	except tweepy.error.TweepError:
+		print('Ошибка при фолловинге!')
+		#break
 #Подписываться на недавно подписавшихся меня ради фолловинга (при каждой подписке)
 '''
 	for i in api.followers(me):
