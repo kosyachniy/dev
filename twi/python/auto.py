@@ -72,6 +72,7 @@ while True:
 	if it%50==0:
 		api=auth(me)
 	print('--- Итерация:',it,'---')
+
 #Автопостинг твитов на базе интернета / популярных твитов (твитить 2400 в день)
 	if tpost:
 		while len(spost)==0:
@@ -90,6 +91,7 @@ while True:
 		except tweepy.error.TweepError:
 			print('Ошибка при постинге!')
 		del spost[0]
+
 #Подписываться для накрутки, проверка языка (фолловинг 1 раз в минуту, список 1 раз в минуту)
 	if len(suser)==0:
 		try:
@@ -117,9 +119,3 @@ while True:
 	except tweepy.error.TweepError:
 		print('Ошибка при фолловинге!')
 		#break
-#Подписываться на недавно подписавшихся меня ради фолловинга (при каждой подписке)
-'''
-	for i in api.followers(me):
-		if i.friends_count>=1000 and i.followers_count>=1000 and i.frends_count*0.8>=i.followers_count and not followed_by:
-			api.get_user(i.screen_name).follow()
-'''

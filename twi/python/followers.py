@@ -12,10 +12,20 @@ def userr(me='kosyachniy',last=''):
 			if i.screen_name==last: #Не рассмотрен случай, если последний пользователь удалится / сменит имя
 				break
 			user.append(i.screen_name)
+
 		if len(user):
 			last=user[0]
 
 			for i in user:
+#Подписываться на недавно подписавшихся меня ради фолловинга (при каждой подписке)
+				x=api.get_user(i)
+				if x.friends_count>=1000 and x.followers_count>=1000 and x.frends_count*0.8>=x.followers_count:
+					y=api.show_friendship(source_screen_name=i,target_screen_name=me)[0]
+					if not y.followed_by:
+						x.follow()
+						print('Follow.',i)
+
+#Отправлять сообщение
 				try:
 					api.send_direct_message(i,text=mess)
 					print('Message.',i)
@@ -24,9 +34,9 @@ def userr(me='kosyachniy',last=''):
 
 				time.sleep(30)
 
-			#Добавление в БД
+#Добавление в БД
 
-			#Удаление невзаимных
+#Удаление невзаимных
 
 		time.sleep(600)
 

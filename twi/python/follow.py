@@ -1,7 +1,7 @@
 import tweepy, time
 from func import auth
 
-api=auth()
+api=auth('kosyachniy')
 
 with open('db.txt','r') as file:
 	for i in file:
