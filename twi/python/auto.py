@@ -1,8 +1,19 @@
-import time, tweepy, threading
+import sys, tweepy, threading, time
 from urllib.request import unquote
 from func import auth
 
-me='deepinmylife'
+arg=len(sys.argv)
+if arg==4:
+	if sys.argv[3]=='x':
+		tpost=False
+else:
+	tpost=True
+if arg>=3:
+	me=sys.argv[2]
+else:
+	me='deepinmylife'
+if arg>=2:
+	start=sys.argv[1]
 api=auth(me)
 
 def tag(place):
@@ -38,16 +49,21 @@ def luser(user):
 				a.append(name)
 	return a
 
+#Контроль новых подписчиков: сообщения, удалять тех, кто в течении недели не подписался (1 раз в день)
+from followers import userr
+threading.Thread(target=userr,args=(me,)).start()
+
 sname=list()
 with open('top.txt','r') as file:
 	for i in file:
 		sname.append(i[0:-1])
 spost=lpost(sname[0])
-tpost=True
 
-suser=luser(api.followers()[0].screen_name)
-user=api.me().screen_name
-i=0
+if not start:
+	start=api.followers()[0].screen_name
+suser=luser(start)
+last=me
+i=1 #Так как на индексе 0 - последний подписчик (я)
 
 it=0
 while True:
@@ -97,7 +113,6 @@ while True:
 
 	try:
 		api.get_user(last).follow()
-		api.send_direct_message(last,text='Привет! Давай знакомиться. Я взаимный)) Подписывайся - https://www.instagram.com/mr.poloz/')
 		print('Follow.',last)
 	except tweepy.error.TweepError:
 		print('Ошибка при фолловинге!')
@@ -108,4 +123,3 @@ while True:
 		if i.friends_count>=1000 and i.followers_count>=1000 and i.frends_count*0.8>=i.followers_count and not followed_by:
 			api.get_user(i.screen_name).follow()
 '''
-#Удалять тех, кто в течении недели не подписался (1 раз в день)

@@ -1,4 +1,4 @@
-import time, sys, tweepy
+import sys, tweepy, time
 from func import auth
 
 me='kosyachniy'

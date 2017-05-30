@@ -1,10 +1,9 @@
 import time, sys
 from func import auth
 
-me='kosyachniy'
 mess='Привет! Давай знакомиться. Я взаимный)) Подписывайся - https://www.instagram.com/mr.poloz/'
 
-def userr(last=''):
+def userr(me='kosyachniy',last=''):
 	while True:
 		api=auth(me)
 
@@ -27,10 +26,12 @@ def userr(last=''):
 
 			#Добавление в БД
 
+			#Удаление невзаимных
+
 		time.sleep(600)
 
 if __name__=='__main__':
 	if len(sys.argv)==2:
-		userr(sys.argv[1])
+		userr('kosyachniy',sys.argv[1])
 	else:
 		userr()
