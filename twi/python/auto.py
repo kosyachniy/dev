@@ -14,6 +14,8 @@ else:
 	me='deepinmylife'
 if arg>=2:
 	start=sys.argv[1]
+else:
+	start=''
 api=auth(me)
 
 def tag(place):

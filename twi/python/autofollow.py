@@ -1,9 +1,9 @@
 import sys, tweepy, time
 from func import auth
 
-me='kosyachniy'
+who='kosyachniy'
 
-def user(start=''):
+def user(me='kosyachniy',start=''):
 	api=auth(me)
 
 	def luser(user):
@@ -54,10 +54,10 @@ def user(start=''):
 		except tweepy.error.TweepError:
 			print('Ошибка при фолловинге!')
 
-		time.sleep(60)
+		time.sleep(90)
 
 if __name__=='__main__':
 	if len(sys.argv)==2:
-		user(sys.argv[1])
+		user(who,sys.argv[1])
 	else:
-		user()
+		user(who)
