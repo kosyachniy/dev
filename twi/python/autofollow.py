@@ -28,6 +28,8 @@ def user(me='kosyachniy',start=''):
 		if it%50==0:
 			api=auth(me)
 
+		#Добавление пользователей с каждого до определённого предела
+
 		if len(suser)==0:
 			try:
 				suser+=luser(api.followers(last)[i].screen_name)
@@ -53,6 +55,7 @@ def user(me='kosyachniy',start=''):
 			print('Follow. {}.'.format(it),last)
 		except tweepy.error.TweepError:
 			print('Ошибка при фолловинге!')
+			#Контроль длительной ошибки
 
 		time.sleep(90)
 

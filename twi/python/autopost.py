@@ -42,6 +42,8 @@ def post(me='deepinmylife'):
 	while True:
 		it+=1
 
+		#Автоматический поиск интересных постов по трендам
+
 		while len(spost)==0:
 			if len(sname)<=1:
 				tpost=True

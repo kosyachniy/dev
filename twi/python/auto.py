@@ -2,6 +2,11 @@ import sys, tweepy, threading, time
 from urllib.request import unquote
 from func import auth
 
+#Получение списка	1/минута
+#Фолловинг 			1000/день
+#Твитить			2400/день
+#Сообщение			1/минута
+
 arg=len(sys.argv)
 if arg==4:
 	if sys.argv[3]=='x':
@@ -51,7 +56,7 @@ def luser(user):
 				a.append(name)
 	return a
 
-#Контроль новых подписчиков: сообщения, удалять тех, кто в течении недели не подписался (1 раз в день)
+#Контроль новых подписчиков: сообщения, подписка (при каждой подписке), удалять тех, кто в течении недели не подписался (1/день)
 from followers import userr
 threading.Thread(target=userr,args=(me,)).start()
 
@@ -75,7 +80,7 @@ while True:
 		api=auth(me)
 	print('--- Итерация:',it,'---')
 
-#Автопостинг твитов на базе интернета / популярных твитов (твитить 2400 в день)
+#Автопостинг твитов на базе интернета / популярных твитов
 	if tpost:
 		while len(spost)==0:
 			if len(sname)<=1:
@@ -94,7 +99,7 @@ while True:
 			print('Ошибка при постинге!')
 		del spost[0]
 
-#Подписываться для накрутки, проверка языка (фолловинг 1 раз в минуту, список 1 раз в минуту)
+#Подписываться для накрутки + проверка языка
 	if len(suser)==0:
 		try:
 			suser+=luser(api.followers(last)[i].screen_name)
