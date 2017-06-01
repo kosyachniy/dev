@@ -58,7 +58,7 @@ def post(me='deepinmylife'):
 
 		try:
 			api.update_status(spost[0])
-			print('Post.',it,'.',sname[0])
+			print('Post. {}.'.format(it),sname[0])
 		except tweepy.error.TweepError:
 			print('Ошибка при постинге!')
 		del spost[0]
