@@ -1,5 +1,4 @@
-import sys, tweepy, time
-from func import auth
+from func import *
 
 who='deepinmylife'
 mess='Привет! Давай знакомиться. Я взаимный)) Подписывайся - https://www.instagram.com/mr.poloz/'

@@ -1,5 +1,4 @@
-import sys, tweepy, time
-from func import auth
+from func import *
 
 who='kosyachniy'
 

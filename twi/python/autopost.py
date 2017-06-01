@@ -1,6 +1,5 @@
-import sys, tweepy, time
+from func import *
 from urllib.request import unquote
-from func import auth
 
 who='deepinmylife'
 
