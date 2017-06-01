@@ -20,8 +20,7 @@ if arg>=4:
 	start=sys.argv[3]
 else:
 	start=''
-if arg==3:
-	if sys.argv[2]=='x':
+if arg>=3 and sys.argv[2]=='x':
 		t=False
 else:
 	t=True
@@ -38,4 +37,4 @@ threading.Thread(target=user,args=(me,start)).start()
 #Контроль новых подписчиков: сообщения, подписка (при каждой подписке)
 threading.Thread(target=userr,args=(me,last)).start()
 #Удалять тех, кто в течении недели не подписался (1/день)
-#threading.Thread(target=unf,args=(me)).start()
+#threading.Thread(target=unf,args=(me,)).start()
