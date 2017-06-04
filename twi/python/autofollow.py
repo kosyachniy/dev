@@ -9,6 +9,8 @@ def user(me='kosyachniy',start=''):
 		a=list()
 		for i in api.followers(user):
 			name=i.screen_name
+			#Проерка сделан ли запрос для закрытах аккаунто
+			#Проверка русский ли
 			if name!=me and i.friends_count>=0.6*i.followers_count:
 				y=api.show_friendship(source_screen_name=name,target_screen_name=me)[0]
 				if name not in a and y.following==False and y.followed_by==False:

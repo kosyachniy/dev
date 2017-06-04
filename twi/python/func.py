@@ -2,10 +2,10 @@ import sys, tweepy, time
 
 def auth(user='deepinmylife'):	
 	if user=='deepinmylife':
-		consumer_key='dyLgjQsoCQHxaLSk1baLOCEQe'
-		consumer_secret='tEnKUNJhNlj7JYTZ5pesIyFYhqQckqbEn84O7QcfTaYTb5bGTp'
-		access_key='3110781773-wiWQkS9564FBEjEb4pzwrPAJdIvtmQFuu4ofblj'
-		access_secret='H9u8EQG10XwQIP1vufpVqMZ4NgIpfWPcH0f6FuDq1UKA6'
+		consumer_key='87RK9id1FnxGAeFRw15dPwQbA'
+		consumer_secret='hPK7FOw6FnXIncz5VrId6CckyYns3QYGEZamzumlCQepMsaxQr'
+		access_key='3110781773-JRSvfLqnxjW1UoPCe7wcDxzuf2Obbif67pH6GlM'
+		access_secret='Ya9Mooiae17zDhyVrxvc0ZfQoE11PAMVP79LqqnQvYCtX'
 	elif user=='kosyachniy':
 		consumer_key='vgCY4P69DWWqGYeyigkoB6u7G'
 		consumer_secret='I9LvATKcjdM1ZVIqNkfnp3pN0Xq4qFyOK4NvF1px63eucJfpxG'
