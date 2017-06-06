@@ -2,19 +2,15 @@ from func import *
 
 who='kosyachniy'
 
-def user(me='kosyachniy',start=''):
+def user(me='kosyachniy',t=True,start=''):
 	api=auth(me)
 
 	def luser(user):
 		a=list()
 		for i in api.followers(user):
 			#Проверка русский ли
-			if i.lang=='ru' and not i.follow_request_sent and not i.following:
-				name=i.screen_name
-				if name!=me and i.friends_count>=0.6*i.followers_count:
-					y=api.show_friendship(source_screen_name=name,target_screen_name=me)[0]
-					if y.following==False:
-						a.append(name)
+			if (t or i.lang=='ru') and i.screen_name!=me and i.friends_count>=0.6*i.followers_count and not i.follow_request_sent and not i.following and not api.show_friendship(source_screen_name=i.screen_name,target_screen_name=me)[0].following:
+				a.append(i.screen_name)
 		return a
 
 	if not start:

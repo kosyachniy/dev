@@ -2,11 +2,19 @@ from func import *
 
 who='deepinmylife'
 
-def all(me='deepinmylife'):
+def unf(me='deepinmylife'):
 #Удаление невзаимных
 	api=auth(me)
-	for i in tweepy.Cursor(api.followers, id='I_Mate_I').items():
-		print(i.followed_by)
+	it=0
+	while True:
+		for i in tweepy.Cursor(api.friends,id=me).items():
+			if not api.show_friendship(source_screen_name=i.screen_name,target_screen_name=me)[0].following:
+				it+=1
+				api.destroy_friendship(i.screen_name)
+				print('Unfollow. {}.'.format(it),i.screen_name)
+				time.sleep(60)
+			time.sleep(10)
+		time.sleep(400000)
 
 if __name__=='__main__':
-	all(who)
+	unf(who)
