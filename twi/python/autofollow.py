@@ -8,13 +8,13 @@ def user(me='kosyachniy',start=''):
 	def luser(user):
 		a=list()
 		for i in api.followers(user):
-			name=i.screen_name
-			#Проерка сделан ли запрос для закрытах аккаунто
 			#Проверка русский ли
-			if name!=me and i.friends_count>=0.6*i.followers_count:
-				y=api.show_friendship(source_screen_name=name,target_screen_name=me)[0]
-				if name not in a and y.following==False and y.followed_by==False:
-					a.append(name)
+			if i.lang=='ru' and not i.follow_request_sent and not i.following:
+				name=i.screen_name
+				if name!=me and i.friends_count>=0.6*i.followers_count:
+					y=api.show_friendship(source_screen_name=name,target_screen_name=me)[0]
+					if y.following==False:
+						a.append(name)
 		return a
 
 	if not start:

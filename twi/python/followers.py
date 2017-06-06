@@ -3,13 +3,14 @@ from func import *
 who='deepinmylife'
 mess='Привет! Давай знакомиться. Я взаимный)) Подписывайся - https://www.instagram.com/mr.poloz/ Также у меня есть для тебя подарок - : http://q32.ru/35378/http://zodzu.com/'
 
-def userr(me='kosyachniy',last=''):
+def userr(me='kosyachniy',last='',t=True):
 	it=0
 	while True:
 		api=auth(me)
 
 		name=''
 		for i in api.followers():
+			#Повторяется
 			name=i.screen_name
 			if name==last: 
 				break
@@ -20,18 +21,17 @@ def userr(me='kosyachniy',last=''):
 			x=api.get_user(name)
 			foling=x.friends_count
 			folers=x.followers_count
-			if foling>=1000 and folers>=1000 and 3*folers>=foling>=0.8*folers:
-				y=api.show_friendship(source_screen_name=name,target_screen_name=me)[0]
-				if not y.followed_by:
+			if foling>=1000 and folers>=1000 and 3*folers>=foling>=0.8*folers and not x.following and not x.follow_request_sent:
 					x.follow()
 					print('Follow.',name)
 
 #Отправлять сообщение
-			try:
-				api.send_direct_message(name,text=mess)
-				print('Message. {}.'.format(it),name)
-			except tweepy.error.TweepError:
-				print('Ошибка отправки сообщения!')
+			if t:
+				try:
+					api.send_direct_message(name,text=mess)
+					print('Message. {}.'.format(it),name)
+				except tweepy.error.TweepError:
+					print('Ошибка отправки сообщения!')
 
 #Добавление в БД
 
