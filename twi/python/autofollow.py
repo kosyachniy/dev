@@ -8,9 +8,8 @@ def user(me='',t=True,start=''):
 	def luser(user):
 		a=list()
 		for i in api.followers(user):
-			#Проверка русский ли
 			if (t or i.lang=='ru') and i.screen_name!=me and i.friends_count>=0.6*i.followers_count and not i.follow_request_sent and not i.following and not api.show_friendship(source_screen_name=i.screen_name,target_screen_name=me)[0].following:
-				a.append(i.screen_name)
+				a.append(i.screen_name) #Проверка русский ли
 		return a
 
 	if not start:
@@ -26,26 +25,24 @@ def user(me='',t=True,start=''):
 	last=me
 	i=1
 	it=0
+	ok=0
 
 	while True:
 		it+=1
 		if it%50==0:
 			api=auth(me)
 
-		#Добавление пользователей с каждого до определённого предела
+#Добавление пользователей с каждого до определённого предела
 		if len(suser)<=200:
 			add(last)
 
 		if len(suser)==0:
 			print('Закончились пользователи!')
 			if i==10:
-				if last==me:
-					#Сделать автозапуск при новых пользователях или прошествии большого времени
-					break
-				else:
-					last=me
-					i=0
-					continue
+				#Поиск других пользователей
+				last=me
+				i=0
+				continue
 			else:
 				i+=1
 				continue
@@ -58,9 +55,16 @@ def user(me='',t=True,start=''):
 		try:
 			api.get_user(last).follow()
 			print('Follow. {}.'.format(it),last)
+			ok=0
 		except tweepy.error.TweepError:
 			print('Ошибка при фолловинге!')
-			#Контроль длительной ошибки
+
+#Контроль длительной ошибки
+			ok+=1
+			if ok==10:
+				break
+			else:
+				time.sleep(3**ok)
 
 		time.sleep(90)
 
