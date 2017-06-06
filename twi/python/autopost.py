@@ -5,16 +5,15 @@ who='deepinmylife'
 
 def post(me=''):
 	api=auth(me)
+	spost=list()
 
 	def tag(place):
 		for j in api.trends_place(place)[0]['trends']:
 			cont=unquote(j['query'].replace('+',' '))
-			if '#' in cont:
-				return cont
+			if '#' in cont: return cont
 		return unquote(api.trends_place(place)[0]['trends'][0])
 
 	def lpost(user):
-		a=list()
 		ru=tag(23424936)
 		us=tag(2352824)
 		for i in api.user_timeline(user):
@@ -25,23 +24,20 @@ def post(me=''):
 					text=i.text+'\n'+ru+' '+us
 				#else: #Проверка пост - картинка?
 				#	text=b
-				if len(text)<=140:
-					a.append(text)
-		return a
+				if len(text)<=140: spost.append(text)
 
+	#Автоматический поиск интересных постов по трендам и количеству подписок, ретвитов
 	sname=list()
 	with open('top.txt','r') as file:
 		for i in file:
 			sname.append(i[0:-1])
 
-	spost=lpost(sname[0])
+	lpost(sname[0])
 	tpost=False
 
 	it=0
 	while True:
 		it+=1
-
-		#Автоматический поиск интересных постов по трендам
 
 		while len(spost)==0:
 			if len(sname)<=1:
@@ -49,11 +45,10 @@ def post(me=''):
 				print('Закончились твиты!')
 				break
 			else:
-				spost+=lpost(sname[1])
+				lpost(sname[1])
 				del sname[0]
 
-		if tpost:
-			break
+		if tpost: break
 
 		try:
 			api.update_status(spost[0])
