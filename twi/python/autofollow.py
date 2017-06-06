@@ -2,7 +2,7 @@ from func import *
 
 who='kosyachniy'
 
-def user(me='kosyachniy',t=True,start=''):
+def user(me='',t=True,start=''):
 	api=auth(me)
 
 	def luser(user):
@@ -16,8 +16,15 @@ def user(me='kosyachniy',t=True,start=''):
 	if not start:
 		start=api.followers()[0].screen_name
 	suser=luser(start)
+
+	def add(user=me,i=1): #Так как на индексе 0 - последний подписчик (я)
+		try:
+			suser+=luser(api.followers(user)[i].screen_name)
+		except tweepy.error.TweepError:
+			api=auth(me)
+
 	last=me
-	i=1 #Так как на индексе 0 - последний подписчик (я)
+	i=1
 	it=0
 
 	while True:
@@ -26,18 +33,19 @@ def user(me='kosyachniy',t=True,start=''):
 			api=auth(me)
 
 		#Добавление пользователей с каждого до определённого предела
+		if len(suser)<=200:
+			add(last)
 
-		if len(suser)==0:
-			try:
-				suser+=luser(api.followers(last)[i].screen_name)
-			except tweepy.error.TweepError:
-				api=auth(me)
 		if len(suser)==0:
 			print('Закончились пользователи!')
 			if i==10:
-				last=me
-				i=0
-				continue
+				if last==me:
+					#Сделать автозапуск при новых пользователях или прошествии большого времени
+					break
+				else:
+					last=me
+					i=0
+					continue
 			else:
 				i+=1
 				continue

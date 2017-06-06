@@ -3,7 +3,7 @@ from func import *
 who='deepinmylife'
 mess='Привет! Давай знакомиться. Я взаимный)) Подписывайся - https://www.instagram.com/mr.poloz/ Также у меня есть для тебя подарок - : http://q32.ru/35378/http://zodzu.com/'
 
-def userr(me='kosyachniy',last='',t=True):
+def userr(me='',t=True,last=''):
 	it=0
 	while True:
 		api=auth(me)
@@ -41,6 +41,11 @@ def userr(me='kosyachniy',last='',t=True):
 
 if __name__=='__main__':
 	if len(sys.argv)==2:
-		userr(who,sys.argv[1])
+		if sys.argv[2]=='x':
+			userr(who,False)
+		elif sys.argv[2]=='v':
+			userr(who)
+		else:
+			userr(who,last=sys.argv[1])
 	else:
 		userr(who)

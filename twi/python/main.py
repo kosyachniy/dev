@@ -9,27 +9,35 @@ from unfollow import unf
 #Сообщение			1/минута
 #Список				1/минута
 
-#python3 main.py kosyachniy x x ru PomidorWatsona ...
+#python3 main.py kosyachniy x x ru PomidorWatsona x
+#python3 main.py deepinmylife v v all zadrotstvo v
+#python3 main.py deepinmylife x v ru zadrotstvo x
 
 arg=len(sys.argv)
-if arg==7:
-	last=sys.argv[6]
+if arg>=7 and sys.argv[6]=='x':
+	u=False
 else:
-	last=''
+	u=True
 if arg>=6:
 	start=sys.argv[5]
 else:
 	start=''
 if arg>=5 and sys.argv[4]=='ru':
-		l=False
+	l=False
 else:
 	l=True
 if arg>=4 and sys.argv[3]=='x':
-		p=False
+	p=False
 else:
 	p=True
-if arg>=3 and sys.argv[2]=='x':
+if arg>=3:
+	last=''
+	if sys.argv[2]=='x':
 		m=False
+	elif sys.argv[2]=='v':
+		m=True
+	else:
+		last=sys.argv[2]
 else:
 	m=True
 if arg>=2:
@@ -43,6 +51,7 @@ if p:
 #Подписываться для накрутки + проверка языка
 threading.Thread(target=user,args=(me,l,start)).start()
 #Контроль новых подписчиков: сообщения, подписка (при каждой подписке)
-threading.Thread(target=userr,args=(me,last,m)).start()
+threading.Thread(target=userr,args=(me,m,last)).start()
 #Удалять тех, кто в течении недели не подписался (1/день)
-threading.Thread(target=unf,args=(me,)).start()
+if u:
+	threading.Thread(target=unf,args=(me,)).start()

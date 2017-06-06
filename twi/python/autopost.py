@@ -3,7 +3,7 @@ from urllib.request import unquote
 
 who='deepinmylife'
 
-def post(me='deepinmylife'):
+def post(me=''):
 	api=auth(me)
 
 	def tag(place):

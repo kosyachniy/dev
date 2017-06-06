@@ -2,7 +2,7 @@ from func import *
 
 who='deepinmylife'
 
-def unf(me='deepinmylife'):
+def unf(me=''):
 #Удаление невзаимных
 	api=auth(me)
 	it=0
