@@ -16,14 +16,14 @@ def user(me='',t=True,start=''):
 		start=api.followers()[0].screen_name
 	suser=luser(start)
 
-	def add(user=me,i=1): #Так как на индексе 0 - последний подписчик (я)
+	def add(user=me,i=0):
 		try:
 			suser+=luser(api.followers(user)[i].screen_name)
 		except tweepy.error.TweepError:
 			api=auth(me)
 
 	last=me
-	i=1
+	i=1 #Так как на индексе 0 - последний подписчик (я)
 	it=0
 	ok=0
 
@@ -34,7 +34,7 @@ def user(me='',t=True,start=''):
 
 #Добавление пользователей с каждого до определённого предела
 		if len(suser)<=200:
-			add(last)
+			add(last,i)
 
 		if len(suser)==0:
 			print('Закончились пользователи!')
