@@ -1,7 +1,7 @@
 import sys, threading
-from autopost import post
-from autofollow import search
-from followers import new
+from post import post
+from follow import search
+from newuser import new
 from unfollow import unf
 
 #Фолловинг 			1000/день
