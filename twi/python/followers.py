@@ -1,7 +1,11 @@
 from func import *
+from json import loads
 
 who='deepinmylife'
-mess='Привет! Давай знакомиться. Я взаимный)) Подписывайся - https://www.instagram.com/mr.poloz/'
+with open('set.txt', 'r') as file:
+	settings=loads(file.read())
+	mess=settings['tMessage'][0]
+	t=settings['bMessage']
 
 def new(me='', t=True, user=''):
 	it=0
