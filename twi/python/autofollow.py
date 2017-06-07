@@ -20,8 +20,7 @@ def search(me='', t=True, user=''):
 	while True:
 		time.sleep(90)
 		it+=1
-		if it%50==0:
-			api=auth(me)
+		if it%50==0: api=auth(me)
 
 #Добавление пользователей с каждой итерации до определённого предела
 		if len(suser)<=200:
@@ -48,7 +47,10 @@ def search(me='', t=True, user=''):
 
 #Контроль длительной ошибки
 			ok+=1
-			break if ok==10 else time.sleep(3**ok)
+			if ok==10:
+				break
+			else:
+				time.sleep(3**ok)
 
 if __name__=='__main__':
 	if len(sys.argv)==2:
