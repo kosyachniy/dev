@@ -1,12 +1,12 @@
 from func import *
 from json import loads
 
-who='deepinmylife'
-
 def new(me='', t=True, user=''):
 	it=0
 	while True:
 		api=auth(me)
+		me=api.me().screen_name
+
 		with open('set.txt', 'r') as file:
 			settings=loads(file.read())
 			mess=settings['tMessage'][0]
@@ -43,10 +43,10 @@ def new(me='', t=True, user=''):
 if __name__=='__main__':
 	if len(sys.argv)==2:
 		if sys.argv[2]=='x':
-			new(who,False)
+			new(t=False)
 		elif sys.argv[2]=='v':
-			new(who)
+			new()
 		else:
-			new(who,user=sys.argv[1])
+			new(user=sys.argv[1])
 	else:
-		new(who)
+		new()

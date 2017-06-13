@@ -1,10 +1,9 @@
 from func import *
 from random import randint
 
-who='HexalQuateo'
-
 def search(me='', t=True, user=''):
 	api=auth(me)
+	me=api.me().screen_name
 	suser=list()
 
 	def luser(one):
@@ -58,6 +57,6 @@ def search(me='', t=True, user=''):
 
 if __name__=='__main__':
 	if len(sys.argv)==2:
-		search(who,user=sys.argv[1])
+		search(user=sys.argv[1])
 	else:
-		search(who)
+		search()

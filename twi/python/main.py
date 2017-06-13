@@ -11,7 +11,7 @@ from unfollow import unf
 
 #python3 main.py kosyachniy x x ru PomidorWatsona x
 #python3 main.py deepinmylife v v all zadrotstvo v
-#python3 main.py deepinmylife x v ru zadrotstvo x
+#python3 main.py HexalQuateo x v ru zadrotstvo x
 
 arg=len(sys.argv)
 u=False if arg==7 and sys.argv[6]=='x' else True
@@ -25,7 +25,7 @@ if arg>=3:
 		m=False
 	elif sys.argv[2]!='v':
 		last=sys.argv[2]
-me=sys.argv[1] if arg>=2 else 'deepinmylife'
+me=sys.argv[1] if arg>=2 else ''
 
 #Автопостинг твитов на базе интернета / популярных твитов
 if p: threading.Thread(target=post, args=(me,)).start()

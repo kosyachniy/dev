@@ -1,11 +1,11 @@
 from func import *
 
-who='deepinmylife'
-
 def unf(me=''):
 	it=0
 	while True:
 		api=auth(me)
+		me=api.me().screen_name
+
 		j=0
 		for i in tweepy.Cursor(api.friends,id=me).items():
 			j+=1
@@ -19,4 +19,4 @@ def unf(me=''):
 		time.sleep(400000)
 
 if __name__=='__main__':
-	unf(who)
+	unf()

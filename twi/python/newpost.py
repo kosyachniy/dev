@@ -1,10 +1,9 @@
 from func import *
 from urllib.request import unquote
 
-who='deepinmylife'
-
 def post(me=''):
 	api=auth(me)
+	me=api.me().screen_name
 	spost=list()
 
 	def tag(place):
@@ -34,4 +33,4 @@ def post(me=''):
 		time.sleep(600)
 
 if __name__=='__main__':
-	post(who)
+	post()
