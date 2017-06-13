@@ -1,7 +1,7 @@
 from func import *
 from urllib.request import unquote
 
-who='deepinmylife'
+who='HexalQuateo'
 
 def post(me=''):
 	api=auth(me)

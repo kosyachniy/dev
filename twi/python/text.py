@@ -4,6 +4,7 @@ if sys.version_info[0]>=3:
 else:
 	from urllib import unquote
 from func import *
+api=auth()
 
 get=lambda x: requests.get(x).text
 

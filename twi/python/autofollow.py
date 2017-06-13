@@ -1,6 +1,7 @@
 from func import *
+from random import randint
 
-who='kosyachniy'
+who='HexalQuateo'
 
 def search(me='', t=True, user=''):
 	api=auth(me)
@@ -18,9 +19,12 @@ def search(me='', t=True, user=''):
 	ok=0
 
 	while True:
-		time.sleep(90)
+		time.sleep(randint(50,90)) #90
 		it+=1
-		if it%50==0: api=auth(me)
+		if it%50==0:
+			if it%300==0:
+				time.sleep(20000)
+			api=auth(me)
 
 #Добавление пользователей с каждой итерации до определённого предела
 		if len(suser)<=200:
@@ -54,6 +58,6 @@ def search(me='', t=True, user=''):
 
 if __name__=='__main__':
 	if len(sys.argv)==2:
-		search(who,sys.argv[1])
+		search(who,user=sys.argv[1])
 	else:
 		search(who)

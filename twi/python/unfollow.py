@@ -14,8 +14,8 @@ def unf(me=''):
 				it+=1
 				api.destroy_friendship(i.screen_name)
 				print('Unfollow. {}.'.format(it),i.screen_name)
-				time.sleep(60)
-			if j%100==0: time.sleep(60)
+				time.sleep(5)
+			#if j%100==0: time.sleep(60)
 		time.sleep(400000)
 
 if __name__=='__main__':
