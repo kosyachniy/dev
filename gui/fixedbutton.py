@@ -29,8 +29,8 @@ class first(QWidget):
         self.show()
     def click(self):
         sender=self.sender()
-        if sender.text()==###:
-            ###
+        if sender.text()=='OK':
+            print('123')
 
 if __name__ == '__main__':
     app=QApplication(sys.argv)

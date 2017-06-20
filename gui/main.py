@@ -1,70 +1,63 @@
 import sys
-from PyQt5.QtWidgets import QMainWindow, QWidget, QPushButton, QApplication, QAction, qApp, QTextEdit, QLabel, QHBoxLayout, QVBoxLayout, QLineEdit, QGridLayout
-from PyQt5.QtGui import QFont, QIcon
+from PyQt5.QtWidgets import QMainWindow, QWidget, QApplication, QDesktopWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel
+from PyQt5.QtGui import QPixmap
 
-class main(QMainWindow):
+class window(QWidget): #QMainWindow
     def __init__(self):
         super().__init__()
         self.initUI()
 
     def initUI(self):
-#Текст
-        l1=QLabel('Hello world!',self)
-        l1.move(15, 10)
-#Кнопка
-        b3=QPushButton('Push me',self)
-        b3.move(15, 50)
-        
+        self.setWindowTitle('ZODZU') #Название окна
+        q=QDesktopWidget().availableGeometry()
+        self.setGeometry(0, 0, q.width(), q.height()) #Размеры окна и положение
+
+#Верхняя полоса
+        p1=QPixmap("icon.png")
+        t1=QLabel(self)
+        t1.setPixmap(p1)
+        t2=QLabel('ZODZU', self) #Надпись
+
+        b3=QPushButton('Notes',self)
         b3.clicked.connect(self.click)
-        self.statusBar()
-#Ввод текста
-        textEdit=QTextEdit()
-#        self.setCentralWidget(textEdit)
-#Окно
-#       w=QWidget()
-#       w.resize(250, 150)
-#       w.move(300, 300)
-        self.setGeometry(300, 300, 250, 150)
-        self.setWindowTitle('UPLe')
-        self.show()
-#При нажатии кнопки
-    def click(self):
+
+        l1=QHBoxLayout()
+        l1.addWidget(t1)
+        l1.addWidget(t2)
+        l1.addWidget(b3)
+        l1.addStretch()
+
+#Кнопки в нижнем углу
+        b1=QPushButton('OK',self)
+        b2=QPushButton('CANCEL',self)
+
+        b1.clicked.connect(self.click)
+        b2.clicked.connect(self.click)
+
+        hbox=QHBoxLayout() #Вертикальный блок
+        hbox.addStretch() #Бесконечное пустое растяжение
+        hbox.addWidget(b1)
+        hbox.addWidget(b2)
+
+        vbox=QVBoxLayout()
+        vbox.addLayout(l1)
+        vbox.addStretch()
+        vbox.addLayout(hbox)
+
+        self.setLayout(vbox)
+
+    def click(self): #Обработка кликов
         sender=self.sender()
-        if sender.text()=='Push me':
-            self.statusBar().showMessage('123')
-
-class first(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.initUI()
-    def initUI(self):
-#Текстовые поля
-        title=QLabel('Title')
-        author=QLabel('Author')
-        review=QLabel('Review')
-
-        titleEdit=QLineEdit()
-        authorEdit=QLineEdit()
-        reviewEdit=QTextEdit()
-
-        grid=QGridLayout()
-        grid.setSpacing(10)
-
-        grid.addWidget(title, 1, 0)
-        grid.addWidget(titleEdit, 1, 1)
-
-        grid.addWidget(author, 2, 0)
-        grid.addWidget(authorEdit, 2, 1)
-
-        grid.addWidget(review, 3, 0)
-        grid.addWidget(reviewEdit, 3, 1, 5, 1)
-
-        self.setLayout(grid)
+        if sender.text()=='Notes':
+            t3=QLabel('Note', self)
+            self.vbox.addWidget(t3)
+#            self.statusBar().showMessage('123')
 
 if __name__ == '__main__':
     app=QApplication(sys.argv)
 
-#    x=first()
-    x=main()
+    x=window()
+#   x2=bar()
+    x.show()
     
     sys.exit(app.exec_())
