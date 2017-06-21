@@ -13,6 +13,11 @@ def auth(user='deepinmylife'):
 	else:
 		access_key='3110781773-HNd7zymonJSoJmbzHyQ4IL6O7y8f3XmbIxha4pN'
 		access_secret='rrz2R22vtXezxpjMeFC9gGj0tXPMhnRRZOmMdaDKvGlG7'
+		
+		#consumer_key='mcactbAgFofues75dpMkFKLsg'
+		#consumer_secret='2H1KU0cR3kcYXgHgfFLnLwzqYdF7Ie5QBsqIVYA7zzN6jEN7QU'
+		#access_key='3110781773-ak4xx5HgoxzxXEyjAZEKRWdmP5lShFoAhPpjymV'
+		#access_secret='1Y5G4s10BHdGjrA3Lxh7TNblLbJXfkSCd1EUaQL35NP0W'
 
 	aut=tweepy.OAuthHandler(consumer_key,consumer_secret)
 	aut.set_access_token(access_key,access_secret)

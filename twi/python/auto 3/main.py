@@ -2,9 +2,9 @@ import sys, threading
 from user import search
 #from trends import trends
 from follow import follow
-from twit import post
-from new import new
-from old import old
+#from twit import post
+#from new import new
+#from old import old
 
 #Фолловинг 			1000/день
 #Твитить			2400/день
@@ -12,6 +12,7 @@ from old import old
 #Список				1/минута
 
 #python3 main.py ME NEW POST RUSSIAN USER OLD
+#python3 main.py deepinmylife x v ru kosyachniy x
 
 #Search
 #	user
@@ -45,11 +46,11 @@ threading.Thread(target=search, args=(me, start, l, p)).start()
 threading.Thread(target=follow, args=(me,)).start()
 #Автопостинг твитов на базе интернета / популярных твитов
 #if p: threading.Thread(target=post, args=(me,)).start()
-#Анализ подписок: подписка, сообщения / Контроль новых подписчиков: сообщения, подписка
-th=threading.Thread(target=new, args=(me, m, last))
-th.daemon=True
-th.start()
+#Контроль новых подписчиков: подписка, сообщения
+#th=threading.Thread(target=new, args=(me, m, last))
+#th.daemon=True
+#th.start()
 #Отписка от давних / Удалять тех, кто в течении недели не подписался (1/день)
-if u: threading.Thread(target=unf, args=(me,)).start()
-#Эмулятор живого - общение 
+#if u: threading.Thread(target=unf, args=(me,)).start()
+#Эмулятор живого: общение, ретвиты, лайки, списки
 #

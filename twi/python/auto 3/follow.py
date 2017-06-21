@@ -12,7 +12,7 @@ def follow(me=''):
 	while True:
 		if len(suser)==0:
 			suser=[i[:-1] for i in open('follow.txt', 'r').readlines()]
-
+			
 		if len(suser):
 			it+=1
 			if it%300==0:
@@ -20,7 +20,7 @@ def follow(me=''):
 				time.sleep(20000)
 
 			try:
-				api.get_user(user).follow()
+				api.get_user(suser[0]).follow()
 				print('Follow {}.'.format(it),suser[0])
 				ok=0
 			except tweepy.error.TweepError:

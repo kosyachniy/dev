@@ -8,8 +8,7 @@ def search(me='', user='', t=True, p=True):
 
 	def luser():
 		for i in api.followers(user):
-#Проверка: Русский? Не я?
-			print(i.screen_name)
+#Проверка: Русский? Не я?ё
 			if (t or i.lang=='ru') and i.screen_name!=me:
 				if p:
 					with open('twit.txt', 'a') as file:
