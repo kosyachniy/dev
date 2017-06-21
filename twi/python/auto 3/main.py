@@ -1,13 +1,27 @@
 import sys, threading
-from autopost import post
-from autofollow import search
-from followers import new
-from unfollow import unf
+from user import search
+#from trends import trends
+from follow import follow
+from twit import post
+from new import new
+from old import old
 
 #Фолловинг 			1000/день
 #Твитить			2400/день
 #Сообщение			1/минута
 #Список				1/минута
+
+#python3 main.py ME NEW POST RUSSIAN USER OLD
+
+#Search
+#	user
+#	trends
+#Action
+#	follow
+#	twit
+#Followers
+#	new
+#	old
 
 arg=len(sys.argv)
 u=False if arg==7 and sys.argv[6]=='x' else True
@@ -23,26 +37,19 @@ if arg>=3:
 		last=sys.argv[2]
 me=sys.argv[1] if arg>=2 else ''
 
-
-Search
-	user
-	trends
-Followers
-	new
-	old
-Action
-	follow
-	twit
-
-
-
+#Поиск пользователей: подписка, твиты
+threading.Thread(target=search, args=(me, start, l, p)).start()
+#Анализ трендов: теги, твиты, пользователи
+#threading.Thread(target=trends, args=(me,)).start()
+#Подписываться для накрутки
+threading.Thread(target=follow, args=(me,)).start()
 #Автопостинг твитов на базе интернета / популярных твитов
-if p: threading.Thread(target=post, args=(me,)).start()
-#Подписываться для накрутки + проверка языка
-threading.Thread(target=search, args=(me, l, start)).start()
-#Контроль новых подписчиков: сообщения, подписка (при каждой подписке)
+#if p: threading.Thread(target=post, args=(me,)).start()
+#Анализ подписок: подписка, сообщения / Контроль новых подписчиков: сообщения, подписка
 th=threading.Thread(target=new, args=(me, m, last))
 th.daemon=True
 th.start()
-#Удалять тех, кто в течении недели не подписался (1/день)
+#Отписка от давних / Удалять тех, кто в течении недели не подписался (1/день)
 if u: threading.Thread(target=unf, args=(me,)).start()
+#Эмулятор живого - общение 
+#
