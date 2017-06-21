@@ -5,41 +5,37 @@ def follow(me=''):
 	api=auth(me)
 	me=api.me().screen_name
 
-	suser=list()
 	it=0
-	ok=0
+	er=0
 
 	while True:
-		if len(suser)==0:
-			suser=[i[:-1] for i in open('follow.txt', 'r').readlines()]
-			
-		if len(suser):
+		s=[i[:-1] for i in open('follow.txt', 'r').readlines()]
+		if len(s):
+			u=s[0]
+			del s[0]
+			#open('follow.txt', 'w').write('\n'.join(s))
+			with open('follow.txt', 'w') as file:
+				for i in s:
+					print(i, file=file)
+
 			it+=1
 			if it%300==0:
 				print('6 часов начало')
 				time.sleep(20000)
 
 			try:
-				api.get_user(suser[0]).follow()
-				print('Follow {}.'.format(it),suser[0])
-				ok=0
+				api.get_user(u).follow()
+				print('Follow {}.'.format(it),u)
+				er=0
 			except tweepy.error.TweepError:
 				print('Ошибка при фолловинге!')
 
 #Контроль длительной ошибки
-				ok+=1
-				if ok==10:
+				er+=1
+				if er==10:
 					break
 				else:
-					time.sleep(3**ok)
-
-			#Заменить
-			del suser[0]
-			f1=open('follow.txt', 'r').readlines()
-			for i in [0,0,-1]:
-				f1.pop(i)
-			with open('follow.txt', 'w') as f2:
-				f2.writelines(f1)
+					time.sleep(3**er)
 	
 			time.sleep(randint(90,180)) #90
 		else:

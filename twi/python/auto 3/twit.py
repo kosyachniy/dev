@@ -1,8 +1,5 @@
 from func import *
 
-'''
-'''
-
 def post(me=''):
 	api=auth(me)
 	me=api.me().screen_name
@@ -10,21 +7,25 @@ def post(me=''):
 	it=0
 
 	while True:
-		with open('twit.txt','r') as file:
-			u=loads(file.readlines(1)[0][:-1]))
-			
-		if len(suser):
-		it+=1
+		s=[i[:-1] for i in open('twit.txt', 'r').readlines()]
+		if len(s):
+			u=loads(s[0])['text']
+			del s[0]
+			with open('twit.txt', 'w') as file:
+				for i in s:
+					print(i, file=file)
 
-		try:
-			api.update_status(spost[0])
-			print('Post {}.'.format(it),spost[0])
-		except tweepy.error.TweepError:
-			print('Ошибка при постинге!')
-		
-		del spost[0]
+			it+=1
 
-		time.sleep(40)
+			try:
+				api.update_status(u)
+				print('Post {}.'.format(it),u)
+			except tweepy.error.TweepError:
+				print('Ошибка при постинге!')
+
+			time.sleep(40)
+		else:
+			time.sleep(600)
 
 if __name__=='__main__':
 	post()
