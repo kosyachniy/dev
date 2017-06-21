@@ -1,5 +1,4 @@
 from func import *
-from json import *
 
 def search(me='', t=True, user=''):
 	api=auth(me)
@@ -7,12 +6,17 @@ def search(me='', t=True, user=''):
 	if not user: user=api.followers()[0].screen_name
 	suser=list()
 
+'''
+with open('twit.txt','r') as file:
+	print(loads(file.readlines(1)[0][:-1]))
+'''
+
 	def luser():
 		for i in api.followers(user):
 #Проверка: Русский? Не я?
 			print(i.screen_name)
 			if (t or i.lang=='ru') and i.screen_name!=me:
-				with open('twit.txt', 'a', encoding="utf-8") as file:
+				with open('twit.txt', 'a') as file:
 					for j in api.user_timeline(i.screen_name):
 						if not j.is_quote_status and not j.in_reply_to_user_id and not j.in_reply_to_status_id and j.favorite_count>=10:
 							print(dumps({'text':j.text}, ensure_ascii=False), file=file)
@@ -26,7 +30,7 @@ def search(me='', t=True, user=''):
 
 	it=0
 	while True:
-		suser=[i[:-1] for i in open('follow.txt', 'r').readlines()] #sum(1 for i in open('follow.txt', 'r'))
+		suser=[i[:-1] for i in open('follow.txt', 'r').readlines()]
 		if len(suser)<200:
 			it+=1
 			print('Итерация',it)

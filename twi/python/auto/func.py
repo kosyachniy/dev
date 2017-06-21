@@ -1,4 +1,5 @@
 import sys, tweepy, time
+from json import *
 
 def auth(user='deepinmylife'):	
 	consumer_key='vveAVFha4hTcjUStnOf0hwEwQ'
