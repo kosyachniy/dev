@@ -9,7 +9,7 @@ def search(me='', t=True, user=''):
 	def luser(one):
 		for i in api.followers(one):
 #Проверка: Русский? Взаимный? Не добавлен?
-			if (t or i.lang=='ru') and i.screen_name!=me and i.friends_count>=0.6*i.followers_count and not i.follow_request_sent and not i.following and i.screen_name not in suser and not api.show_friendship(source_screen_name=i.screen_name,target_screen_name=me)[0].following:
+			if (t or i.lang=='ru') and i.screen_name!=me and i.friends_count>=0.6*i.followers_count and not i.follow_request_sent and not i.following and i.screen_name not in suser and not api.show_friendship(source_screen_name=i.screen_name, target_screen_name=me)[0].following:
 				suser.append(i.screen_name)
 
 	if not user: user=api.followers()[0].screen_name
