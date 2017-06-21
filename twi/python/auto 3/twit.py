@@ -17,6 +17,14 @@ def post(me=''):
 
 			it+=1
 
+			with open('set.txt', 'r') as file:
+				q=loads(file.read())['trends']
+			#Проверка пост - картинка?
+			if q['ru'] not in u and len(u)+len(q['ru'])<=138:
+				u+='\n'+q['ru']
+			if len(u)+len(q['us'])<140:
+				u+=' '+q['us']
+
 			try:
 				api.update_status(u)
 				print('Post {}.'.format(it),u)

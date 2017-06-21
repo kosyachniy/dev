@@ -8,8 +8,10 @@ def search(me='', user='', t=True, p=True):
 
 	def luser():
 		for i in api.followers(user):
-#Проверка: Русский? Не я?ё
+#Проверка: Русский? Не я?
 			if (t or i.lang=='ru') and i.screen_name!=me:
+
+#Поиск твитов
 				if p:
 					with open('twit.txt', 'a') as file:
 						for j in api.user_timeline(i.screen_name):
@@ -17,6 +19,7 @@ def search(me='', user='', t=True, p=True):
 								print(dumps({'text':j.text}, ensure_ascii=False), file=file)
 								print('Add post.',i.screen_name)
 
+#Поиск пользователей
 				if i.friends_count>=0.6*i.followers_count and not i.follow_request_sent and not i.following and i.screen_name not in suser and not api.show_friendship(source_screen_name=i.screen_name, target_screen_name=me)[0].following:
 					with open('follow.txt', 'a') as file:
 						#Убирать надпись ретвит 
