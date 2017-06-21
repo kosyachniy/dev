@@ -11,21 +11,21 @@ def search(me='', user='', t=True, p=True):
 #Проверка: Русский? Не я?
 			if (t or i.lang=='ru') and i.screen_name!=me:
 
+#Поиск пользователей
+				if i.friends_count>=0.6*i.followers_count and not i.follow_request_sent and not i.following and i.screen_name not in suser and not api.show_friendship(source_screen_name=i.screen_name, target_screen_name=me)[0].following:
+					with open('follow.txt', 'a') as file:
+						#Убирать надпись ретвит
+						print(i.screen_name, file=file)
+						print('Add follow.',i.screen_name)
+
 #Поиск твитов
 				if p:
 					with open('twit.txt', 'a') as file:
 						for j in api.user_timeline(i.screen_name):
-							if not j.is_quote_status and not j.in_reply_to_user_id and not j.in_reply_to_status_id and j.favorite_count>=10:
-								print(dumps({'text':j.text}, ensure_ascii=False), file=file)
-								print('Add post.',i.screen_name)
-
-#Поиск пользователей
-				if i.friends_count>=0.6*i.followers_count and not i.follow_request_sent and not i.following and i.screen_name not in suser and not api.show_friendship(source_screen_name=i.screen_name, target_screen_name=me)[0].following:
-					with open('follow.txt', 'a') as file:
-						#Убирать надпись ретвит 
-						print(i.screen_name, file=file)
-						print('Add follow.',i.screen_name)
-			time.sleep(60)
+							if not j.is_quote_status and not j.in_reply_to_user_id and not j.in_reply_to_status_id and (j.favorite_count>=30 or j.retweet_count>=10):
+								api.retweet(j.id)
+								print('Repost.',i.screen_name)
+					time.sleep(60)
 
 	it=0
 	while True:

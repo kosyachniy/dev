@@ -1,8 +1,8 @@
 import sys, threading
 from user import search
-#from trends import trends
+from trends import trends
 from follow import follow
-#from twit import post
+from twit import post
 #from new import new
 #from old import old
 
@@ -12,7 +12,7 @@ from follow import follow
 #Список				1/минута
 
 #python3 main.py ME NEW POST RUSSIAN USER OLD
-#python3 main.py deepinmylife x v ru kosyachniy x
+#python3 main.py deepinmylife x x ru Pomidorwatsona x
 
 #Search
 #	user
@@ -41,11 +41,11 @@ me=sys.argv[1] if arg>=2 else ''
 #Поиск пользователей: подписка, твиты
 threading.Thread(target=search, args=(me, start, l, p)).start()
 #Анализ трендов: теги, твиты, пользователи
-#threading.Thread(target=trends, args=(me,)).start()
+threading.Thread(target=trends, args=(me,)).start()
 #Подписываться для накрутки
 threading.Thread(target=follow, args=(me,)).start()
 #Автопостинг твитов на базе интернета / популярных твитов
-#if p: threading.Thread(target=post, args=(me,)).start()
+if p: threading.Thread(target=post, args=(me,)).start()
 #Контроль новых подписчиков: подписка, сообщения
 #th=threading.Thread(target=new, args=(me, m, last))
 #th.daemon=True
