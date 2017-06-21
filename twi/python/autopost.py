@@ -16,7 +16,7 @@ def post(me=''):
 		ru=tag(23424936)
 		us=tag(2352824)
 		for i in api.user_timeline(user):
-			if not i.retweeted and not i.in_reply_to_user_id and not i.is_quote_status and not i.in_reply_to_user_id and not i.in_reply_to_status_id and i.favorite_count>=10:
+			if not i.retweeted and not i.is_quote_status and not i.in_reply_to_user_id and not i.in_reply_to_status_id and i.favorite_count>=10:
 				if ru in i.text:
 					text=i.text+'\n'+us
 				else:

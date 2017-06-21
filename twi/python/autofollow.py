@@ -18,16 +18,14 @@ def search(me='', t=True, user=''):
 	ok=0
 
 	while True:
-		time.sleep(randint(50,90)) #90
+		time.sleep(randint(90,180)) #90
 		it+=1
-		if it%50==0:
-			if it%300==0:
-				print('6 часов начало')
-				time.sleep(20000)
-			api=auth(me)
+		if it%300==0:
+			print('6 часов начало')
+			time.sleep(20000)
 
 #Добавление пользователей с каждой итерации до определённого предела
-		if len(suser)<=200:
+		if len(suser)<200:
 			try:
 				luser(user)
 			except tweepy.error.TweepError:
@@ -57,7 +55,4 @@ def search(me='', t=True, user=''):
 				time.sleep(3**ok)
 
 if __name__=='__main__':
-	if len(sys.argv)==2:
-		search(user=sys.argv[1])
-	else:
-		search()
+	search(t=False, user=sys.argv[1]) if len(sys.argv)==2 else search(t=False)
