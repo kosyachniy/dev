@@ -12,7 +12,7 @@ from twit import post
 #Список				1/минута
 
 #python3 main.py ME NEW POST RUSSIAN USER OLD
-#python3 main.py deepinmylife x x ru Pomidorwatsona x
+#python3 main.py deepinmylife x x ru PomidorWatsona x
 
 #Search
 #	user
