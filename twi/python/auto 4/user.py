@@ -1,27 +1,22 @@
 from func import *
 
-def search(me='', u='', t=True, p=True):
+def search(me=''):
 	api=auth(me)
 	me=api.me().screen_name
 	if not u: u=api.followers()[0].screen_name
 	s=list()
 
-	it=0
 	while True:
 		s=[i[:-1] for i in open('follow.txt', 'r').readlines()]
 		if len(s)<200:
-			it+=1
-			print('Итерация',it)
 
 			for i in api.followers(u):
-#Проверка: Русский? Не я?
 				if (t or i.lang=='ru') and i.screen_name!=me:
 
 #Поиск пользователей
 					if i.friends_count>=0.6*i.followers_count and not i.follow_request_sent and not i.following and i.screen_name not in s and not api.show_friendship(source_screen_name=i.screen_name, target_screen_name=me)[0].following:
 						with open('follow.txt', 'a') as file:
 							print(i.screen_name, file=file)
-							print('Add follow.',i.screen_name)
 
 #Поиск твитов
 					if p:
@@ -35,6 +30,8 @@ def search(me='', u='', t=True, p=True):
 						time.sleep(60)
 
 			u=s[0] if len(s) else api.followers()[0].screen_name
+			
+			#Умная система поиска пользователей, если их нет
 
 			time.sleep(60)
 		else:

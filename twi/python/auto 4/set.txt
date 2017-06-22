@@ -1,0 +1,8 @@
+{
+    "trends": {
+        "world": "",
+        "ru": "#ТейтФолловитВсех",
+        "us": "#BREAKING"
+    },
+    "default": {}
+}
