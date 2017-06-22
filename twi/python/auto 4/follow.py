@@ -16,13 +16,9 @@ def follow(me=''):
 
 			try:
 				api.get_user(u).follow()
-				print('Follow.',u)
 			except tweepy.error.TweepError:
-				print('Ошибка при фолловинге!')
+				print('Error!')
 	
 			time.sleep(randint(90,180))
 		else:
 			time.sleep(600)
-
-if __name__=='__main__':
-	follow()

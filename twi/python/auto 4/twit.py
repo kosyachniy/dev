@@ -23,13 +23,11 @@ def post(me=''):
 
 			try:
 				api.update_status(u)
-				print('Post.',u)
 			except tweepy.error.TweepError:
-				print('Ошибка при постинге!')
+				print('Error!')
+
+			#Контроль длительной ошибки
 
 			time.sleep(40)
 		else:
 			time.sleep(600)
-
-if __name__=='__main__':
-	post()

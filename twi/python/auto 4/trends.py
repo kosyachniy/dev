@@ -25,6 +25,3 @@ def trends(me=''):
 		#print(dumps({'text':j.text}, ensure_ascii=False), file=file)
 
 		time.sleep(300)
-
-if __name__=='__main__':
-	trends()

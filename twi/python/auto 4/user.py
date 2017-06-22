@@ -25,8 +25,7 @@ def search(me=''):
 								try:
 									api.retweet(j.id)
 								except tweepy.error.TweepError:
-									print('Ошибка репоста!')
-								print('Repost.',i.screen_name)
+									print('Error!')
 						time.sleep(60)
 
 			u=s[0] if len(s) else api.followers()[0].screen_name
@@ -36,6 +35,3 @@ def search(me=''):
 			time.sleep(60)
 		else:
 			time.sleep(600)
-
-if __name__=='__main__':
-	search(u=sys.argv[1], t=False) if len(sys.argv)==2 else search(t=False)
