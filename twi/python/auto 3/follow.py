@@ -20,7 +20,7 @@ def follow(me=''):
 
 			it+=1
 			if it%300==0:
-				print('6 часов начало')
+				print('Заснул!')
 				time.sleep(20000)
 
 			try:

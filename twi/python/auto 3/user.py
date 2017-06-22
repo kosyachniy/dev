@@ -11,7 +11,7 @@ def search(me='', u='', t=True, p=True):
 		s=[i[:-1] for i in open('follow.txt', 'r').readlines()]
 		if len(s)<200:
 			it+=1
-			print('Итерация',it)
+			print('Итерация',it) #
 
 			for i in api.followers(u):
 #Проверка: Русский? Не я?
@@ -21,7 +21,7 @@ def search(me='', u='', t=True, p=True):
 					if i.friends_count>=0.6*i.followers_count and not i.follow_request_sent and not i.following and i.screen_name not in s and not api.show_friendship(source_screen_name=i.screen_name, target_screen_name=me)[0].following:
 						with open('follow.txt', 'a') as file:
 							print(i.screen_name, file=file)
-							print('Add follow.',i.screen_name)
+							print('Add follow.',i.screen_name) #
 
 #Поиск твитов
 					if p:
@@ -29,12 +29,15 @@ def search(me='', u='', t=True, p=True):
 							if not j.is_quote_status and not j.in_reply_to_user_id and not j.in_reply_to_status_id and (j.favorite_count>=30 or j.retweet_count>=10):
 								try:
 									api.retweet(j.id)
+									print('Repost.',i.screen_name)
 								except tweepy.error.TweepError:
 									print('Ошибка репоста!')
-								print('Repost.',i.screen_name)
 						time.sleep(60)
 
 			u=s[0] if len(s) else api.followers()[0].screen_name
+
+			#Умная система поиска пользователей
+			#Блокируют за частое получение списка пользователей
 
 			time.sleep(60)
 		else:
