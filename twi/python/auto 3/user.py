@@ -12,14 +12,18 @@ def search(me='', u='', t=True, p=True):
 		if len(s)<200:
 			it+=1
 			print('Итерация',it) #
+			if it%50==0:
+				api=auth(me)
 
 			for i in api.followers(u):
 #Проверка: Русский? Не я?
 				if (t or i.lang=='ru') and i.screen_name!=me:
+					f=False
 
 #Поиск пользователей
 					if i.friends_count>=0.6*i.followers_count and not i.follow_request_sent and not i.following and i.screen_name not in s and not api.show_friendship(source_screen_name=i.screen_name, target_screen_name=me)[0].following:
 						with open('follow.txt', 'a') as file:
+							f=True
 							print(i.screen_name, file=file)
 							print('Add follow.',i.screen_name) #
 
@@ -27,12 +31,20 @@ def search(me='', u='', t=True, p=True):
 					if p:
 						for j in api.user_timeline(i.screen_name):
 							if not j.is_quote_status and not j.in_reply_to_user_id and not j.in_reply_to_status_id and (j.favorite_count>=30 or j.retweet_count>=10):
-								try:
-									api.retweet(j.id)
-									print('Repost.',i.screen_name)
-								except tweepy.error.TweepError:
-									print('Ошибка репоста!')
+								if f:
+									try:
+										api.retweet(j.id)
+										print('Repost.',i.screen_name)
+									except tweepy.error.TweepError:
+										print('Ошибка репоста!')
+								else:
+									try:
+										api.update_status(j.text)
+										print('Post.',i.screen_name)
+									except tweepy.error.TweepError:
+										print('Ошибка при постинге!')
 						time.sleep(60)
+					time.sleep(60) #
 
 			u=s[0] if len(s) else api.followers()[0].screen_name
 
