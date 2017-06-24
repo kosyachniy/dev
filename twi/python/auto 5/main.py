@@ -26,12 +26,10 @@ from twit import twit
 #	new
 #	old
 
+x=Manager().dict()
 #Считывание файла настроек в глобальные переменны и обновление
 with open('set.txt', 'r') as file:
-	s=loads(file.read())
-
-x=Manager().dict()
-x=s['default']
+	x=loads(file.read())['default']
 
 arg=len(sys.argv)
 x['Unfollow']=False if arg==7 and sys.argv[6]=='x' else True
@@ -47,17 +45,17 @@ if arg>=3:
 		last=sys.argv[2]
 x['NewFollowers']=m
 x['LastFollowers']=last
-x['Me']=sys.argv[1] if arg>=2 else ''
+if arg>=2: x['Me']=sys.argv[1]
 
 #Возобновление процессов при ошибке
 #Поиск пользователей: подписка, твиты
-p1=Process(target=search, args=(x,)).start()
+p1=Process(target=search, args=(x,))
 #Анализ трендов: теги, твиты, пользователи
-p2=Process(target=trends, args=(x,)).start()
+p2=Process(target=trends, args=(x,))
 #Подписываться для накрутки
-p3=Process(target=follow, args=(x,)).start()
+p3=Process(target=follow, args=(x,))
 #Автопостинг твитов на базе интернета / популярных твитов
-if x['Post']: p4=Process(target=twit, args=(x,)).start()
+if x['Post']: p4=Process(target=twit, args=(x,))
 #Контроль новых подписчиков: подписка, сообщения
 #th=threading.Thread(target=new, args=(me, m, last))
 #th.daemon=True

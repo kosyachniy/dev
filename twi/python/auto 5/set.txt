@@ -1,8 +1,17 @@
 {
+    "default": {
+        "StartFollow": "PomidorWatsona",
+        "Me": "deepinmylife",
+        "NotRussian": false,
+        "Post": true,
+        "LastFollowers": "",
+        "Unfollow": false,
+        "NewFollowers": false
+    },
     "trends": {
-        "ru": "#MEXRUS",
-        "us": "#heatwave",
-        "world": ""
+        "us": "#GoLobos",
+        "world": "",
+        "ru": "#РоссияМексика"
     },
     "key": {
         "alexpoloz": [
@@ -13,21 +22,13 @@
             "3110781773-HNd7zymonJSoJmbzHyQ4IL6O7y8f3XmbIxha4pN",
             "rrz2R22vtXezxpjMeFC9gGj0tXPMhnRRZOmMdaDKvGlG7"
         ],
-        "kosyachniy": [
-            "",
-            ""
-        ],
         "main": [
             "vveAVFha4hTcjUStnOf0hwEwQ",
             "F8tFzORTE8DzAAYnz5hHxCBRAClPWf4ABhuGn03GHZ5w2QJtbP"
+        ],
+        "kosyachniy": [
+            "",
+            ""
         ]
-    },
-    "default": {
-        "LastFollowers": "",
-        "NewFollowers": false,
-        "Unfollow": false,
-        "StartFollow": "PomidorWatsona",
-        "Post": true,
-        "NotRussian": false
     }
 }

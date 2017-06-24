@@ -2,8 +2,8 @@ from func import *
 from urllib.request import unquote
 
 def trends(x):
-	api=auth(x['Me'])
-	me=api.me().screen_name
+	me=x['Me']
+	api=auth(me)
 
 	def tag(place):
 		for j in api.trends_place(place)[0]['trends']:

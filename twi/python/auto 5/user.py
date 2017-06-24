@@ -1,8 +1,8 @@
 from func import *
 
 def search(x):
-	api=auth(x['Me'])
-	me=api.me().screen_name
+	me=x['Me']
+	api=auth(me)
 
 	u=x['StartFollow'] if x['StartFollow'] else api.followers()[0].screen_name
 	s=list()

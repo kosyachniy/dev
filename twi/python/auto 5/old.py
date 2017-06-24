@@ -3,8 +3,8 @@ from func import *
 def unf(x):
 	it=0
 	while True:
-		api=auth(x['Me'])
-		me=api.me().screen_name
+		me=x['Me']
+		api=auth(me)
 
 		j=0
 		for i in tweepy.Cursor(api.friends,id=me).items():
@@ -17,6 +17,3 @@ def unf(x):
 				time.sleep(5)
 			#if j%100==0: time.sleep(60)
 		time.sleep(400000)
-
-if __name__=='__main__': #
-	unf() #

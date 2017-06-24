@@ -4,8 +4,8 @@ from json import loads
 def new(x):
 	it=0
 	while True:
-		api=auth(x['Me'])
-		me=api.me().screen_name
+		me=x['Me']
+		api=auth(me)
 
 		#Заменить глобальными переменными
 		with open('set.txt', 'r') as file:
@@ -43,6 +43,3 @@ def new(x):
 
 			time.sleep(60)
 		time.sleep(300)
-
-if __name__=='__main__': #
-	new() #

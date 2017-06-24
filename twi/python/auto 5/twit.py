@@ -1,8 +1,8 @@
 from func import *
 
 def twit(x):
-	api=auth(x['Me'])
-	me=api.me().screen_name
+	me=x['Me']
+	api=auth(me)
 
 	it=0
 

@@ -2,8 +2,8 @@ from func import *
 from random import randint
 
 def follow(x):
-	api=auth(x['Me'])
-	me=api.me().screen_name
+	me=x['Me']
+	api=auth(me)
 
 	it=0
 	er=0
