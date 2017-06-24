@@ -1,18 +1,10 @@
 from func import *
 
-def search(me=''):
-	api=auth(me)
+def search(x):
+	api=auth(x['Me'])
 	me=api.me().screen_name
 
-	#Заменить глобальными переменными
-	with open('set.txt', 'r') as file:
-		s=loads(file.read())['default']
-
-	u=s['StartFollow']
-	t=s['NotRussian']
-	p=s['Post']
-
-	if not u: u=api.followers()[0].screen_name
+	u=x['StartFollow'] if x['StartFollow'] else api.followers()[0].screen_name
 	s=list()
 
 	it=0
@@ -25,10 +17,10 @@ def search(me=''):
 
 			for i in api.followers(u):
 #Проверка: Русский? Не я?
-				if (t or i.lang=='ru') and i.screen_name!=me:
+				if (x['NotRussian'] or i.lang=='ru') and i.screen_name!=me:
 					f=subscribe(i, me, s)
 
-					if p: post(i.screen_name, me, f)
+					if x['Post']: post(i.screen_name, me, f)
 					time.sleep(60) #
 
 			u=s[0] if len(s) else api.followers()[0].screen_name
@@ -36,6 +28,3 @@ def search(me=''):
 			time.sleep(60)
 		else:
 			time.sleep(600)
-
-if __name__=='__main__': #
-	search() #

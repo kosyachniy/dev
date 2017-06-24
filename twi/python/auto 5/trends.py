@@ -1,14 +1,9 @@
 from func import *
 from urllib.request import unquote
 
-def trends(me=''):
-	api=auth(me)
+def trends(x):
+	api=auth(x['Me'])
 	me=api.me().screen_name
-
-	#Заменить глобальными переменными
-	with open('set.txt', 'r') as file:
-		s=loads(file.read())['default']
-	p=s['Post']
 
 	def tag(place):
 		for j in api.trends_place(place)[0]['trends']:
@@ -26,9 +21,6 @@ def trends(me=''):
 			print(dumps(s, ensure_ascii=False, indent=4), file=file)
 
 #Автоматический поиск интересных постов по трендам и количеству подписок, ретвитов
-		#if p:
+		#if x['Post']:
 
 		time.sleep(300)
-
-if __name__=='__main__': #
-	ternds() #

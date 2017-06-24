@@ -1,9 +1,9 @@
 from func import *
 
-def unf(me=''):
+def unf(x):
 	it=0
 	while True:
-		api=auth(me)
+		api=auth(x['Me'])
 		me=api.me().screen_name
 
 		j=0

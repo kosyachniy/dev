@@ -1,10 +1,10 @@
 from func import *
 from json import loads
 
-def new(me=''):
+def new(x):
 	it=0
 	while True:
-		api=auth(me)
+		api=auth(x['Me'])
 		me=api.me().screen_name
 
 		#Заменить глобальными переменными

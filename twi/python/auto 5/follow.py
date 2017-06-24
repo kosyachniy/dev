@@ -1,8 +1,8 @@
 from func import *
 from random import randint
 
-def follow(me=''):
-	api=auth(me)
+def follow(x):
+	api=auth(x['Me'])
 	me=api.me().screen_name
 
 	it=0
@@ -40,6 +40,3 @@ def follow(me=''):
 			time.sleep(randint(90,180)) #90
 		else:
 			time.sleep(600)
-
-if __name__=='__main__': #
-	follow() #

@@ -1,16 +1,18 @@
 import sys, tweepy, time
 from json import *
+from multiprocessing import Process, Manager
 
 #Авторизация
-def auth(user='deepinmylife'):
+def auth(user=''):
 	with open('set.txt', 'r') as file:
-		s=loads(file.read())['key']
-		consumer_key, consumer_secret=s['main'] #
-		access_key, access_secret=s[user] #
+		s=loads(file.read())
+		if not user: user=s['default']['Me']
+		consumer_key, consumer_secret=s['key']['main'] #
+		access_key, access_secret=s['key'][user] #
 
-		aut=tweepy.OAuthHandler(consumer_key, consumer_secret)
-		aut.set_access_token(access_key, access_secret)
-		return tweepy.API(aut)
+	aut=tweepy.OAuthHandler(consumer_key, consumer_secret)
+	aut.set_access_token(access_key, access_secret)
+	return tweepy.API(aut)
 
 #Подписка
 def subscribe(i, me, s=[]):

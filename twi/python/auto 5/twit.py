@@ -1,7 +1,7 @@
 from func import *
 
-def twit(me=''):
-	api=auth(me)
+def twit(x):
+	api=auth(x['Me'])
 	me=api.me().screen_name
 
 	it=0
@@ -34,6 +34,3 @@ def twit(me=''):
 			time.sleep(40)
 		else:
 			time.sleep(600)
-
-if __name__=='__main__': #
-	twit() #
