@@ -21,9 +21,7 @@ def trends(me=''):
 			print(dumps(s, ensure_ascii=False, indent=4), file=file)
 
 #Автоматический поиск интересных постов по трендам и количеству подписок, ретвитов
-		#Убирать надпись ретвит
-		#print(dumps({'text':j.text}, ensure_ascii=False), file=file)
-		#print('Add post.',i.screen_name)
+		#
 
 		time.sleep(300)
 
