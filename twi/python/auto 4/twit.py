@@ -35,5 +35,5 @@ def twit(me=''):
 		else:
 			time.sleep(600)
 
-if __name__=='__main__':
-	twit()
+if __name__=='__main__': #
+	twit() #

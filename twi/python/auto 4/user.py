@@ -4,7 +4,8 @@ def search(me=''):
 	api=auth(me)
 	me=api.me().screen_name
 
-	with open('set.txt') as file:
+	#Заменить глобальными переменными
+	with open('set.txt', 'r') as file:
 		s=loads(file.read())['default']
 
 	u=s['StartFollow']
@@ -36,5 +37,5 @@ def search(me=''):
 		else:
 			time.sleep(600)
 
-if __name__=='__main__':
-	search()
+if __name__=='__main__': #
+	search() #

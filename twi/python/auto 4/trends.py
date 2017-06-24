@@ -5,7 +5,8 @@ def trends(me=''):
 	api=auth(me)
 	me=api.me().screen_name
 
-	with open('set.txt') as file:
+	#Заменить глобальными переменными
+	with open('set.txt', 'r') as file:
 		s=loads(file.read())['default']
 	p=s['Post']
 
@@ -29,5 +30,5 @@ def trends(me=''):
 
 		time.sleep(300)
 
-if __name__=='__main__':
-	ternds()
+if __name__=='__main__': #
+	ternds() #

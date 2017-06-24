@@ -41,5 +41,5 @@ def follow(me=''):
 		else:
 			time.sleep(600)
 
-if __name__=='__main__':
-	follow()
+if __name__=='__main__': #
+	follow() #

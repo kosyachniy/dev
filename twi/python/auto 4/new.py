@@ -7,10 +7,14 @@ def new(me='', t=True, user=''):
 		api=auth(me)
 		me=api.me().screen_name
 
+		#Заменить глобальными переменными
 		with open('set.txt', 'r') as file:
-			settings=loads(file.read())
-			mess=settings['tMessage'][0]
-			#t=settings['bMessage']
+			s=loads(file.read())['default']
+
+		mess=s['Message']
+		u=s['StartFollow']
+		t=s['NotRussian']
+		p=s['Post']
 
 		for i in api.followers():
 			#Повторяется
@@ -40,13 +44,5 @@ def new(me='', t=True, user=''):
 			time.sleep(60)
 		time.sleep(300)
 
-if __name__=='__main__':
-	if len(sys.argv)==2:
-		if sys.argv[2]=='x':
-			new(t=False)
-		elif sys.argv[2]=='v':
-			new()
-		else:
-			new(user=sys.argv[1])
-	else:
-		new()
+if __name__=='__main__': #
+	new() #
