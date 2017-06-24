@@ -23,7 +23,7 @@ def subscribe(i, me, s=[]):
 	if i.followers_count>=0.5*i.friends and i.followers_count>=5000:
 		with open('set.txt', 'r') as file:
 			s=loads(file.read())
-		s['top'].append(i.screen_name)
+		s['top'].append(i.id)
 		with open('set.txt', 'w') as file:
 			print(dumps(s, ensure_ascii=False, indent=4), file=file)
 

@@ -33,7 +33,7 @@ with open('set.txt', 'r') as file:
 
 arg=len(sys.argv)
 x['Unfollow']=False if arg==7 and sys.argv[6]=='x' else True
-x['StartFollow']=sys.argv[5] if arg>=6 else 'PomidorWatsona'
+x['StartFollow']=sys.argv[5] if arg>=6 else x['top'][len(x['top'])-1]
 x['NotRussian']=False if arg>=5 and sys.argv[4]=='ru' else True
 x['Post']=False if arg>=4 and sys.argv[3]=='x' else True
 last=''
