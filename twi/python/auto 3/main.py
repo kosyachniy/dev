@@ -24,14 +24,11 @@ from twit import twit
 #	new
 #	old
 
-with open('set.txt', 'r') as file:
-	s=loads(file.read())
-
 arg=len(sys.argv)
-s['default']['Unfollow']=False if arg==7 and sys.argv[6]=='x' else True
-s['default']['StartFollow']=sys.argv[5] if arg>=6 else 'PomidorWatsona'
-s['default']['NotRussian']=False if arg>=5 and sys.argv[4]=='ru' else True
-s['default']['Post']=False if arg>=4 and sys.argv[3]=='x' else True
+u=False if arg==7 and sys.argv[6]=='x' else True
+start=sys.argv[5] if arg>=6 else ''
+l=False if arg>=5 and sys.argv[4]=='ru' else True
+p=False if arg>=4 and sys.argv[3]=='x' else True
 last=''
 m=True
 if arg>=3:
@@ -39,21 +36,16 @@ if arg>=3:
 		m=False
 	elif sys.argv[2]!='v':
 		last=sys.argv[2]
-s['default']['NewFollowers']=m
-s['default']['LastFollowers']=last
 me=sys.argv[1] if arg>=2 else ''
 
-with open('set.txt', 'w') as file:
-	print(dumps(s, indent=4), file=file)
-
 #Поиск пользователей: подписка, твиты
-threading.Thread(target=search, args=(me,)).start()
+threading.Thread(target=search, args=(me, start, l, p)).start()
 #Анализ трендов: теги, твиты, пользователи
-threading.Thread(target=trends, args=(me,)).start()
+threading.Thread(target=trends, args=(me, p)).start()
 #Подписываться для накрутки
 threading.Thread(target=follow, args=(me,)).start()
 #Автопостинг твитов на базе интернета / популярных твитов
-if s['default']['Post']: threading.Thread(target=apost, args=(me,)).start()
+if p: threading.Thread(target=apost, args=(me,)).start()
 #Контроль новых подписчиков: подписка, сообщения
 #th=threading.Thread(target=new, args=(me, m, last))
 #th.daemon=True

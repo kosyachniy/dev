@@ -5,6 +5,10 @@ def trends(me=''):
 	api=auth(me)
 	me=api.me().screen_name
 
+	with open('set.txt') as file:
+		s=loads(file.read())['default']
+	p=s['Post']
+
 	def tag(place):
 		for j in api.trends_place(place)[0]['trends']:
 			cont=unquote(j['query'].replace('+',' '))
@@ -21,7 +25,9 @@ def trends(me=''):
 			print(dumps(s, ensure_ascii=False, indent=4), file=file)
 
 #Автоматический поиск интересных постов по трендам и количеству подписок, ретвитов
-		#Убирать надпись ретвит
-		#print(dumps({'text':j.text}, ensure_ascii=False), file=file)
+		#if p:
 
 		time.sleep(300)
+
+if __name__=='__main__':
+	ternds()

@@ -1,20 +1,39 @@
 import sys, tweepy, time
 from json import *
 
-def auth(user='deepinmylife'):	
-	consumer_key='vveAVFha4hTcjUStnOf0hwEwQ'
-	consumer_secret='F8tFzORTE8DzAAYnz5hHxCBRAClPWf4ABhuGn03GHZ5w2QJtbP'
-	if user=='kosyachniy':
-		access_key=''
-		access_secret=''
-	elif user=='alexpoloz':
-		access_key='393195793-5OHIbf9wTGHaTbk3BBpGyDF0KxIo61n7bKgxSom3'
-		access_secret='wFjDOGxoHzp1gj7ZyUOqdjNmA5gg8ga74RqdlPA7TzHSj'
-	else:
-		access_key='3110781773-HNd7zymonJSoJmbzHyQ4IL6O7y8f3XmbIxha4pN'
-		access_secret='rrz2R22vtXezxpjMeFC9gGj0tXPMhnRRZOmMdaDKvGlG7'
+#Авторизация
+def auth(user='deepinmylife'):
+	with open('set.txt', 'r') as file:
+		s=loads(file.read())['key']
+		consumer_key, consumer_secret=s['main'] #
+		access_key, access_secret=s[user] #
 
-	aut=tweepy.OAuthHandler(consumer_key,consumer_secret)
-	aut.set_access_token(access_key,access_secret)
-	api=tweepy.API(aut)
-	return api
+		aut=tweepy.OAuthHandler(consumer_key, consumer_secret)
+		aut.set_access_token(access_key, access_secret)
+		return tweepy.API(aut)
+
+#Подписка
+def subscribe(i):
+	if i.friends_count>=0.6*i.followers_count and not i.follow_request_sent and not i.following and i.screen_name not in s and not api.show_friendship(source_screen_name=i.screen_name, target_screen_name=me)[0].following:
+		with open('follow.txt', 'a') as file:
+			print(i.screen_name, file=file)
+			print('Add follow.',i.screen_name) #
+			return True
+	return False
+
+#Посты
+def post(user, follow=False):
+	for i in api.user_timeline(user):
+		if not i.is_quote_status and not i.in_reply_to_user_id and not i.in_reply_to_status_id and (i.favorite_count>=30 or i.retweet_count>=10):
+			if follow:
+				try:
+					api.retweet(i.id)
+					print('Repost.', user)
+					time.sleep(60)
+				except tweepy.error.TweepError:
+					print('Ошибка репоста!')
+			else:
+				with open('twit.txt', 'a') as file:
+					#Убирать надпись ретвит
+  					print(dumps({'text':i.text}, ensure_ascii=False), file=file)
+  				print('Add post.', user) #
