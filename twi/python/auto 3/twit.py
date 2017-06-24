@@ -1,6 +1,6 @@
 from func import *
 
-def post(me=''):
+def apost(me=''):
 	api=auth(me)
 	me=api.me().screen_name
 
