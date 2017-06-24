@@ -2,7 +2,7 @@ import sys, threading
 from user import search
 from trends import trends
 from follow import follow
-from twit import apost
+from twit import twit
 #from new import new
 #from old import old
 
@@ -41,7 +41,7 @@ me=sys.argv[1] if arg>=2 else ''
 #Поиск пользователей: подписка, твиты
 threading.Thread(target=search, args=(me, start, l, p)).start()
 #Анализ трендов: теги, твиты, пользователи
-threading.Thread(target=trends, args=(me,)).start()
+threading.Thread(target=trends, args=(me, p)).start()
 #Подписываться для накрутки
 threading.Thread(target=follow, args=(me,)).start()
 #Автопостинг твитов на базе интернета / популярных твитов

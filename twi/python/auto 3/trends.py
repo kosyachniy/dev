@@ -1,7 +1,7 @@
 from func import *
 from urllib.request import unquote
 
-def trends(me=''):
+def trends(me='', p=True):
 	api=auth(me)
 	me=api.me().screen_name
 
@@ -21,7 +21,7 @@ def trends(me=''):
 			print(dumps(s, ensure_ascii=False, indent=4), file=file)
 
 #Автоматический поиск интересных постов по трендам и количеству подписок, ретвитов
-		#
+		#if p:
 
 		time.sleep(300)
 

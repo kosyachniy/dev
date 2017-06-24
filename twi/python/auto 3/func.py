@@ -2,19 +2,15 @@ import sys, tweepy, time
 from json import *
 
 #Авторизация
-def auth(user=''):
-	if user=='deepinmylife' or user=='': user='all'
-
+def auth(user='deepinmylife'):
 	with open('set.txt', 'r') as file:
 		s=loads(file.read())['key']
+		consumer_key, consumer_secret=s['main'] #
+		access_key, access_secret=s[user] #
 
-		consumer_key, consumer_secret=s['main']
-		access_key, access_secret=s[user]
-
-	aut=tweepy.OAuthHandler(consumer_key,consumer_secret)
-	aut.set_access_token(access_key,access_secret)
-	api=tweepy.API(aut)
-	return api
+		aut=tweepy.OAuthHandler(consumer_key, consumer_secret)
+		aut.set_access_token(access_key, access_secret)
+		return tweepy.API(aut)
 
 #Подписка
 def subscribe(i):
@@ -25,7 +21,7 @@ def subscribe(i):
 			return True
 	return False
 
-#Твиты
+#Посты
 def post(user, follow=False):
 	for i in api.user_timeline(user):
 		if not i.is_quote_status and not i.in_reply_to_user_id and not i.in_reply_to_status_id and (i.favorite_count>=30 or i.retweet_count>=10):

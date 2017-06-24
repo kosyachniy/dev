@@ -1,6 +1,6 @@
 from func import *
 
-def apost(me=''):
+def twit(me=''):
 	api=auth(me)
 	me=api.me().screen_name
 
@@ -36,4 +36,4 @@ def apost(me=''):
 			time.sleep(600)
 
 if __name__=='__main__':
-	post()
+	twit()
