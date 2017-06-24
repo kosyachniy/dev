@@ -1,4 +1,5 @@
-import sys, threading
+import sys
+from multiprocessing import Process, Manager
 from json import *
 from user import search
 from trends import trends
@@ -29,8 +30,10 @@ from twit import twit
 with open('set.txt', 'r') as file:
 	s=loads(file.read())
 
+x=Manager().dict()
+
 arg=len(sys.argv)
-s['default']['Unfollow']=False if arg==7 and sys.argv[6]=='x' else True
+x['Unfollow']=s['default']['Unfollow']=False if arg==7 and sys.argv[6]=='x' else True
 s['default']['StartFollow']=sys.argv[5] if arg>=6 else 'PomidorWatsona'
 s['default']['NotRussian']=False if arg>=5 and sys.argv[4]=='ru' else True
 s['default']['Post']=False if arg>=4 and sys.argv[3]=='x' else True
@@ -48,7 +51,6 @@ me=sys.argv[1] if arg>=2 else ''
 with open('set.txt', 'w') as file:
 	print(dumps(s, indent=4), file=file)
 
-#Заменить на multiprocess
 #Возобновление процессов при ошибке
 #Поиск пользователей: подписка, твиты
 threading.Thread(target=search, args=(me,)).start()
