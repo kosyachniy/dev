@@ -1,4 +1,4 @@
-import sys, tweepy, time
+import sys, tweepy, time, re
 from json import *
 from multiprocessing import Process, Manager
 
@@ -55,5 +55,5 @@ def post(user, me, follow=False):
 			else:
 				with open('twit.txt', 'a') as file:
 #Убирает надпись ретвит
-					print(dumps({'text':re.sub(r'^RT @\w+: ','',i.text)}, ensure_ascii=False), file=file)
+					print(dumps({'text':re.sub(r'^RT @\w+: ', '', i.text)}, ensure_ascii=False), file=file)
 				print('Add post.', user) #
