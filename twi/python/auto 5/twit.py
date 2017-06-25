@@ -19,9 +19,10 @@ def twit(x):
 
 			with open('set.txt', 'r') as file:
 				q=loads(file.read())['trends']
-			#Проверка пост - картинка?
 			if q['ru'] not in u and len(u)+len(q['ru'])<=138:
-				u+='\n'+q['ru']
+#Проверка пост - картинка?
+				if u[:13]!='https://t.co/': u+='\n'
+				u+=q['ru']
 			if len(u)+len(q['us'])<140:
 				u+=' '+q['us']
 

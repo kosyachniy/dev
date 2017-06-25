@@ -4,7 +4,7 @@ from multiprocessing import Process, Manager
 
 #Авторизация
 def auth(user=''):
-	with open('set.txt', 'r') as file:
+	with open('auto 5/set.txt', 'r') as file:
 		s=loads(file.read())
 		if not user: user=s['default']['Me']
 		consumer_key, consumer_secret=s['key']['main'] #
@@ -20,7 +20,7 @@ def subscribe(i, me, s=[]):
 	api=auth(me)
 
 #Поиск топ-пользователей
-	if i.followers_count>=0.5*i.friends_count and i.followers_count>=5000:
+	if i.followers_count>=0.5*i.friends and i.followers_count>=5000:
 		with open('set.txt', 'r') as file:
 			s=loads(file.read())
 		s['top'].append(i.id)
@@ -54,6 +54,6 @@ def post(user, me, follow=False):
 #Пост
 			else:
 				with open('twit.txt', 'a') as file:
-#Убирает надпись ретвит
-					print(dumps({'text':re.sub(r'^RT @\w+: ','',i.text)}, ensure_ascii=False), file=file)
+					#Убирать надпись ретвит
+					print(dumps({'text':i.text}, ensure_ascii=False), file=file)
 				print('Add post.', user) #
