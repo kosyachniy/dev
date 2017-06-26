@@ -50,6 +50,7 @@
         "Me": "deepinmylife",
         "Post": true,
         "StartFollow": "PomidorWatsona",
-        "NewFollowers": false
+        "NewFollowers": false,
+	"Message": ""
     }
 }

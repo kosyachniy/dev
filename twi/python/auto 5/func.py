@@ -40,6 +40,7 @@ def post(user, me, follow=False):
 	#Заменить глобальными переменными
 	api=auth(me)
 	for i in api.user_timeline(user):
+		#Проверка: Русский? Есть ли обращения?
 		if not i.is_quote_status and not i.in_reply_to_user_id and not i.in_reply_to_status_id and (i.favorite_count>=30 or i.retweet_count>=10):
 
 #Репост
@@ -55,5 +56,7 @@ def post(user, me, follow=False):
 			else:
 				with open('twit.txt', 'a') as file:
 #Убирает надпись ретвит
+					#Убрать обрезанную медиа
+					#Замена &amp; &gt;
 					print(dumps({'text':re.sub(r'^RT @\w+: ', '', i.text)}, ensure_ascii=False), file=file)
 				print('Add post.', user) #

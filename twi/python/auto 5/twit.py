@@ -22,6 +22,7 @@ def twit(x):
 			if q['ru'] not in u and len(u)+len(q['ru'])<=138:
 #Проверка пост - картинка?
 				if u[:13]!='https://t.co/': u+='\n'
+				#Добавлять рекламную ссылку
 				u+=q['ru']
 			if len(u)+len(q['us'])<140:
 				u+=' '+q['us']
