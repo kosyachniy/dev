@@ -15,7 +15,12 @@ def search(x):
 			print('Итерация',it) #
 			if it%50==0: api=auth(me) #
 
-			for i in api.followers(u):
+			try:
+				p=api.followers(u)
+			except:
+				api=auth(me)
+				p=[]
+			for i in p:
 #Проверка: Русский? Не я?
 				if (x['NotRussian'] or i.lang=='ru') and i.screen_name!=me:
 					f=subscribe(i, me, s)

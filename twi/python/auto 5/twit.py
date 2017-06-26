@@ -19,13 +19,17 @@ def twit(x):
 
 			with open('set.txt', 'r') as file:
 				q=loads(file.read())['trends']
+			d=''
+#Дополнительный текст
+			if x['Message'] and len(u)+len(x['Message'])<=137:
+				d=x['Message']+' '
+#Популярные теги
 			if q['ru'] not in u and len(u)+len(q['ru'])<=138:
-#Проверка пост - картинка?
-				if u[:13]!='https://t.co/': u+='\n'
-				#Добавлять рекламную ссылку
-				u+=q['ru']
+				d+=q['ru']
 			if len(u)+len(q['us'])<140:
-				u+=' '+q['us']
+				d+=' '+q['us']
+#Проверка пост - картинка?
+			u+=d if u[:13]=='https://t.co/' else '\n'+d
 
 			try:
 				api.update_status(u)

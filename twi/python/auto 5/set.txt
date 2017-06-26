@@ -51,6 +51,6 @@
         "Post": true,
         "StartFollow": "PomidorWatsona",
         "NewFollowers": false,
-	"Message": ""
+	"Message": "http://bit.ly/2sRY1BX"
     }
 }
