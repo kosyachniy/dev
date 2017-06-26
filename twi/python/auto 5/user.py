@@ -15,17 +15,14 @@ def search(x):
 			print('Итерация',it) #
 			if it%50==0: api=auth(me) #
 
-			try:
-				p=api.followers(u)
-			except:
-				api=auth(me)
-				p=[]
-			for i in p:
+			for i in api.followers(u):
 #Проверка: Русский? Не я?
 				if (x['NotRussian'] or i.lang=='ru') and i.screen_name!=me:
-					f=subscribe(i, me, s)
-
-					if x['Post']: post(i.screen_name, me, f)
+					try:
+						f=subscribe(i, me, x['NotRussian'], s)
+						if x['Post']: post(i.screen_name, me, f)
+					except tweepy.error.TweepError:
+						print('Ошибка!')
 					time.sleep(60) #
 
 			u=s[0] if len(s) else api.followers()[0].screen_name
