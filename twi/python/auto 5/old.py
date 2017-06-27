@@ -2,7 +2,7 @@ from func import *
 
 def unf(x):
 	it=0
-	while True:
+	while x['work']:
 		me=x['Me']
 		api=auth(me)
 

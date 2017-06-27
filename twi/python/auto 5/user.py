@@ -8,11 +8,11 @@ def search(x):
 	s=list()
 
 	it=0
-	while True:
+	while x['work']:
 		s=[i[:-1] for i in open('follow.txt', 'r').readlines()]
 		if len(s)<200:
 			it+=1
-			print('Итерация',it) #
+			print('Итерация',it,'| подписаться:',len(s)) #
 			if it%50==0: api=auth(me) #
 
 			for i in api.followers(u):

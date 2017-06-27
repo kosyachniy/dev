@@ -6,7 +6,7 @@ def twit(x):
 
 	it=0
 
-	while True:
+	while x['work']:
 		s=[i[:-1] for i in open('twit.txt', 'r').readlines()]
 		if len(s):
 			u=loads(s[0])['text']

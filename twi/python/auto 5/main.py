@@ -29,26 +29,27 @@ from twit import twit
 x=Manager().dict()
 #Считывание файла настроек в глобальные переменны и обновление
 with open('set.txt', 'r') as file:
-	s=loads(file.read())
-	x=s['default']
-	top=s['top']
+	x=loads(file.read())['default']
 
 arg=len(sys.argv)
 #Исправить чтобы не менял, если не заданы
-x['Unfollow']=False if arg==7 and sys.argv[6]=='x' else True
-x['StartFollow']=sys.argv[5] if arg>=6 else top[len(top)-1]
-x['NotRussian']=False if arg>=5 and sys.argv[4]=='ru' else True
-x['Post']=False if arg>=4 and sys.argv[3]=='x' else True
-last=''
-m=True
+if arg==7: x['Unfollow']=False if sys.argv[6]=='x' else True
+#Добавить топ-пользователей?
+if arg>=6: x['StartFollow']=sys.argv[5]
+if arg>=5: x['NotRussian']=False if sys.argv[4]=='ru' else True
+if arg>=4: x['Post']=False if sys.argv[3]=='x' else True
 if arg>=3:
+	last=''
+	m=True
 	if sys.argv[2]=='x':
 		m=False
 	elif sys.argv[2]!='v':
 		last=sys.argv[2]
-x['NewFollowers']=m
-x['LastFollowers']=last
+	x['NewFollowers']=m
+	x['LastFollowers']=last
 if arg>=2: x['Me']=sys.argv[1]
+
+x['work']=True
 
 #Возобновление процессов при ошибке
 #Поиск пользователей: подписка, твиты
@@ -72,6 +73,9 @@ p1.start()
 p2.start()
 p3.start()
 if x['Post']: p4.start()
+
+q=input()
+if q: x['work']=False
 
 p1.join()
 p2.join()

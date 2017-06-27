@@ -39,6 +39,7 @@ def subscribe(i, me, s=[]):
 def post(user, me, ru=False, follow=False):
 	#Заменить глобальными переменными
 	api=auth(me)
+	#Обрезаются твиты
 	for i in api.user_timeline(user):
 #Русский?
 		if (ru or i.lang=='ru') and not i.is_quote_status and not i.in_reply_to_user_id and not i.in_reply_to_status_id and (i.favorite_count>=30 or i.retweet_count>=10):
@@ -54,9 +55,6 @@ def post(user, me, ru=False, follow=False):
 
 #Пост
 			else:
-#Если обрезаются твиты?
-				if u[-3:]=='...':
-					u=api.get_status(i.id).text
 #Убирает надпись ретвит
 				u=re.sub(r'^RT @\w+: ', '', i.text)
 #Есть ли обращения?
