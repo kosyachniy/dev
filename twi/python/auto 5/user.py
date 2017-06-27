@@ -8,24 +8,27 @@ def search(x):
 	s=list()
 
 	it=0
-	while Contro:
+	while True:
 		s=[i[:-1] for i in open('follow.txt', 'r').readlines()]
 		if len(s)<200:
 			it+=1
 			print('Итерация',it,'| подписаться:',len(s)) #
-			if it%50==0: api=auth(me) #
+			#if it%50==0: api=auth(me)
 
-			for i in api.followers(u):
+			try:
+				for i in api.followers(u):
 #Проверка: Русский? Не я?
-				if (x['NotRussian'] or i.lang=='ru') and i.screen_name!=me:
-					try:
+					if (x['NotRussian'] or i.lang=='ru') and i.screen_name!=me:
+						#try:
 						f=subscribe(i, me, s)
 						if x['Post']: post(i.screen_name, me, x['NotRussian'], f)
-					except tweepy.error.TweepError:
-						print('Ошибка!')
-					time.sleep(60) #
+						#except tweepy.error.TweepError:
+						#	print('Ошибка!')
+						time.sleep(60) #
 
-			u=s[0] if len(s) else api.followers()[0].screen_name
+				u=s[0] if len(s) else api.followers()[0].screen_name
+			except tweepy.error.TweepError:
+				print('Ошибка!')
 
 			time.sleep(60)
 		else:

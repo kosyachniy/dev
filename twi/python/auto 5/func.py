@@ -57,7 +57,6 @@ def post(user, me, ru=False, follow=False):
 #Есть ли обращения?
 				if '@' not in u:
 					with open('twit.txt', 'a') as file:
-						#Убрать обрезанную медиа
 						#Замена &amp; &gt;
 						print(dumps({'text':u}, ensure_ascii=False), file=file)
 					print('Add post.', user) #
