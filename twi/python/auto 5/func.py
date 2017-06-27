@@ -46,12 +46,9 @@ def post(user, me, ru=False, follow=False):
 
 #Репост
 			if follow:
-				try:
-					api.retweet(i.id)
-					print('Repost.', user)
-					time.sleep(60)
-				except tweepy.error.TweepError:
-					print('Ошибка репоста!')
+				api.retweet(i.id)
+				print('Repost.', user)
+				time.sleep(60)
 
 #Пост
 			else:

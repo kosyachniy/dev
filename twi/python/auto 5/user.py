@@ -8,7 +8,7 @@ def search(x):
 	s=list()
 
 	it=0
-	while x['work']:
+	while Contro:
 		s=[i[:-1] for i in open('follow.txt', 'r').readlines()]
 		if len(s)<200:
 			it+=1

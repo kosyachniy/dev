@@ -3,7 +3,7 @@ from json import loads
 
 def new(x):
 	it=0
-	while x['work']:
+	while True:
 		me=x['Me']
 		api=auth(me)
 

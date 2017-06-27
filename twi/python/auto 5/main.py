@@ -49,7 +49,7 @@ if arg>=3:
 	x['LastFollowers']=last
 if arg>=2: x['Me']=sys.argv[1]
 
-x['work']=True
+#x['work']=True
 
 #Возобновление процессов при ошибке
 #Поиск пользователей: подписка, твиты
@@ -74,8 +74,8 @@ p2.start()
 p3.start()
 if x['Post']: p4.start()
 
-q=input()
-if q: x['work']=False
+#q=input()
+#if q: x['work']=False
 
 p1.join()
 p2.join()

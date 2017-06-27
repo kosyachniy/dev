@@ -8,7 +8,7 @@ def follow(x):
 	it=0
 	er=0
 
-	while x['work']:
+	while True:
 		s=[i[:-1] for i in open('follow.txt', 'r').readlines()]
 		if len(s):
 			u=s[0]

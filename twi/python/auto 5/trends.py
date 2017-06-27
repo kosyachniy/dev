@@ -11,7 +11,7 @@ def trends(x):
 			if '#' in cont: return cont
 		return unquote(api.trends_place(place)[0]['trends'][0])
 
-	while x['work']:
+	while True:
 #Обновление трендов
 		with open('set.txt', 'r') as file:
 			s=loads(file.read())
