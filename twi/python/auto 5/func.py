@@ -54,6 +54,9 @@ def post(user, me, ru=False, follow=False):
 
 #Пост
 			else:
+#Если обрезаются твиты?
+				if u[-3:]=='...':
+					u=api.get_status(i.id).text
 #Убирает надпись ретвит
 				u=re.sub(r'^RT @\w+: ', '', i.text)
 #Есть ли обращения?

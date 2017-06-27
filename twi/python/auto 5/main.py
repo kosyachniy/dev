@@ -34,6 +34,7 @@ with open('set.txt', 'r') as file:
 	top=s['top']
 
 arg=len(sys.argv)
+#Исправить чтобы не менял, если не заданы
 x['Unfollow']=False if arg==7 and sys.argv[6]=='x' else True
 x['StartFollow']=sys.argv[5] if arg>=6 else top[len(top)-1]
 x['NotRussian']=False if arg>=5 and sys.argv[4]=='ru' else True

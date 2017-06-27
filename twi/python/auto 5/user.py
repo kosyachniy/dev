@@ -19,8 +19,8 @@ def search(x):
 #Проверка: Русский? Не я?
 				if (x['NotRussian'] or i.lang=='ru') and i.screen_name!=me:
 					try:
-						f=subscribe(i, me, x['NotRussian'], s)
-						if x['Post']: post(i.screen_name, me, f)
+						f=subscribe(i, me, s)
+						if x['Post']: post(i.screen_name, me, x['NotRussian'], f)
 					except tweepy.error.TweepError:
 						print('Ошибка!')
 					time.sleep(60) #

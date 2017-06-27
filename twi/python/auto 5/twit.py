@@ -37,6 +37,6 @@ def twit(x):
 			except tweepy.error.TweepError:
 				print('Ошибка при постинге!')
 
-			time.sleep(40)
+			time.sleep(150) #40
 		else:
 			time.sleep(600)
