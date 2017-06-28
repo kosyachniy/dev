@@ -39,6 +39,7 @@ def subscribe(i, me, s=[]):
 def post(user, me, ru=False, follow=False):
 	#Заменить глобальными переменными
 	api=auth(me)
+	t-True #
 	#Обрезаются твиты
 	for i in api.user_timeline(user):
 #Русский?
@@ -46,9 +47,11 @@ def post(user, me, ru=False, follow=False):
 
 #Репост
 			if follow:
-				api.retweet(i.id)
-				print('Repost.', user)
-				time.sleep(60)
+				if t: #Ограничение ретвитов
+					api.retweet(i.id)
+					print('Repost.', user)
+					time.sleep(60)
+					t=False #
 
 #Пост
 			else:
