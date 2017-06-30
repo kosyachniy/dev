@@ -31,14 +31,14 @@ def subscribe(i, me, s=[]):
 	elif i.friends_count>=0.6*i.followers_count and not i.follow_request_sent and not i.following and i.screen_name not in s and not api.show_friendship(source_screen_name=i.screen_name, target_screen_name=me)[0].following:
 		with open('follow.txt', 'a') as file:
 			print(i.screen_name, file=file)
-			print('Add follow.',i.screen_name) #
+			print('Add follow.', i.screen_name) #
 			return True
 	return False
 
 #Анализ твита
 def post(user, me, ru=False, follow=False):
 	#Заменить глобальными переменными
-	api=auth(me)
+	api=auth(me) #x['api']
 	t-True #
 	#Обрезаются твиты
 	for i in api.user_timeline(user):

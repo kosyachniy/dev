@@ -21,7 +21,7 @@ def follow(x):
 			it+=1
 			if it%300==0:
 				print('Заснул!')
-				time.sleep(10000) #20000
+				time.sleep(20000)
 
 			try:
 				api.get_user(u).follow()

@@ -7,39 +7,33 @@ def new(x):
 		me=x['Me']
 		api=auth(me)
 
-		#Заменить глобальными переменными
-		with open('set.txt', 'r') as file:
-			s=loads(file.read())['default']
+		u=x['StartFollow']
 
-		mess=s['Message']
-		u=s['StartFollow']
-		t=s['NotRussian']
-		p=s['Post']
+		try:
+			for i in api.followers():
+				#Повторяется
+				#Не рассмотрен случай, если последний пользователь удалится / сменит имя
+				if i.screen_name==u: break
 
-		for i in api.followers():
-			#Повторяется
-			#Не рассмотрен случай, если последний пользователь удалится / сменит имя
-			if i.screen_name==user: break
-
-			user=i.screen_name
-			it+=1
+				user=i.screen_name
+				it+=1
 
 #Подписываться на недавно подписавшихся меня ради фолловинга (при каждой подписке)
-			foling=i.friends_count
-			folers=i.followers_count
-			if foling>=1000 and folers>=1000 and 3*folers>=foling>=0.8*folers and not i.following and not i.follow_request_sent:
-					i.follow()
-					print('Follow.',user)
+				if 3*i.followers_count>=i.friends_count>=0.8*i.followers_count>=800 and not i.following and not i.follow_request_sent:
+					with open('follow.txt', 'a') as file:
+						print(user, file=file)
+						print('My follow.', user) #
 
 #Отправлять сообщение
-			if t:
-				try:
-					api.send_direct_message(user,text=mess)
-					print('Message. {}.'.format(it),user)
-				except tweepy.error.TweepError:
-					print('Ошибка отправки сообщения!')
+				if x['Message']:
+					api.send_direct_message(user, text=x['Message'])
+					print('Message. {}.'.format(it), user)
+		except tweepy.error.TweepError:
+			print('Ошибка новых пользователей!')
 
 #Добавление в БД
-
+		finally:
 			time.sleep(60)
+
+		u=user
 		time.sleep(300)
