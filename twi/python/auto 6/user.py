@@ -15,8 +15,8 @@ def search(x):
 				for i in x['api'].followers(u):
 #Проверка: Русский? Не я?
 					if (x['NotRussian'] or i.lang=='ru') and i.screen_name!=x['me']:
-						f=subscribe(i, x['me'], s)
-						if x['Post']: post(i.screen_name, x['me'], x['NotRussian'], f)
+						f=subscribe(i, x, s)
+						if x['Post']: post(i.screen_name, x, f)
 						time.sleep(60) #
 
 				u=s[0] if len(s) else x['api'].followers()[0].screen_name

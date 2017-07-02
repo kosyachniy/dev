@@ -15,10 +15,7 @@ def auth(user=''):
 	return tweepy.API(aut)
 
 #Анализ пользователя
-def subscribe(i, me, s=[]):
-	#Заменить глобальными переменными
-	api=auth(me)
-
+def subscribe(i, x, s=[]):
 #Поиск топ-пользователей
 	if i.followers_count>=0.5*i.friends_count and i.followers_count>=5000:
 		with open('set.txt', 'r') as file:
@@ -28,7 +25,7 @@ def subscribe(i, me, s=[]):
 			print(dumps(s, ensure_ascii=False, indent=4), file=file)
 
 #Подписка
-	elif i.friends_count>=0.6*i.followers_count and not i.follow_request_sent and not i.following and i.screen_name not in s and not api.show_friendship(source_screen_name=i.screen_name, target_screen_name=me)[0].following:
+	elif i.friends_count>=0.6*i.followers_count and not i.follow_request_sent and not i.following and i.screen_name not in s and not x['api'].show_friendship(source_screen_name=i.screen_name, target_screen_name=x['me'])[0].following:
 		with open('follow.txt', 'a') as file:
 			print(i.screen_name, file=file)
 			print('Add follow.', i.screen_name) #
@@ -36,19 +33,17 @@ def subscribe(i, me, s=[]):
 	return False
 
 #Анализ твита
-def post(user, me, ru=False, follow=False):
-	#Заменить глобальными переменными
-	api=auth(me) #x['api']
+def post(user, x, follow=False):
 	t=True #
 	#Обрезаются твиты
-	for i in api.user_timeline(user):
+	for i in x['api'].user_timeline(user):
 #Русский?
-		if (ru or i.lang=='ru') and not i.is_quote_status and not i.in_reply_to_user_id and not i.in_reply_to_status_id and (i.favorite_count>=30 or i.retweet_count>=10):
+		if (x['NotRussian'] or i.lang=='ru') and not i.is_quote_status and not i.in_reply_to_user_id and not i.in_reply_to_status_id and (i.favorite_count>=30 or i.retweet_count>=10):
 
 #Репост
 			if follow:
 				if t: #Ограничение ретвитов
-					api.retweet(i.id)
+					x['api'].retweet(i.id)
 					print('Repost.', user)
 					time.sleep(60)
 					t=False #
