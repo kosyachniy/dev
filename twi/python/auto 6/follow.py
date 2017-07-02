@@ -2,9 +2,6 @@ from func import *
 from random import randint
 
 def follow(x):
-	me=x['Me']
-	api=auth(me)
-
 	it=0
 	er=0
 
@@ -24,7 +21,7 @@ def follow(x):
 				time.sleep(20000)
 
 			try:
-				api.get_user(u).follow()
+				x['api'].get_user(u).follow()
 				print('Follow {}.'.format(it),u)
 				er=0
 			except tweepy.error.TweepError:
