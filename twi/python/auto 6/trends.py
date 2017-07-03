@@ -17,6 +17,7 @@ def trends(x):
 			s['trends']['ru']=tag(23424936)
 			s['trends']['us']=tag(2352824)
 		except tweepy.error.TweepError:
+			x['api']=auth(x['me'])
 			print('Ошибка трендов!')
 		else:
 			with open('set.txt', 'w') as file:

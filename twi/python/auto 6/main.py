@@ -51,6 +51,9 @@ if arg>=2: x['Me']=sys.argv[1]
 
 #x['work']=True
 x['api']=auth(x['Me'])
+#x['subscribe']=list()
+#x['post']=list()
+#x['repost']=list()
 
 #Возобновление процессов при ошибке и по времени
 #Поиск пользователей: подписка, твиты
