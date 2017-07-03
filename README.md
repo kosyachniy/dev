@@ -17,6 +17,12 @@ GUI | [PyQt](http://pyqt.sourceforge.net/Docs/PyQt5/)<br>[Обучение](http
 Twitter | [TweePy](http://docs.tweepy.org/en/v3.5.0/api.html) |  |
 InstaGram |  |  |
 
+Обучение
+---
+### MNIST (``` ai/tensorflow ```)
+[Tutorial](https://codelabs.developers.google.com/codelabs/cloud-tensorflow-mnist/#0)
+[GitHub](https://github.com/martin-gorner/tensorflow-mnist-tutorial)
+
 MarkDown
 ---
 [Разметка README.md](http://coddism.com/zametki/razmetka_readmemd_v_github)
