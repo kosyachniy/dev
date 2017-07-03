@@ -4,7 +4,7 @@ from multiprocessing import Process, Manager
 
 #Авторизация
 def auth(user=''):
-	with open('auto 5/set.txt', 'r') as file:
+	with open('set.txt', 'r') as file:
 		s=loads(file.read())
 		if not user: user=s['default']['Me']
 		consumer_key, consumer_secret=s['key']['main'] #

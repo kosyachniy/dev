@@ -4,8 +4,8 @@ def auth(user='deepinmylife'):
 	consumer_key='vveAVFha4hTcjUStnOf0hwEwQ'
 	consumer_secret='F8tFzORTE8DzAAYnz5hHxCBRAClPWf4ABhuGn03GHZ5w2QJtbP'
 	if user=='kosyachniy':
-		access_key=''
-		access_secret=''
+		access_key='4100776272-7xmoKNCUsYysGa0blR1qjaV8qxPW5jV8rrisr5E'
+		access_secret='3BB795pM6225Fdq5G9XZWCdpXLrXVN7KHVRGYdwgjnHu1'
 	elif user=='alexpoloz':
 		access_key='393195793-5OHIbf9wTGHaTbk3BBpGyDF0KxIo61n7bKgxSom3'
 		access_secret='wFjDOGxoHzp1gj7ZyUOqdjNmA5gg8ga74RqdlPA7TzHSj'
