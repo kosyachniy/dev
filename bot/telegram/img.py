@@ -7,18 +7,10 @@ bot = telebot.TeleBot(token)
 def handle_start_help(message):
 	bot.send_message(message.chat.id, 'Hi!')
 
-@bot.message_handler(content_types=['document', 'audio'])
-def handle_docs_audio(message):
-	pass
-
-@bot.message_handler(regexp="SOME_REGEXP")
-def handle_message(message):
-	pass
-
-#@bot.message_handler(func=lambda message: message.document.mime_type == 'text/plain', content_types=['document'])
 @bot.message_handler(content_types=["text"])
 def repeat_all_messages(message):
-	bot.send_message(message.chat.id, message.text)
+	f=open('load/1.jpg', 'rb')
+	bot.send_photo(message.chat.id, f)
 
 if __name__ == '__main__':
 	bot.polling(none_stop=True)
