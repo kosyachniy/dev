@@ -21,7 +21,7 @@ summary_writer=tf.summary.FileWriter('log_simple_graph', sess.graph)
 print('--------------------')
 
 #Запуск обучения
-sess.run(tf.initialize_all_variables())
+sess.run(tf.global_variables_initializer())
 train_step=tf.train.GradientDescentOptimizer(0.025).minimize(loss)
 for i in range(100):
 	sess.run(train_step)

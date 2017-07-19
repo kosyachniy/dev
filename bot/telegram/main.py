@@ -1,4 +1,4 @@
-import telebot, requests, urllib
+import telebot, urllib
 
 token='417063852:AAFvfJdVGgLv9odlnY_gaiMmV4NIBMlgvOQ'
 bot=telebot.TeleBot(token)
@@ -11,19 +11,7 @@ def handle_start_help(message):
 def handle_docs_audio(message):
 	bot.send_message(message.chat.id, 'Media!')
 	file_info=bot.get_file(message.voice.file_id)
-	'''
-	print('https://api.telegram.org/file/bot{0}/{1}'.format(token, file_info.file_path))
-	'''
 	urllib.request.urlretrieve('https://api.telegram.org/file/bot{0}/{1}'.format(token, file_info.file_path), '1.oga')
-	'''
-	f=requests.get('https://api.telegram.org/file/bot{0}/{1}'.format(token, file_info.file_path))
-	fi=open('1.ogg', 'w')
-	fi.write(f)
-	fi.close()
-	
-	with open('1.ogg', 'w') as file:
-		print(f.text, file=file)
-	'''	
 
 @bot.message_handler(regexp="SOME_REGEXP")
 def handle_message(message):

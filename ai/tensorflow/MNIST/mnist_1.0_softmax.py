@@ -84,7 +84,7 @@ datavis = tensorflowvisu.MnistDataVis()
 init = tf.global_variables_initializer()
 sess = tf.Session()
 sess.run(init)
-
+#sess.run(allweights)
 
 # You can call this function in a loop to train the model, 100 images at a time
 def training_step(i, update_test_data, update_train_data):
