@@ -1,4 +1,4 @@
-import csv,sys
+import sys, csv
 
 def text(x):
 	y=[]

@@ -1,8 +1,8 @@
 <?php
 // определяем изначальные конфигурационные данные
 
-define('CONSUMER_KEY', 'mcactbAgFofues75dpMkFKLsg');
-define('CONSUMER_SECRET', '2H1KU0cR3kcYXgHgfFLnLwzqYdF7Ie5QBsqIVYA7zzN6jEN7QU');
+define('CONSUMER_KEY', 'vveAVFha4hTcjUStnOf0hwEwQ');
+define('CONSUMER_SECRET', 'F8tFzORTE8DzAAYnz5hHxCBRAClPWf4ABhuGn03GHZ5w2QJtbP');
 
 define('REQUEST_TOKEN_URL', 'https://api.twitter.com/oauth/request_token');
 define('AUTHORIZE_URL', 'https://api.twitter.com/oauth/authorize');
