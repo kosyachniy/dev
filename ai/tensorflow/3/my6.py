@@ -27,15 +27,16 @@ y2=tf.multiply(x, w)
 
 #Рассчитываем ошибку выходных данных
 loss=tf.reduce_mean(tf.square(y2-y))
-optimizer=tf.train.GradientDescentOptimizer(0.05).minimize(loss)
+optimizer=tf.train.GradientDescentOptimizer(0.005).minimize(loss)
 
 #Запуск обучения
 with tf.Session() as session:
 	tf.global_variables_initializer().run()
-	for i in range(len(xx)):
-		feed_dict={x: xx[i:(i+1)][0], y: yy[i:(i+1)][0]}
-		_, l = session.run([optimizer, loss], feed_dict=feed_dict)
-		print("ошибка: %f" % (l, ))
+	for j in range(3):
+		for i in range(len(xx)):
+			feed_dict={x: xx[i:(i+1)][0], y: yy[i:(i+1)][0]}
+			_, l = session.run([optimizer, loss], feed_dict=feed_dict)
+			print("ошибка: %f" % (l, ))
 
 	iii=session.run(w)[0]
 	np.savetxt('weights.csv', iii, delimiter=',')
