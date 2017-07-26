@@ -13,7 +13,7 @@ API
 ---|---|---|---
 GUI | [PyQt](http://pyqt.sourceforge.net/Docs/PyQt5/)<br>[Обучение](https://pythonworld.ru/gui) |  |
 ИИ | [TensorFlow](https://www.tensorflow.org/api_docs/python/) |  |
-ВКонтакте |  |  |
+ВКонтакте | [VK](https://vk.com/dev/methods) |  |
 Twitter | [TweePy](http://docs.tweepy.org/en/v3.5.0/api.html) |  |
 InstaGram |  |  |
 
