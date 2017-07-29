@@ -1,6 +1,6 @@
 import csv
 
-def write(text, name='db', sign=';'):
+def write(text, name='db', sign=','):
 	with open(name+'.csv', 'a') as file:
 		csv.writer(file, delimiter=sign, quotechar=' ', quoting=csv.QUOTE_MINIMAL).writerow(text)
 

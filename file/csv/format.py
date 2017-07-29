@@ -10,10 +10,10 @@ def text(x):
 				y.append(j['infinitive'])
 	return y
 
-def format(name='db',sign=';'):
-	with open(name+'.txt','r') as out:
-		with open(name+'.csv','w') as file:
-			a=csv.writer(file,delimiter=sign,quotechar=' ',quoting=csv.QUOTE_MINIMAL) #Сделать через ;
+def format(name='db', sign=','):
+	with open(name+'.txt', 'r') as out:
+		with open(name+'.csv', 'w') as file:
+			a=csv.writer(file, delimiter=sign, quotechar=' ', quoting=csv.QUOTE_MINIMAL) #Сделать через ;
 			for i in out:
 				a.writerow(text(i.strip())) #Изменить кодировку с русским языком
 
