@@ -39,14 +39,6 @@
             "3110781773-HNd7zymonJSoJmbzHyQ4IL6O7y8f3XmbIxha4pN",
             "rrz2R22vtXezxpjMeFC9gGj0tXPMhnRRZOmMdaDKvGlG7"
         ],
-        "alexpoloz": [
-            "393195793-5OHIbf9wTGHaTbk3BBpGyDF0KxIo61n7bKgxSom3",
-            "wFjDOGxoHzp1gj7ZyUOqdjNmA5gg8ga74RqdlPA7TzHSj"
-        ],
-        "kosyachniy": [
-            "4100776272-7xmoKNCUsYysGa0blR1qjaV8qxPW5jV8rrisr5E",
-            "3BB795pM6225Fdq5G9XZWCdpXLrXVN7KHVRGYdwgjnHu1"
-        ],
         "main": [
             "vveAVFha4hTcjUStnOf0hwEwQ",
             "F8tFzORTE8DzAAYnz5hHxCBRAClPWf4ABhuGn03GHZ5w2QJtbP"

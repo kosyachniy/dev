@@ -6,13 +6,6 @@ $CONSUMER_SECRET = "2r4KPBm8kCcKsNrwkzSQRH4IkDqbxhVrgVcAmvfoyfXbZUNm1L";
 $OAUTH_TOKEN = "3110781773-4I27iEchYIxqZmIQOgt18b2ehZUHkdEpWKRPuRO";
 $OAUTH_SECRET = "OZj9w6TRUQoeVCgk3pShYOTFWasvSx3ebgOXn6lJQyngy";
 
-/*
-$CONSUMER_KEY = "jARMeUTgjWhDSWOSbs0pfQYz4";
-$CONSUMER_SECRET = "stRnOnA3KRpaCI3hjyJyo0eLedQNflQ4FuvudvXj37mSLX7tPa";
-$OAUTH_TOKEN = "4100776272-4VpvJNSkyhG9kWXfhRHyI3eTEeBRYRABiIqzusU";
-$OAUTH_SECRET = "RHcdHHf0TyHBxtfxHyRCgmB41r7c6gnVgUHH7SEf1Uqi9";
-*/
-
 $url='http://t30p.ru/';
 $contain='Тренды твиттера';
 $start='">';

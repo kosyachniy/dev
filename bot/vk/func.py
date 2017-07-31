@@ -4,7 +4,7 @@ vk=vk_api.VkApi(login='', password='')
 #vk=vk_api.VkApi(token='')
 vk.auth()
 
-send=lambda user, cont: vk.method('messages.send', {'user_id':user, 'message':cont})
+send=lambda user, cont, img=[]: vk.method('messages.send', {'user_id':user, 'message':cont, 'attachment':','.join(img)})
 
 def read():
 	cont=[]
