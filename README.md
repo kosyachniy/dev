@@ -6,13 +6,13 @@
 № | Где | Ошибка | Решение
 ---|---|---|---
 1 | ``` ai/tensorflow ``` | Попробовать обучать нейронные сети после нахождения весов мат алгоритмами | Пройти курс..
-2 | ``` compile ``` | Найти способ запуска Python как пприложения | Пакетирование / Cython
+2 | ``` compile ``` | Найти способ запуска Python как приложения | Пакетирование / Cython
 
 API
 ---
 &nbsp; | Python | C++ | PHP
 ---|---|---|---
-GUI | [PyQt](http://pyqt.sourceforge.net/Docs/PyQt5/)<br>[Обучение](https://pythonworld.ru/gui) |  |
+GUI | [PyQt](http://pyqt.sourceforge.net/Docs/PyQt5/) |  |
 ИИ | [TensorFlow](https://www.tensorflow.org/api_docs/python/) |  |
 ВКонтакте | [VK](https://vk.com/dev/methods) |  |
 Twitter | [TweePy](http://docs.tweepy.org/en/v3.5.0/api.html) |  |
@@ -25,7 +25,7 @@ InstaGram |  |  |
 Регулярные выражения | ``` regular ``` | [Wikipedia](https://ru.wikipedia.org/wiki/%D0%A0%D0%B5%D0%B3%D1%83%D0%BB%D1%8F%D1%80%D0%BD%D1%8B%D0%B5_%D0%B2%D1%8B%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F) |
 MNIST | ``` ai/tensorflow/mnist ``` | [Google](https://codelabs.developers.google.com/codelabs/cloud-tensorflow-mnist/#0) | [GitHub](https://github.com/martin-gorner/tensorflow-mnist-tutorial)
 GUI | ``` gui ``` | [PythonWorld](https://pythonworld.ru/gui) |
-HTML / CSS  |  | [HTMLBook](http://htmlbook.ru/) |
+HTML / CSS  | ``` style ``` | [HTMLBook](http://htmlbook.ru/) |
 JS | ``` js ``` | [JavaScript](http://learn.javascript.ru/) |
 AI | ``` ai/tensorflow ``` | [Stepik](https://stepik.org/course/%D0%9D%D0%B5%D0%B9%D1%80%D0%BE%D0%BD%D0%BD%D1%8B%D0%B5-%D1%81%D0%B5%D1%82%D0%B8-401/syllabus)<br>[HabraHabr 1](https://habrahabr.ru/post/312450/)<br>[HabraHabr 2](https://habrahabr.ru/post/313216/) |
 
@@ -34,7 +34,8 @@ AI | ``` ai/tensorflow ``` | [Stepik](https://stepik.org/course/%D0%9D%D0%B5%D0%
 Тип | Сервис
 ---|---
 Олимпиадные задачи | [CodeForces](http://codeforces.com/problemset)
-Конкурсы | 
+Олимпиады | [Яндекс.Алгоритм](https://academy.yandex.ru/events/algorithm/)<br>[VK Cup](http://codeforces.com/vkcup2017)<br>[Russian Code Cup](http://www.russiancodecup.ru/ru/)<br>[FaceBook Hacker Cup](https://ru.wikipedia.org/wiki/Facebook_Hacker_Cup)<br>[Google Code Jam](https://code.google.com/codejam/)<br>[КРОК](https://www.croc.ru/vacancy/students/detail/61353/)
+Конкурсы | [Web Ready](http://www.gotech.vc/)<br>[Список](https://habrahabr.ru/company/ingria_startup/blog/138718/)
 Работа | [HeadHunter](https://spb.hh.ru/search/vacancy?text=python&area=2)
 
 MarkDown
