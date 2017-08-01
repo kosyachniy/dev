@@ -31,6 +31,8 @@ AI | ``` ai/tensorflow ``` | [Stepik](https://stepik.org/course/%D0%9D%D0%B5%D0%
 
 Решение
 ---
+[Онлайн компилятор](http://ideone.com/)
+
 Тип | Сервис
 ---|---
 Олимпиадные задачи | [CodeForces](http://codeforces.com/problemset)
