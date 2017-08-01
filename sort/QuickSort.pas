@@ -1,6 +1,6 @@
 const n=200;
-var x:array[1..n] of integer;
-    i:integer;
+var x:array[1..n] of integer; i:integer;
+
 procedure sort(l,r:integer); {l-левый конец масива,r-правый конец}
 var
   i,j,x1,y1,m: integer;
@@ -13,7 +13,7 @@ begin
     while x[i]<x1 do inc(i); {пока левый больше среднего, подвигоем левый край вправо }
     while x[j]>x1 do dec(j); {пока правый меньше среднего, подвигаем левый вправо}
     if i<=j then {если левый и правый срослись}
-     begin
+      begin
       y1:=x[i];
       x[i]:=x[j]; {меняем левый и правый}
       x[j]:=y1;

@@ -5,8 +5,8 @@
 ---
 № | Где | Ошибка | Решение
 ---|---|---|---
-1 | ``` ai/tensorflow ``` | Попробовать обучать нейронные сети после нахождения весов мат алгоритмами | 
-2 | ``` bot/twi ``` | Изменить активность бота, чтобы не блокировали |
+1 | ``` ai/tensorflow ``` | Попробовать обучать нейронные сети после нахождения весов мат алгоритмами | Пройти курс..
+2 | ``` compile ``` | Найти способ запуска Python как пприложения | Пакетирование / Cython
 
 API
 ---
@@ -24,6 +24,18 @@ InstaGram |  |  |
 ---|---|---|---
 Регулярные выражения | ``` regular ``` | [Wikipedia](https://ru.wikipedia.org/wiki/%D0%A0%D0%B5%D0%B3%D1%83%D0%BB%D1%8F%D1%80%D0%BD%D1%8B%D0%B5_%D0%B2%D1%8B%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F) |
 MNIST | ``` ai/tensorflow/mnist ``` | [Google](https://codelabs.developers.google.com/codelabs/cloud-tensorflow-mnist/#0) | [GitHub](https://github.com/martin-gorner/tensorflow-mnist-tutorial)
+GUI | ``` gui ``` | [PythonWorld](https://pythonworld.ru/gui) |
+HTML / CSS  |  | [HTMLBook](http://htmlbook.ru/) |
+JS | ``` js ``` | [JavaScript](http://learn.javascript.ru/) |
+AI | ``` ai/tensorflow ``` | [Stepik](https://stepik.org/course/%D0%9D%D0%B5%D0%B9%D1%80%D0%BE%D0%BD%D0%BD%D1%8B%D0%B5-%D1%81%D0%B5%D1%82%D0%B8-401/syllabus)<br>[HabraHabr 1](https://habrahabr.ru/post/312450/)<br>[HabraHabr 2](https://habrahabr.ru/post/313216/) |
+
+Решение
+---
+Тип | Сервис
+---|---
+Олимпиадные задачи | [CodeForces](http://codeforces.com/problemset)
+Конкурсы | 
+Работа | [HeadHunter](https://spb.hh.ru/search/vacancy?text=python&area=2)
 
 MarkDown
 ---
