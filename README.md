@@ -17,6 +17,7 @@ GUI | [PyQt](http://pyqt.sourceforge.net/Docs/PyQt5/) |  |
 ВКонтакте | [VK](https://vk.com/dev/methods) |  |
 Twitter | [TweePy](http://docs.tweepy.org/en/v3.5.0/api.html) |  |
 InstaGram |  |  |
+Steam | [Steam](http://steam.readthedocs.io/en/latest/user_guide.html)<br>[GitHub](https://github.com/ValvePython/steam) |  |
 
 Обучение
 ---
