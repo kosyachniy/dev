@@ -1,6 +1,7 @@
 from func import *
+from datetime import datetime
 
-db.execute("INSERT INTO note VALUES (1, 'Заголовок', 'Содержание', '01.08.2017 03:01:00')")
+time=datetime.strftime(datetime.now(), "%d.%M.%Y %H:%M:%S")
 
-auth.commit()
-auth.close()
+with db:
+	db.execute("INSERT INTO note (name, cont, time) VALUES ('Заголовок', 'Содержание', (?))", (time,))

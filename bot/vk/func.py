@@ -1,7 +1,8 @@
-import vk_api, time
+import vk_api, time, json
 
-vk=vk_api.VkApi(login='', password='')
-#vk=vk_api.VkApi(token='')
+with open('set.txt', 'r') as file:
+	vk=vk_api.VkApi(token=json.loads(file.read())['token'])
+	#vk=vk_api.VkApi(login='', password='')
 vk.auth()
 
 send=lambda user, cont, img=[]: vk.method('messages.send', {'user_id':user, 'message':cont, 'attachment':','.join(img)})

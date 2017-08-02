@@ -13,7 +13,7 @@ API
 &nbsp; | Python | C++ | PHP
 ---|---|---|---
 GUI | [PyQt](http://pyqt.sourceforge.net/Docs/PyQt5/) |  |
-ИИ | [TensorFlow](https://www.tensorflow.org/api_docs/python/) |  |
+ИИ | [TensorFlow](https://www.tensorflow.org/api_docs/python/)<br>[GitHub](https://github.com/tensorflow/tensorflow) |  |
 ВКонтакте | [VK](https://vk.com/dev/methods) |  |
 Twitter | [TweePy](http://docs.tweepy.org/en/v3.5.0/api.html) |  |
 InstaGram |  |  |
@@ -29,7 +29,7 @@ GUI | ``` gui ``` | [PythonWorld](https://pythonworld.ru/gui) |
 HTML / CSS  | ``` style ``` | [HTMLBook](http://htmlbook.ru/) |
 JS | ``` js ``` | [JavaScript](http://learn.javascript.ru/) |
 AI | ``` ai/tensorflow ``` | [Stepik](https://stepik.org/course/%D0%9D%D0%B5%D0%B9%D1%80%D0%BE%D0%BD%D0%BD%D1%8B%D0%B5-%D1%81%D0%B5%D1%82%D0%B8-401/syllabus)<br>[HabraHabr 1](https://habrahabr.ru/post/312450/)<br>[HabraHabr 2](https://habrahabr.ru/post/313216/) |
-
+Python |  | [PythonWorld](https://pythonworld.ru/samouchitel-python) |
 Решение
 ---
 [Онлайн компилятор](http://ideone.com/)
