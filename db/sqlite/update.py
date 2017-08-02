@@ -1,6 +1,7 @@
 from func import *
+from datetime import datetime
 
-db.execute("UPDATE note SET name=1, cont=2, time='20170801031400' WHERE id=1")
+time=datetime.strftime(datetime.now(), "%Y%m%d%H%M%S")
 
-auth.commit()
-auth.close()
+with db:
+	db.execute("UPDATE note SET name=1, cont=2, time=(?) WHERE id=1", (time,))
