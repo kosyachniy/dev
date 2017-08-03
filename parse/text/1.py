@@ -1,3 +1,5 @@
+from parse import parse
+
 def text(x):
 	y=[]
 	for i in parse(x):
