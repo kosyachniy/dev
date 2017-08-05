@@ -2,3 +2,5 @@
 ai/tensorflow/log_simple_graph
 **/vk_config.json
 bot/steam/set.txt
+bot/vk/set.txt
+bot/vk/re.jpg

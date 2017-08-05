@@ -1,11 +1,32 @@
 import vk_api, time, json
 
 with open('set.txt', 'r') as file:
-	vk=vk_api.VkApi(token=json.loads(file.read())['token'])
-	#vk=vk_api.VkApi(login='', password='')
-vk.auth()
+	s=json.loads(file.read())
+	login=s['login']
+	password=s['password']
 
-send=lambda user, cont, img=[]: vk.method('messages.send', {'user_id':user, 'message':cont, 'attachment':','.join(img)})
+	vk=vk_api.VkApi(token=s['token'])
+	#vk=vk_api.VkApi(login='', password='')
+
+	vk.auth()
+
+def send(user, cont, img=[]):
+	vks=vk_api.VkApi(login=login, password=password)
+	vks.auth()
+
+	for i in range(img):
+		if img[i][0:5]!='photo':
+#Загружаем изображение на сервер
+			out=open('re.jpg', 'wb')
+			out.write(requests.get(img[i]).content)
+			out.close()
+
+#Загружаем изображение в ВК
+			upload=vk_api.VkUpload(vks)
+			photo=upload.photo('re.jpg', album_id=247265476, group_id=151412216)[0]
+			img[i]='photo{}_{}'.format(photo['owner_id'], photo['id'])
+
+	return vk.method('messages.send', {'user_id':user, 'message':cont, 'attachment':','.join(img)})
 
 def read():
 	cont=[]
@@ -17,7 +38,8 @@ def read():
 dial=lambda: [i['message']['user_id'] for i in vk.method('messages.getDialogs')['items']]
 
 def info(user):
-	x=vk.method('users.get', {'user_ids': user, 'fields': 'verified, first_name, last_name, sex, bdate, photo_id, country, city, lang, phone, timezone, home_town, screen_name'})[0]
+	x=vk.method('users.get', {'user_ids': user, 'fields': 'verified, first_name, last_name, sex, bdate, photo_id, country, city, home_town, screen_name'})[0]
+	#, lang, phone, timezone
 
 	bd=x.get('bdate').count('.')
 	if bd==2:
