@@ -13,21 +13,16 @@ def send(user, cont, img=[]):
 	for i in range(len(img)):
 		if img[i][0:5]!='photo':
 #Загружаем изображение на сервер
-			file=open('re.jpg', 'wb')
-			file.write(requests.get(img[i]).content)
-			file.close()
+			with open('re.jpg', 'wb') as file:
+				file.write(requests.get(img[i]).content)
 
 #Загружаем изображение в ВК
-			upload=vk_api.VkUpload(vks)
-			photo=upload.photo('re.jpg', group_id=151412216, album_id=247265476)[0]
+			photo=vk_api.VkUpload(vks).photo('re.jpg', group_id=151412216, album_id=247265476)[0]
 			img[i]='photo{}_{}'.format(photo['owner_id'], photo['id'])
 
 	return vk.method('messages.send', {'user_id':user, 'message':cont, 'attachment':','.join(img)})
 
-read=lambda:
-#Ищем непрочитанные
-	cont=[[i['user_id'], i['body']] for i in vk.method('messages.get')['items'] if not i['read_state']]
-	return cont[::-1]
+read=lambda: [[i['user_id'], i['body']] for i in vk.method('messages.get')['items'] if not i['read_state']][::-1]
 
 dial=lambda: [i['message']['user_id'] for i in vk.method('messages.getDialogs')['items']]
 
