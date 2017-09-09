@@ -1,18 +1,17 @@
-def predict(ex):
-	return [][ex]
+import random
 
-def target(ex):
-	return [182 ,170, 162, 148][ex]
+act = lambda x, w: x * w[1] + w[0]
 
-examples=[62, 76, 70, 33]
+yr = [182, 170, 162, 148]
 
-perfect = False
-while not perfect:
-	perfect = True
-	for i in examples:
-		if predict(i) != target(i):
-			perfect = False
-			if predict(i):
-				w=w-i
-			else:
-				w=w+i
+x1 = [62, 76, 70, 33]
+w1 = [[random.random() for j in range(2)] for i in range(4)]
+
+for i in range(len(x1)):
+	error = (yr[i] - act(x1[i], w1[i]))
+
+	print('Δw1 =', x1[i] * error)
+	print('Δw0 =', error)
+
+	w1 += x1[i] * error
+	
