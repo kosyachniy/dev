@@ -1,28 +1,26 @@
-'''
-import random
-'''
+import numpy as np
+#import random
 
 act = lambda xe, we: sum([xe[i] * we[i] for i in range(len(xe))])
 
-yr = [1, 1, 0]
-x = [[1, 0.3], [0.4, 0.5], [0.7, 0.8]]
-w = [0 for j in range(len(x)+1)]
-
-'''
-yr = [182, 170, 162, 148]
-x1 = [62, 76, 70, 33]
-w1 = [random.random() for j in range(2)]
-'''
+with open('data.csv', 'r') as f:
+	x = np.loadtxt(f, delimiter=',', skiprows=1)
+with open('data.csv', 'r') as f:
+	y = np.loadtxt(f, delimiter=',', skiprows=1).T[0].T
 
 for i in range(len(x)):
-	x[i]=[1]+x[i]
+	x[i][0] = 1
+w = [0 for j in range(len(x))] #random
+
+print(x)
+print(y)
+print(w)
 
 for iteration in range(100):
 	print('Iteration №{}'.format(iteration+1))
 
 	for i in range(len(x)):
-		#x[i]=[1]+x[i]
-		error = (yr[i] - act(x[i], w))
+		error = (y[i] - act(x[i], w))
 
 		for j in range(len(x[i])):
 			print('Δw%d = %f' % (j, x[i][j] * error))
@@ -36,6 +34,6 @@ while True:
 	for i in range(len(x)):
 		s += x[i] * w[i+1]
 	if s>=0.5:
-		print('YES ({}%)'.format(round(s*100)))
+		print('YES ({}%)'.format(int(round(s*100))))
 	else:
-		print('NO ({}%)'.format(round((1-s)*100)))
+		print('NO ({}%)'.format(int(round((1-s)*100))))

@@ -1,5 +1,5 @@
 import urllib
-from copy import copy
+#from copy import copy
 import numpy as np
 
 with open('data.csv', 'r') as f:
