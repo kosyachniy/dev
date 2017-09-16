@@ -1,11 +1,12 @@
 import numpy as np
 #import random
 
-countcat=1
+compilation = str(1) #набор данных
+countcat = 1 #количество выходов
 
 act = lambda xe, we: sum([xe[i] * we[i] for i in range(len(xe))])
 
-with open('data/table.csv', 'r') as f:
+with open('data/' + compilation + '/table.csv', 'r') as f:
 	x = np.loadtxt(f, delimiter=',', skiprows=1).T[countcat-1:].T
 for i in range(len(x)):
 	x[i][0] = 1
@@ -13,7 +14,7 @@ for i in range(len(x)):
 def neiro(column):
 	print('Out №{}'.format(column))
 
-	with open('data/table.csv', 'r') as f:
+	with open('data/' + compilation + '/table.csv', 'r') as f:
 		y = np.loadtxt(f, delimiter=',', skiprows=1).T[column].T
 
 	w = [0 for j in range(len(x[0]))] #random
@@ -45,7 +46,7 @@ for i in range(countcat):
 w = np.array(w).T
 
 #Сохранение весов
-np.savetxt('data/weights.csv', w, delimiter=',')
+np.savetxt('data/' + compilation + '/weights.csv', w, delimiter=',')
 print(w)
 
 #Рассчёт прогноза
