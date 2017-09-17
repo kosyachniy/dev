@@ -2,10 +2,10 @@ import numpy as np
 import tensorflow as tf
 
 #Данные
-#xx=np.array([[1,0.3],[0.4,0.5],[0.7,0.8]])
-#yy=np.array([[1,0],[1,0],[0,1]])
-xx=np.array([0.3, 0.5, 0.8])
-yy=np.array([1.0, 1.0, 0.0])
+#xx = np.array([[1,0.3],[0.4,0.5],[0.7,0.8]])
+#yy = np.array([[1,0],[1,0],[0,1]])
+xx = np.array([0.3, 0.5, 0.8])
+yy = np.array([1.0, 1.0, 0.0])
 
 #Объявляем входное значение x, вес w, какое значение должны получить y
 x = tf.placeholder(tf.float32, shape=(1,))
