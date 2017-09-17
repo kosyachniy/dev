@@ -1,26 +1,27 @@
 import time, requests, vk_api, json
 
 with open('set.txt', 'r') as file:
-	s=json.loads(file.read())
+	s = json.loads(file.read())
 
-	vk=vk_api.VkApi(token=s['token'])
+	vk = vk_api.VkApi(token=s['token'])
 	vk.auth()
 
-	vks=vk_api.VkApi(login=s['login'], password=s['password'])
-	vks.auth()
-
-def send(user, cont, img=[]):
+def send(user, cont='', img=[]):
 	for i in range(len(img)):
-		if img[i][0:5]!='photo':
-#Загружаем изображение на сервер
-			with open('re.jpg', 'wb') as file:
-				file.write(requests.get(img[i]).content)
+		if img[i][0:5] != 'photo':
+#Загружаем фото
+			if img[i][0:4] == 'http':
+				pass
 
-#Загружаем изображение в ВК
-			photo=vk_api.VkUpload(vks).photo('re.jpg', group_id=151412216, album_id=247265476)[0]
-			img[i]='photo{}_{}'.format(photo['owner_id'], photo['id'])
+			a = vk.method('photos.getMessagesUploadServer')
+			
+			b = requests.post(a['upload_url'], files={'photo': open(img[i], 'rb')}).json()
 
-	return vk.method('messages.send', {'user_id':user, 'message':cont, 'attachment':','.join(img)})
+			c = vk.method('photos.saveMessagesPhoto', {'photo': b['photo'], 'server': b['server'], 'hash': b['hash']})[0]
+
+			img[i] = 'photo{}_{}'.format(c['owner_id'], c['id'])
+
+	return vk.method('messages.send', {'user_id': user, 'message': cont, 'attachment': ','.join(img)})
 
 read=lambda: [[i['user_id'], i['body']] for i in vk.method('messages.get')['items'] if not i['read_state']][::-1]
 
@@ -28,7 +29,6 @@ dial=lambda: [i['message']['user_id'] for i in vk.method('messages.getDialogs')[
 
 def info(user):
 	x=vk.method('users.get', {'user_ids': user, 'fields': 'verified, first_name, last_name, sex, bdate, photo_id, country, city, screen_name'})[0]
-	#vks
 	#, lang, phone, timezone, home_town
 
 #Форматируем дату
