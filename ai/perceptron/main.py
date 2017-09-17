@@ -2,7 +2,7 @@ import numpy as np
 import math
 #import random
 
-compilation = str(1) #набор данных
+compilation = str(2) #набор данных
 countcat = 1 #количество выходов
 fault = 0.005 #с какой погрешностью нужен ответ
 

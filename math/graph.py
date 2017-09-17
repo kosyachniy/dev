@@ -1,19 +1,18 @@
-import math
-import pylab
+import math, pylab
 from matplotlib import mlab
 
+#Описание функции
 def func(x):
-	return math.sin(x)
+	y = math.sin(x)
+	return y
     
 #Начало, конец и шаг
 xmin = -10.0
 xmax = 10.0
 dx = 0.01
 
-#Значения по x
+#Значения
 xlist = mlab.frange(xmin, xmax, dx)
-
-#Значения по y
 ylist = [func(x) for x in xlist]
 
 #Строим график

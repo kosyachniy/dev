@@ -5,7 +5,7 @@ import math
 import numpy as np
 import tensorflow as tf
 
-compilation = str(1) #набор данных
+compilation = str(2) #набор данных
 countcat = 1 #количество выходов
 fault = 0.41 #1: 0.41 2: 9146 #с какой погрешностью нужен ответ
 
