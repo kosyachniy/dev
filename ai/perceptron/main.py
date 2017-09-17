@@ -16,14 +16,14 @@ for i in range(len(x)):
 #Уменьшаем разряд параметров, чтобы при обучении нейронов не выходили громадные ошибки (с каждым разом увеличиваясь)
 discharge = 0
 for i in x:
-	for j in i[countcat:]:
+	for j in i[1:]:
 		print(j)
 		dis = int(math.log(j, 10)) + 1 if j != 0 else 0
 		if dis > discharge:
 			discharge = dis
 
 for i in range(len(x)):
-	for j in range(countcat, len(x[0])):
+	for j in range(1, len(x[0])):
 		x[i][j] /= 10 ** discharge
 
 def neiro(column):
