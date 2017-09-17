@@ -1,6 +1,5 @@
 import numpy as np
 import math
-#import random
 
 compilation = str(2) #набор данных
 countcat = 1 #количество выходов
@@ -34,34 +33,46 @@ def neiro(column):
 	with open('data/' + compilation + '/table.csv', 'r') as f:
 		y = np.loadtxt(f, delimiter=',', skiprows=1).T[column].T
 
-	w = [0 for j in range(len(x[0]))] #random
+	w = [0 for j in range(len(x[0]))]
 
 	print(x)
 	print(y)
 	print(w)
 
-	iteration = 0
+	iteration = 0 #
 	while True: #for iteration in range(1, 21):
-		iteration += 1
-		print('Iteration №{}'.format(iteration))
+		iteration += 1 #
+		print('iteration №{}'.format(iteration))
 
-		exit = True
+		err = 0
+
 		for i in range(len(x)):
-			#Сделать ограничение по уменьшению ошибки
 			error = y[i] - act(x[i], w)
-			print(error)
+			#print(error)
 
-			if error > fault: exit = False
+			if error > err: err = error
 
 			for j in range(len(x[i])):
 				delta = x[i][j] * error
-				print('Δw%d = %f' % (j, delta))
+				#print('Δw%d = %f' % (j, delta))
 				w[j] += delta
 
-			print('-----')
+			#print('-----')
 
-		if exit: break
+		print('error: %f' % (err, )) #
 
+		if err < fault:
+			break
+		'''
+		elif iteration == 1:
+			pred = err
+		elif err >= pred: #Остаться рядом с локальным минимумом
+			break
+		else:
+			pred = err
+
+		print('error: %f (%f)' % (err, pred))
+		'''
 	return w
 
 w = []
