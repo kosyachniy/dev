@@ -1,4 +1,5 @@
 import time, requests, vk_api, json
+#from io import BytesIO
 
 with open('set.txt', 'r') as file:
 	s = json.loads(file.read())
@@ -10,12 +11,17 @@ def send(user, cont='', img=[]):
 	for i in range(len(img)):
 		if img[i][0:5] != 'photo':
 #Загружаем фото
-			if img[i][0:4] == 'http':
-				pass
 
 			a = vk.method('photos.getMessagesUploadServer')
-			
-			b = requests.post(a['upload_url'], files={'photo': open(img[i], 'rb')}).json()
+
+			if img[i][0:4] == 'http':
+				#file = requests.get(img[i]).content
+				file = requests.get(img[i]).content
+				print(file)
+			else:
+				file = open(img[i], 'rb')
+			b = requests.post(a['upload_url'], files={'photo': file}).json()
+			print(b)
 
 			c = vk.method('photos.saveMessagesPhoto', {'photo': b['photo'], 'server': b['server'], 'hash': b['hash']})[0]
 
