@@ -1,0 +1,8 @@
+requests==2.12.4
+oandapyV20>=0.2.2
+gevent
+urwid
+urwidtrees
+urwid-geventloop
+pyyaml
+six

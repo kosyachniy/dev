@@ -4,3 +4,6 @@ ai/tensorflow/log_simple_graph
 bot/steam/set.txt
 bot/vk/set.txt
 bot/vk/re.jpg
+trade/oanda/example/account.txt
+trade/oanda/example/token.txt
+trade/oanda/set.txt
