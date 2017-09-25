@@ -1,10 +1,30 @@
 import time, requests, vk_api, json
+from io import BytesIO #
 
 with open('set.txt', 'r') as file:
 	s = json.loads(file.read())
 
 	vk = vk_api.VkApi(token=s['token'])
 	vk.auth()
+
+def genCatImage():
+	r = requests.get('http://i.stack.imgur.com/bq6O5.png')
+	if r.status_code == requests.codes.ok:  # image returned OK
+		img = BytesIO(r.content)  # create BytesIO object from the request
+		r.close()  # close the get request
+		return img  # return the BytesIO object
+	else:  # request failed to retrieve the image
+		r.close()  # close the get request
+		return genCatImage()  # try to return another image
+
+def uploadImage(url, params, file):
+	post_params = {'parameters': params}
+	files = {'file': file.getvalue()}
+	r = requests.post(url, data=post_params, files=files)
+	file.close()  # close the BytesIO object
+
+
+
 
 def send(user, cont='', img=[]):
 	for i in range(len(img)):
@@ -19,7 +39,8 @@ def send(user, cont='', img=[]):
 				file = open('re.jpg', 'rb')
 			else:
 				file = open(img[i], 'rb')
-			b = requests.post(a['upload_url'], files={'photo': file}).json()
+			b = requests.post(a['upload_url'], files={'photo': genCatImage().getvalue()}).json()
+			print(b)
 
 			c = vk.method('photos.saveMessagesPhoto', {'photo': b['photo'], 'server': b['server'], 'hash': b['hash']})[0]
 

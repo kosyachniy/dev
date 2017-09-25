@@ -1,6 +1,6 @@
 import telebot, urllib
 
-token='417063852:AAFvfJdVGgLv9odlnY_gaiMmV4NIBMlgvOQ'
+token=''
 bot=telebot.TeleBot(token)
 
 @bot.message_handler(commands=['start', 'help'])

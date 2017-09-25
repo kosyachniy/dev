@@ -15,6 +15,7 @@ API
 GUI | [PyQt](http://pyqt.sourceforge.net/Docs/PyQt5/) |  |
 ИИ | [TensorFlow](https://www.tensorflow.org/api_docs/python/)<br>[GitHub](https://github.com/tensorflow/tensorflow) |  |
 ВКонтакте | [VK](https://vk.com/dev/methods)<br>[GitHub](https://github.com/python273/vk_api) |  |
+Telegram | [GitHub](https://github.com/eternnoir/pyTelegramBotAPI) |  |
 Twitter | [TweePy](http://docs.tweepy.org/en/v3.5.0/api.html)<br>[GitHub](https://github.com/tweepy/tweepy) |  |
 InstaGram |  |  |
 Steam | [Steam](http://steam.readthedocs.io/en/latest/user_guide.html)<br>[GitHub](https://github.com/ValvePython/steam) |  |
