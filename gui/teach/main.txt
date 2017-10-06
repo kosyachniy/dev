@@ -1,0 +1,8 @@
+Операционные системы
+@image(1.png)
+
+@button(Windows)
+@button(Linux)
+@button(MacOS)
+
+@button(Выход)
