@@ -5,7 +5,7 @@ from matplotlib import mlab
 def func(x):
 	y = math.sin(x)
 	return y
-    
+
 #Начало, конец и шаг
 xmin = -10.0
 xmax = 10.0
@@ -18,3 +18,4 @@ ylist = [func(x) for x in xlist]
 #Строим график
 pylab.plot(xlist, ylist)
 pylab.show()
+pylab.savefig('1.png', format='png', dpi=150)
