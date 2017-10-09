@@ -6,6 +6,11 @@ from PyQt5.QtCore import *
 class first(QWidget):
     def __init__(self):
         super().__init__()
+
+        window = QDesktopWidget().availableGeometry()
+        self.width = window.width()
+        self.height = window.height()
+
         self.initUI()
 
     '''
@@ -38,8 +43,9 @@ class first(QWidget):
 #Кнопки
             if i[:7] == '@button':
                 self.b.append(QPushButton(i[8:-1], self))
-                self.b[len(self.b) - 1].setGeometry(100, 100, 300, 300) #resize(self, QSize(100, 20))
                 self.b[len(self.b) - 1].clicked.connect(self.click)
+                # self.b[len(self.b) - 1].setFixedWidth(500)
+                self.b[len(self.b) - 1].setFixedHeight(60)
 #Изображения
             elif i[:6] == '@image':
                 lbl = QLabel(self)
@@ -51,17 +57,15 @@ class first(QWidget):
                 self.b.append(lbl)
 
 #Разметка страницы
-        hbox = QVBoxLayout()
+        vbox = QVBoxLayout()
         for i in range(len(self.b)):
-            hbox.addWidget(self.b[i])
-        vbox = QHBoxLayout()
-        vbox.addLayout(hbox)
+            vbox.addWidget(self.b[i])
         self.setLayout(vbox)
 
 #Параметры окна
-        q = QDesktopWidget().availableGeometry()
-        self.setGeometry(0, 0, q.width(), q.height())
+        self.setGeometry(self.width * 0.2, self.height * 0.2, self.width * 0.6, self.height * 0.6)
         self.setWindowTitle('Goncharov Lox')
+        # self.setWindowIcon(QIcon('icon.png'))
         self.show()
 
 #Обработка кликов
