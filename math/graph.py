@@ -15,7 +15,10 @@ dx = 0.01
 xlist = mlab.frange(xmin, xmax, dx)
 ylist = [func(x) for x in xlist]
 
+#Сохраняем
+pylab.plot(xlist, ylist)
+pylab.savefig('1.png', format='png', dpi=150)
+
 #Строим график
 pylab.plot(xlist, ylist)
 pylab.show()
-pylab.savefig('1.png', format='png', dpi=150)

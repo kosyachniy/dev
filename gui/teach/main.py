@@ -1,11 +1,22 @@
 import sys
-from PyQt5.QtWidgets import QWidget, QPushButton, QApplication, QHBoxLayout, QVBoxLayout, QDesktopWidget, QLabel
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
 
 class first(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
+
+    '''
+#Фон
+    def resizeEvent(self, event):
+        palette = QPalette()
+        img = QImage('1.png')
+        scaled = img.scaled(self.size(), Qt.KeepAspectRatioByExpanding, transformMode = Qt.SmoothTransformation)
+        palette.setBrush(QPalette.Window, QBrush(scaled))
+        self.setPalette(palette)
+    '''
 
     def initUI(self):
 #Считывание контента
@@ -22,10 +33,12 @@ class first(QWidget):
         #print(self.x)
 
         self.b = []
+        q = QDesktopWidget().availableGeometry()
         for i in self.x:
 #Кнопки
             if i[:7] == '@button':
                 self.b.append(QPushButton(i[8:-1], self))
+                self.b[len(self.b) - 1].setGeometry(100, 100, 300, 300) #resize(self, QSize(100, 20))
                 self.b[len(self.b) - 1].clicked.connect(self.click)
 #Изображения
             elif i[:6] == '@image':
