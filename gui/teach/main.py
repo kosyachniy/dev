@@ -51,6 +51,10 @@ class first(QWidget):
                 lbl = QLabel(self)
                 lbl.setPixmap(QPixmap(i[7:-1]))
                 self.b.append(lbl)
+#Заголовок
+            elif i[:6] == '@title':
+                lbl = QLabel('<div style="font-size: 40px; text-align: center;">' + i[7:-1] + '</div>')
+                self.b.append(lbl)
 #Текст
             else:
                 lbl = QLabel(i)
