@@ -1,11 +1,14 @@
 from telethon import TelegramClient
 
-api_id = 12345
-api_hash = '0123456789abcdef0123456789abcdef'
-phone = '+34600000000'
+import json
+with open('set.txt', 'r') as file:
+	x = json.loads(file.read())
 
-client = TelegramClient('session_name', api_id, api_hash)
+client = TelegramClient(x['name'], x['id'], x['hash'])
 client.connect()
-
-client.sign_in(phone=phone)
-me = client.sign_in(code=input())
+'''
+client.sign_in(phone=x['telephone'])
+me = client.sign_in(code=input('Код: '))
+'''
+client.send_code_request(x['phone'])
+user = client.sign_in(x['phone'], input('Код: '))

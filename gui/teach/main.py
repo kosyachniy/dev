@@ -69,7 +69,7 @@ class first(QWidget):
 #Параметры окна
         self.setGeometry(self.width * 0.2, self.height * 0.2, self.width * 0.6, self.height * 0.6)
         self.setWindowTitle('Goncharov Lox')
-        # self.setWindowIcon(QIcon('icon.png'))
+        #self.setWindowIcon(QIcon('icon.png'))
         self.show()
 
 #Обработка кликов

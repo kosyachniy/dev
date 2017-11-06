@@ -1,10 +1,9 @@
 **/__pycache__
 ai/tensorflow/log_simple_graph
 **/vk_config.json
-bot/steam/set.txt
-bot/telegram/set.txt
-bot/vk/set.txt
 bot/vk/re.jpg
 trade/oanda/example/account.txt
 trade/oanda/example/token.txt
-trade/oanda/set.txt
+**/set.txt
+bot/telegram/user/crypto.session
+bot/telegram/user/session_name.session
