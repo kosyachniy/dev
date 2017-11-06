@@ -31,6 +31,7 @@ HTML / CSS  | ``` style ``` | [HTMLBook](http://htmlbook.ru/) |
 JS | ``` js ``` | [JavaScript](http://learn.javascript.ru/) |
 AI | ``` ai/tensorflow ``` | [Stepik](https://stepik.org/course/%D0%9D%D0%B5%D0%B9%D1%80%D0%BE%D0%BD%D0%BD%D1%8B%D0%B5-%D1%81%D0%B5%D1%82%D0%B8-401/syllabus)<br>[HabraHabr 1](https://habrahabr.ru/post/312450/)<br>[HabraHabr 2](https://habrahabr.ru/post/313216/) |
 Python |  | [PythonWorld](https://pythonworld.ru/samouchitel-python) |
+Анализ синтаксиса | ``` syntax ```<br>``` parse/text ``` | [НКРЯ](http://www.ruscorpora.ru/)<br>[OpenCorpora](http://opencorpora.org/?page=downloads)<br>[RusVectores](http://rusvectores.org/ru/calculator/)<br>[RDT](https://nlpub.ru/Russian_Distributional_Thesaurus) |
 
 Решение
 ---
