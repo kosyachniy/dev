@@ -1,38 +1,42 @@
 from telethon import TelegramClient
+import time
 
 import json
 with open('set.txt', 'r') as file:
 	x = json.loads(file.read())
 
-client = TelegramClient(x['name'], x['id'], x['hash'])
+client = TelegramClient(x['name'], x['id'], x['hash'], update_workers=4)
 client.connect()
 
-'''
-client.sign_in(phone=x['phone'])
-user = client.sign_in(code=input('Код: '))
-'''
 if not client.is_user_authorized():
 	client.send_code_request(x['phone'])
 	client.sign_in(x['phone'], input('Код: '))
 
-#print(user.stringify())
-#dialogs, entities = client.get_dialogs(10)
-#print(dialogs, entities[0])
+#print(dir(client))
 
-#print(client.get_message_history())
+def mess(cont):
+	print(cont.status)
+	time.sleep(2)
+	#print(dir(cont))
+	#print(cont.to_dict())
+	'''
+	if 'status' not in dir(cont):
+		print(cont.stringify().title())
+	'''
+
+while True:
+	client.add_update_handler(mess)
 
 '''
-for i in client.get_message_history(136563129)[1]: #get_message_history #get_input_entity #get_entity
-	print(i.message)
-'''
-
 for i in client.get_dialogs()[0]:
 	x = i.to_dict()['peer']
-	x = [x[i] for i in x][0]
-	print(x)
-	try:
-		for i in client.get_message_history(x)[1]:
-			print(i.message)
-	except:
-		pass
+	if 'user_id' in x:
+		j = x['user_id']
+		print('User / Bot', j)
+		for u in client.get_message_history(j)[1]:
+			print(u.message)
+	else:
+		j = x['channel_id']
+		print('Channel', j)
 	print('-----')
+'''
