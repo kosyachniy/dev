@@ -5,5 +5,4 @@ bot/vk/re.jpg
 trade/oanda/example/account.txt
 trade/oanda/example/token.txt
 **/set.txt
-bot/telegram/user/crypto.session
-bot/telegram/user/session_name.session
+bot/telegram/user/*.session
