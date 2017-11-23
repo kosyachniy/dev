@@ -1,12 +1,16 @@
-# -*- coding: utf-8 -*-
-import urllib
+from urllib.request import urlopen
+from urllib.parse import quote
 import json
 import time
+
+with open('set.txt', 'r') as file:
+    s = json.loads(file.read())
  
 def send_sms(phones, text, total_price=0):
-    login = 'userlog'       # Логин в smsc
-    password = 'myPas1'     # Пароль в smsc
-    sender = 'Python'    # Имя отправителя
+    text = quote(text)
+    login = s['login']
+    password = s['password']
+    sender = 'SMSC.RU' # Имя отправителя
     # Возможные ошибки
     errors = {
         1: 'Ошибка в параметрах.',
@@ -21,16 +25,18 @@ def send_sms(phones, text, total_price=0):
     }
     # Отправка запроса
     url = "http://smsc.ru/sys/send.php?login=%s&psw=%s&phones=%s&mes=%s&cost=%d&sender=%s&fmt=3" % (login, password, phones, text, total_price, sender)
-    answer = json.loads(urllib.urlopen(url).read())
+    print(url)
+    answer = json.loads(urlopen(url).read())
+
     if 'error_code' in answer:
         # Возникла ошибка
         return errors[answer['error_code']]
     else:
         if total_price == 1:
             # Не отправлять, узнать только цену
-            print 'Будут отправлены: %d SMS, цена рассылки: %s' % (answer['cnt'], answer['cost'].encode('utf-8'))
+            print('Будут отправлены: %d SMS, цена рассылки: %s' % (answer['cnt'], answer['cost'].encode('utf-8')))
         else:
             # СМС отправлен, ответ сервера
             return answer
  
-print send_sms("7111111111111", 'Текст сообщения')
+print(send_sms("89811635578", 'Privet', 1))
