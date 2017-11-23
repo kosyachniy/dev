@@ -1,9 +1,6 @@
-'''
 from urllib.request import urlopen
-from urllib.parse import quote
-from urllib.request import urlencode
-'''
-from urllib2 import Request, urlopen
+from urllib.parse import quote, urlencode
+import requests
 import json, time
 
 with open('set.txt', 'r') as file:
@@ -31,9 +28,11 @@ def send_sms(phones, text, notsend=0):
     #text = quote(text)
     #text = text.encode('utf-8')
     #text = urlencode(text)
-    url = "http://smsc.ru/sys/send.php?login=%s&psw=%s&phones=%s&mes=%s&cost=%d&sender=%s&fmt=3" % (login, password, phones, text, notsend, sender)
+    url = 'http://smsc.ru/sys/send.php?login=%s&psw=%s&phones=%s&mes=%s&cost=%d&sender=%s&fmt=3' % (login, password, phones, text, notsend, sender)
+    #url = url.encode('utf-8')
     print(url)
-    answer = json.loads(urlopen(url).read().decode('utf-8'))
+    #answer = json.loads(urlopen(url).read().decode('utf-8'))
+    answer = json.loads(requests.get(url).text) #urlopen(url).read().decode('utf-8'))
 
     if 'error_code' in answer:
         #Возникла ошибка
@@ -46,4 +45,4 @@ def send_sms(phones, text, notsend=0):
             #СМС отправлен, ответ сервера
             return answer
  
-print(send_sms("79811635578", 'Прив', 1))
+print(send_sms("79811635578", 'Прив'))
