@@ -1,0 +1,70 @@
+@charset "utf-8";
+@font-face {font-family: Arsenal-Bold; src: url(/sys/8143.otf);}
+
+body {
+	margin: 0;
+	padding: 55px 0 0 0;
+	font: 19px Arsenal-Bold; /* Helvetica */
+}
+
+hr {border: 1px solid #000; margin: 0;}
+
+/* Отступы */
+
+/* Размеры */
+
+/* Позиционирование */
+img, div {display: inline-block;}
+body, div {vertical-align: top;}
+
+/**/
+
+@media all and (orientation: portrait) {
+	
+}
+
+@media all and (orientation: landscape) {
+	
+}
+
+@media all and (max-width: 480px) {
+	.header {text-align: center;}
+	.header div {display: none;}
+}
+
+@media all and (min-width: 480px) {
+}
+
+/* Верхняя полоса */
+
+.header {
+	left: 0;
+	top: 0;
+	width: 100vw;
+	height: 55px;
+	position: fixed;
+	background-color: #000;
+}
+
+.header a {
+	height: 55px;
+}
+	
+
+.header img {
+	height: 100%;
+	margin: 0 2vw 0 2vw;
+}
+
+.header div {
+	/*font: Helvetica;*/
+	color: #fff;
+	padding: 18px 1.5vw 18px 1.5vw;
+}
+
+.header div:hover {
+	background-color: #fff;
+	color: #000;
+}
+
+/* Формы */

@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import numpy as np
+#import numpy as np
 
 z1 = [10, 17, 24, 16, 22]
 z2 = [12, 14, 21, 13, 17]

@@ -1,0 +1,1 @@
+bot.delete_message(-1001124440739, i)
