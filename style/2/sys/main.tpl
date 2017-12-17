@@ -7,7 +7,7 @@
 	<link rel="stylesheet" type="text/css" href="/sys/main.css">
 	
 	<title><?=$title?></title>
-	<link rel ="shortcut icon" type="images/png" href="/sys/logo.png">
+	<link rel ="shortcut icon" type="images/png" href="/sys/favicon.png">
 	<meta name="author" content="Poloz Alexey">
 	<meta name="keywords" content="<?=$descript?>">
 	<meta name="description" content="<?=$descript?>">
@@ -15,7 +15,7 @@
 <!--
 	<script src="/sys/main.js"></script>
 !-->
-<body>
+<body s>
 	<div class="header">
 		<a href="/"><img src="sys/logo.png"></a>
 		<a href="/"><div>Главная</div></a>

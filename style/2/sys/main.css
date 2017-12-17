@@ -1,13 +1,14 @@
 @charset "utf-8";
-@font-face {font-family: Arsenal-Bold; src: url(/sys/8143.otf);}
+@font-face {font-family: Myriad; src: url(8143.otf);}
 
 body {
 	margin: 0;
 	padding: 55px 0 0 0;
-	font: 19px Arsenal-Bold; /* Helvetica */
+	font: 19px Myriad; /* Arsenal-Bold Helvetica Arial Calibri */
 }
 
-hr {border: 1px solid #000; margin: 0;}
+hr {border: 1px solid #000; margin: 0; width: 100%-2px;}
+a, a:hover, a:active {text-decoration: none; color: #000;}
 
 /* Отступы */
 
@@ -44,6 +45,7 @@ body, div {vertical-align: top;}
 	height: 55px;
 	position: fixed;
 	background-color: #000;
+	z-index: 9;
 }
 
 .header a {
@@ -53,13 +55,13 @@ body, div {vertical-align: top;}
 
 .header img {
 	height: 100%;
-	margin: 0 2vw 0 2vw;
+	margin: 0 1.7vw 0 1.7vw;
 }
 
 .header div {
-	/*font: Helvetica;*/
+	/*font: 19px Arial;*/
 	color: #fff;
-	padding: 18px 1.5vw 18px 1.5vw;
+	padding: 18px 2vw 18px 2vw;
 }
 
 .header div:hover {
@@ -68,3 +70,60 @@ body, div {vertical-align: top;}
 }
 
 /* Формы */
+
+/* Списки */
+
+
+.list {
+	margin: 20px 0 10px 30px
+}
+
+.list div {
+	font: bold 23px Arial;
+}
+
+.list a {
+	padding: 5px 0 0 25px;
+	display: block;
+}
+
+/*
+.list {
+	counter-reset: li; 
+	list-style: none;
+	text-shadow: 0 1px 0 rgba(255,255,255,.5);
+	width: 40%;
+	margin: 20px 0 0 30px;
+	z-index: 1;
+}
+
+.list a {
+	position: relative;
+	display: block;
+	padding: .4em .4em .4em 2em;
+	margin: .5em 0;
+	background: #DAD2CA;
+	color: #444;
+	text-decoration: none;
+	border-radius: .3em;
+	transition: .3s ease-out;
+}
+
+.list a:before {
+	content: counter(li);
+	counter-increment: li;
+	position: absolute;
+	left: -1.3em;
+	top: 50%;
+	margin-top: -1.3em;
+	background: #8FD4C1;
+	height: 2em;
+	width: 2em;
+	line-height: 2em;
+	border: .3em solid white;
+	text-align: center;
+	font-weight: bold;
+	border-radius: 2em;
+	transition: all .3s ease-out;
+}
+*/
