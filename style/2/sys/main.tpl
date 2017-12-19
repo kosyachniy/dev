@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<meta name="apple-mobile-web-app-capable" content="yes">
 	<link rel="stylesheet" type="text/css" href="/sys/main.css">
-	
+
 	<title><?=$title?></title>
 	<link rel ="shortcut icon" type="images/png" href="/sys/favicon.png">
 	<meta name="author" content="Poloz Alexey">
@@ -16,21 +16,30 @@
 	<script src="/sys/main.js"></script>
 !-->
 <body>
+	<script type="text/javascript">
+function change() {
+	if (document.getElementById('menu').style.display == 'block') document.getElementById('menu').style.display = 'none';
+	else document.getElementById('menu').style.display = 'block';
+}
+	</script>
 	<div class="header">
-		<a href="/"><img src="/sys/logo.png"></a>
+		<img src="/sys/logo.png" onclick="change(this);">
 		<a href="/"><div>Главная</div></a>
-		<a href="notes"><div>Статьи</div></a>
-		<a href="services"><div>Услуги</div></a>
+		<a href="/notes"><div>Статьи</div></a>
+		<a href="/services"><div>Услуги</div></a>
 
-		<div>
-		<form action="/sys/search.php" method="post">
-			<input placeholder="Поиск" name="search">
-		</form>
+		<div class="expand">
+			<form action="/sys/search.php" method="post">
+				<input placeholder="Поиск" name="search">
+			</form>
 
-		<div>
+			<div>
 <?php
 if ($_SESSION['auth']==2) print '<a href="/cabinet">'.$_SESSION['user'].'</a> &nbsp;<a href="/sys/out.php" class="del">Выйти</a>'; else print '<a class="del">Гость &nbsp;</a><a href="/login">Войти</a>';
 ?>
+			</div>
 		</div>
-		</div>
+	</div>
+	<div class="menu" id="menu">
+		123
 	</div>

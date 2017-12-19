@@ -3,7 +3,7 @@ header('Content-type: text/html; charset=utf-8');
 session_start();
 
 function db($name='') {
-	$db=mysqli_connect('mysql.hostinger.ru', 'u696001181_k', 'asdrqwerty09','u696001181_k'+$name);
+	$db = mysqli_connect('mysql.hostinger.ru', 'u696001181_k', 'asdrqwerty09', 'u696001181_k'.$name);
 	if (mysqli_connect_errno()) print 'Ошибка 1. '.mysqli_connect_errno();
 	mysqli_query($db, 'SET names "utf8"');
 	return $db;
@@ -23,7 +23,7 @@ function user($type) {
 			}
 		}
 		else {
-			$u=mysqli_query($db, "SELECT * FROM `user` WHERE `user`='$cookie'");
+			$u = mysqli_query($db, "SELECT * FROM `user` WHERE `user`='$cookie'");
 			if ($u)
 				while ($a=mysqli_fetch_array($u))
 					if ($_COOKIE['password'] == $a['pas']) {

@@ -177,20 +177,32 @@ input[type="file"] {border: 0;}
 
 .header input {border: 0;}
 
-.header > div {width: 45%; float:right;} /*display: table-cell;*/
+.expand {width: 45%; float:right;} /*display: table-cell;*/
 
 .header div div {float: right;}
 
+.menu {
+	position: fixed;
+	display: none;
+	width: 100vw;
+	height: calc(100vh - 55px);
+	top: 55px;
+	left: 0;
+	background-color: #000;
+}
+
+
+
 @media all and (max-width: 480px) {
 	.header {text-align: center;}
-	.header div {display: none;}
+	.header > a {display: none;}
 }
 
 @media all and (max-width: 650px) {
-	.header > div {display: none;}
+	.expand {display: none;}
 }
 
-@media all and (max-width: 850px) {
-	.header > div {width: auto;}
-	.header form, .del {display: none;}
+@media all and (max-width: 900px) {
+	.expand {width: auto;}
+	.expand form, .del {display: none;}
 }

@@ -1,0 +1,17 @@
+.note {
+	padding: 0 0 0 5vw;
+}
+
+.note img {
+	width: 90vw;
+}
+
+@media all and (max-width: 650px) {
+	.note {
+		padding: 0;
+	}
+
+	.note img {
+		width: 100vw;
+	}
+}

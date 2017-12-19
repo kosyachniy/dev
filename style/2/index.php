@@ -4,8 +4,8 @@ start('ZODZU', '/', 'Полоз Алексей - Разработчик и эн�
 ?>
 
 <style type="text/css">
-	@media all and (min-width: 480px) {
-		hr {width: 75%}
+@media all and (min-width: 480px) {
+	hr {width: 75%}
 }
 </style>
 
