@@ -22,24 +22,26 @@ function change() {
 	else document.getElementById('menu').style.display = 'block';
 }
 	</script>
-	<div class="header">
-		<img src="/sys/logo.png" onclick="change(this);">
+
+	<div class="header" onclick="change(this);">
+		<img src="/sys/logo.png" >
 		<a href="/"><div>Главная</div></a>
 		<a href="/notes"><div>Статьи</div></a>
 		<a href="/services"><div>Услуги</div></a>
 
-		<div class="expand">
-			<form action="/sys/search.php" method="post">
-				<input placeholder="Поиск" name="search">
-			</form>
-
-			<div>
-<?php
-if ($_SESSION['auth']==2) print '<a href="/cabinet">'.$_SESSION['user'].'</a> &nbsp;<a href="/sys/out.php" class="del">Выйти</a>'; else print '<a class="del">Гость &nbsp;</a><a href="/login">Войти</a>';
-?>
-			</div>
-		</div>
 	</div>
-	<div class="menu" id="menu">
-		123
+
+	<div class="expand" id="menu">
+		<form action="/sys/search.php" method="post">
+			<input placeholder="Поиск" name="search">
+		</form>
+		<div>
+<?php
+if ($_SESSION['auth']==2) print '<a href="/cabinet">'.$_SESSION['user'].'</a> &nbsp;<a href="/sys/out.php" class="del">Выйти</a>';
+else print '<a class="del">Гость &nbsp;</a><a href="/login">Войти</a>';
+?>
+		</div>
+		<a href="/"><div>Главная</div></a>
+		<a href="/notes"><div>Статьи</div></a>
+		<a href="/services"><div>Услуги</div></a>
 	</div>

@@ -160,7 +160,7 @@ input[type="file"] {border: 0;}
 	margin: 0 1.7vw 0 1.7vw;
 }
 
-.header a div, .header div div {
+.header a div, .expand div {
 	/*font: 19px Arial;*/
 	padding: 16px 2vw 16px 2vw;
 }
@@ -170,39 +170,72 @@ input[type="file"] {border: 0;}
 	color: #000;
 }
 
-.header form {
+.expand form {
 	width: 20vw;
 	margin: 2px 30px 2px 10px;
 }
 
-.header input {border: 0;}
+.expand input {border: 0;}
 
-.expand {width: 45%; float:right;} /*display: table-cell;*/
-
-.header div div {float: right;}
-
-.menu {
+.expand {
+	width: 45vw;
+	float: right;
 	position: fixed;
-	display: none;
-	width: 100vw;
-	height: calc(100vh - 55px);
-	top: 55px;
-	left: 0;
-	background-color: #000;
+	left: 55vw;
+	top: 0;
+	z-index: 10;
 }
 
+.expand div {
+	float: right;
+}
 
+.expand a {
+	color: #fff;
+}
 
-@media all and (max-width: 480px) {
-	.header {text-align: center;}
-	.header > a {display: none;}
+.expand > a {
+	display: none;
+}
+
+@media all and (max-width: 900px) {
+	.expand form, .del {display: none;}
 }
 
 @media all and (max-width: 650px) {
 	.expand {display: none;}
 }
 
-@media all and (max-width: 900px) {
-	.expand {width: auto;}
-	.expand form, .del {display: none;}
+@media all and (max-width: 480px) {
+	.header {text-align: center;}
+
+	.header > a {display: none;}
+
+	.expand {
+		width: 100vw;
+		height: calc(100vh - 55px);
+		position: fixed;
+		background-color: #000;
+		top: 55px;
+		left: 0;
+		display: none;
+		text-align: center;
+	}
+
+	.expand form {
+		display: block;
+		width: calc(100vw - 30px);
+		margin: 0;
+	}
+
+	.del {display: inline-block;}
+
+	.expand div {
+		float: center;
+		width: 100vw;
+	}
+
+	.expand > a {
+		display: block;
+	}
 }
