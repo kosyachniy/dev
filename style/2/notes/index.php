@@ -13,7 +13,7 @@ if ($i > 0) {
 
 	print '</div>';
 } else {
-	print '<link rel="stylesheet" type="text/css" href="notes.css"><div class="notes">';
+	print '<div class="notes">';
 
 	$list = mysqli_query($db, "SELECT * FROM `notes` ORDER BY `priority` DESC");
 	while ($note = mysqli_fetch_array($list))

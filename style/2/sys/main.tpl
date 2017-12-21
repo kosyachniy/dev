@@ -41,7 +41,7 @@ if ($_SESSION['auth']==2) print '<a href="/cabinet">'.$_SESSION['user'].'</a> &n
 else print '<a class="del">Гость &nbsp;</a><a href="/login">Войти</a>';
 ?>
 		</div>
-		<a href="/"><div>Главная</div></a>
-		<a href="/notes"><div>Статьи</div></a>
-		<a href="/services"><div>Услуги</div></a>
+		<a href="/">Главная</a>
+		<a href="/notes">Статьи</a>
+		<a href="/services">Услуги</a>
 	</div>
