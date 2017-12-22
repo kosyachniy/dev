@@ -17,7 +17,7 @@ if ($i > 0) {
 
 	$list = mysqli_query($db, "SELECT * FROM `notes` ORDER BY `priority` DESC");
 	while ($note = mysqli_fetch_array($list))
-		print '<a href="?i=' . $note['id'] . '"><div style="background-image: url(../load/img/' . $note['id'] . '.jpg);"><div>' . $note['name'] . '</div></div>';
+		print '<a href="?i=' . $note['id'] . '"><div style="background-image: url(../load/img/' . $note['id'] . '.jpg);"><div class="back"><div class="title">' . $note['name'] . '</div></div></div></a>';
 
 	print '</div>';
 }

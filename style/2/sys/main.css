@@ -205,24 +205,38 @@ input[type="file"] {border: 0;}
 	margin: 40px 0 40px 5vw;
 }
 
-.notes div {
+.back {
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.6);
+}
+
+.notes a > div {
 	width: 50%;
 	height: 22vw;
+	line-height: 22vw;
 	background: no-repeat;
 	-moz-background-size: 100%;
 	-webkit-background-size: 100%;
 	-o-background-size: 100%;
 	background-size: 100%;
+	text-align: center;
 }
 
-.notes div div {
-	width: 100%;
-	background: rgba(0, 0, 0, 0.6);
+.title {
 	color: #fff;
-	padding: 9.5vw 0 0 0;
-	height: 12.5vw;
 	font-size: 3vw;
+	line-height: 3vw;
 	text-align: center;
+	vertical-align: middle;
+	padding: 0 10px 0 10px;
+}
+
+.title div {
+	padding: 0 20px 0 20px;
+	font-size: 1.5vw;
+	line-height: 1.6vw;
+	display: block;
 }
 
 @media all and (max-width: 650px) {
@@ -231,14 +245,22 @@ input[type="file"] {border: 0;}
 		margin: 0;
 	}
 
-	.notes div {
+	.notes a > div {
 		width: 100%;
 		height: 56vw;
+		line-height: 56vw;
 	}
 
-	.notes div div {
-		font-size: 6vw;
-		padding: 25vw 0 0 0;
-		height: 31vw;
+	.title {
+		font-size: 7vw;
+		line-height: 7vw;
+		font-weight: bold;
 	}
+
+	.title div {
+		font-weight: normal;
+		font-size: 4.5vw;
+		line-height: 4.5vw;
+	}
+*/
 }
