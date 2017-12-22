@@ -7,11 +7,13 @@ body {
 	font: 19px Myriad; /* Arsenal-Bold Helvetica Arial Calibri */
 }
 
-hr {border: 1px solid #000; margin: 0; width: 100%-2px;}
+hr {border: 1px solid #000; width: 100% - 2px;}
 a, a:hover, a:active, a:visited {text-decoration: none; color: #000;}
-table, tr, td {border: 0; border-collapse: collapse; margin: 0; padding: 0;}
+table, tr, td {border: 1px solid #000 border-collapse: collapse;}
 
 /* Отступы */
+
+div, table, tr, td, hr {margin: 0; padding: 0;}
 
 /* Размеры */
 
@@ -20,19 +22,6 @@ table, tr, td {border: 0; border-collapse: collapse; margin: 0; padding: 0;}
 img, div, form {display: inline-block;}
 input {display: block;}
 body, div, form {vertical-align: top;}
-
-/**/
-
-@media all and (orientation: portrait) {
-	
-}
-
-@media all and (orientation: landscape) {
-	
-}
-
-@media all and (min-width: 480px) {
-}
 
 /* Формы */
 
@@ -79,63 +68,6 @@ input[type="checkbox"] {
 
 input[type="file"] {border: 0;}
 
-/* Списки */
-
-
-.list {
-	margin: 20px 0 10px 30px;
-}
-
-.list div {
-	font: bold 23px Arial;
-}
-
-.list a {
-	padding: 5px 0 0 25px;
-	display: block;
-}
-
-/*
-.list {
-	counter-reset: li; 
-	list-style: none;
-	text-shadow: 0 1px 0 rgba(255,255,255,.5);
-	width: 40%;
-	margin: 20px 0 0 30px;
-	z-index: 1;
-}
-
-.list a {
-	position: relative;
-	display: block;
-	padding: .4em .4em .4em 2em;
-	margin: .5em 0;
-	background: #DAD2CA;
-	color: #444;
-	text-decoration: none;
-	border-radius: .3em;
-	transition: .3s ease-out;
-}
-
-.list a:before {
-	content: counter(li);
-	counter-increment: li;
-	position: absolute;
-	left: -1.3em;
-	top: 50%;
-	margin-top: -1.3em;
-	background: #8FD4C1;
-	height: 2em;
-	width: 2em;
-	line-height: 2em;
-	border: .3em solid white;
-	text-align: center;
-	font-weight: bold;
-	border-radius: 2em;
-	transition: all .3s ease-out;
-}
-*/
-
 /* Верхняя полоса */
 
 .header {
@@ -148,7 +80,7 @@ input[type="file"] {border: 0;}
 	background-color: #000;
 	color: #fff;
 	overflow: hidden;
-} /* display: inline-table; */
+}
 
 .header a {
 	height: 100%;
@@ -227,7 +159,6 @@ input[type="file"] {border: 0;}
 	.del {display: inline-block;}
 
 	.expand div, .expand > a {
-		float: center;
 		width: 100vw;
 	}
 
@@ -244,6 +175,27 @@ input[type="file"] {border: 0;}
 .header a div:hover, .expand > a:hover {
 	background-color: #fff;
 	color: #000;
+}
+
+/* Списки */
+
+.list {
+	margin: 20px 0 10px 30px;
+}
+
+.list div {
+	font: bold 23px Arial;
+}
+
+.list a {
+	padding: 5px 0 0 25px;
+	display: block;
+}
+
+@media all and (max-width: 480px) {
+	.list {
+		margin-left: 15px;
+	}
 }
 
 /* Статьи */

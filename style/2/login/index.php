@@ -34,7 +34,7 @@ font {
 
 <div class="login">
 	<font>Зарегистрироваться</font>
-	<form action="form.php" method="post">
+	<form action="signup.php" method="post">
 		<input type="text" name="name" placeholder="Имя" required>
 		<input type="text" name="surname" placeholder="Фамилия" required>
 		<input type="email" name="mail" placeholder="Почта" readonly onfocus="this.removeAttribute('readonly')" required>
@@ -45,7 +45,7 @@ font {
 	Нажимая кнопку "Зарегистрироваться", Вы автоматически соглашаетесь с <a href="privacy.php" style="color: blue;">условиями сайта</a>.
 </div><div class="login">
 	<font>Войти</font>
-	<form action="login.php" method="post">
+	<form action="signin.php" method="post">
 		<input placeholder="Почта" name="user" required>
 		<input type="password" placeholder="Пароль" name="pas" required>
 		<input type="submit" value="Войти">
