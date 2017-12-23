@@ -12,57 +12,98 @@ start('ZODZU', '/', 'Полоз Алексей - Разработчик и эн�
 	margin: 10px 0 -10px 0;
 }
 
+.left, .center, .right {width: 100vw;}
+
+.center {overflow: hidden;}
+
+.left div, .right div {
+	 margin: 25px 0 0 0;
+	 font: bold 23px Arial;
+}
+
+.left a, .right a {
+	padding: 5px 0 0 25px;
+	display: block;
+}
+
 @media all and (min-width: 480px) {
-	hr {width: 75%}
+	.left, .center, .right {width: 31vw;}
+	.left {text-align: right; margin-left: 	2vw;}
 	.info {display: none;}
 }
 </style>
 
 <div class="info" onclick="change(this);">↑ Нажми на лого ↑</div>
 
-<div class="list"><div>Основная информация</div>
+<div class="left" id="width">
+	<div>Основная информация</div>
 	<a>Полоз Алексей Евгеньевич</a>
 	<a>19 лет</a>
 	<a href="https://www.google.ru/maps/place/Санкт-Петербург/">Санкт-Петербург, Россия</a>
-</div>
-<hr>
+	<hr>
 
-<div class="list"><div>Контакты</div>
+	<div>Контакты</div>
 	<a href="https://vk.com/freakiller">vk.com/freakiller</a>
 	<a href="http://mail.ru/">polozhev@mail.ru</a>
 	<a>+7 (981) 163-55-78</a>
-</div>
-<hr>
+	<hr>
 
-<div class="list"><div>Обучение</div>
+	<div>Конкурсы</div><!-- Достижения !-->
+	<a>Первое место на региональном уровне Всероссийской Олимпиады Школьников</a>
+	<a href="http://abitu.net/conference/1315">Диплом III степени МФТИ</a>
+	<a>Первые места в региональных IT конкурсах</a>
+	<hr>
+</div>
+
+<img src="photo.jpg" class="center" id="set">
+
+<!--
+<script type="text/javascript">
+	if (document.body.clientWidth >= 480) {
+		height = document.getElementById('width').offsetHeight;
+		element = document.getElementById('set');
+
+		alert(document.body.clientWidth / 3 - (height * element.offsetWidth / element.offsetHeight));
+		delta = document.body.clientWidth / 3 - (height * element.offsetWidth / element.offsetHeight);
+		if (delta > 0) {
+			margin1 = (delta / 2) + 'px';
+			margin2 = 0;
+
+			document.getElementById('set').style.height = height + 'px';
+			document.getElementById('set').style.width = (height * element.offsetWidth / element.offsetHeight) + 'px';
+		} else {
+			margin1 = 0
+			margin2 = ((height - element.offsetHeight) / 2) + 'px';
+
+			document.getElementById('set').style.height = '100%';
+		}
+
+		document.getElementById('set').style.margin = margin2 + ' ' + margin1 + ' ' + margin2 + ' ' + margin1;
+	}
+</script>
+!-->
+
+<div class="right">
+	<div>Обучение</div>
 	<a href="http://spbu.ru/">СПбГУ Прикладная Математика - Процессы Управления</a>
 	<a href="http://www.fml31.ru/">31 лицей г. Челябинск</a>
-</div>
-<hr>
+	<hr>
 
-<div class="list"><div>Область деятельности</div>
+	<div>Область деятельности</div>
 	<a href="https://ru.wikipedia.org/wiki/Python">Python BackEnd</a>
 	<a href="https://ru.wikipedia.org/wiki/Веб-программирование">Web Full-Stack</a>
 	<a>Микроконтроллеры: Raspberry Pi, Arduino</a>
-</div>
-<hr>
+	<hr>
 
-<div class="list"><div>Интересы</div>
+	<div>Интересы</div>
 	<a href="https://ru.wikipedia.org/wiki/Искусственный_интеллект">Artificial Intelligence, Machine Vision, Machine Learning</a>
 	<a href="https://ru.wikipedia.org/wiki/Автоматизированная_система">Роботизированные / автоматизированные системы</a>
 	<a href="https://ru.wikipedia.org/wiki/Бот_(программа)">Боты Телеграмм, ВКонтакте</a>
 	<a>Биржа</a>
+	<hr>
 </div>
-<hr>
 
-<div class="list"><div>Конкурсы</div><!-- Достижения !-->
-	<a>Первое место на региональном уровне Всероссийской Олимпиады Школьников</a>
-	<a href="http://abitu.net/conference/1315">Диплом III степени МФТИ</a>
-	<a>Первые места в региональных IT конкурсах</a>
-</div>
-<hr>
-
-<div class="list"><div>Проекты</div></div>
+<!-- Проекты !-->
 <div class="notes">
 <?php
 
