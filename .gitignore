@@ -6,3 +6,4 @@ trade/oanda/example/account.txt
 trade/oanda/example/token.txt
 **/set.txt
 bot/telegram/user/*.session
+ai/text/araneum_upos_skipgram_600_2_2017.bin

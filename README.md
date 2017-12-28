@@ -8,6 +8,12 @@
 1 | ``` ai/perceptron ``` | Сделать нейронные сети переобучаемыми | 
 2 | ``` compile ``` | Найти способ запуска Python как приложения | Пакетирование / Cython
 
+Технологии
+Название | Расположение
+---|---
+Word2Vec | ``` ai/text ```
+Telethon Update | ``` bot/telegram/user ```
+
 API
 ---
 &nbsp; | Python | C++ | PHP
