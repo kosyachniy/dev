@@ -9,9 +9,9 @@
 2 | ``` compile ``` | Найти способ запуска Python как приложения | Пакетирование / Cython
 
 Технологии
-Название | Расположение
----|---
-Word2Vec | ``` ai/text ```
+Название | Расположение | Дополнительно
+---|---|---
+Word2Vec | ``` ai/text ``` | [RusVectores](http://rusvectores.org/ru/)
 Telethon Update | ``` bot/telegram/user ```
 
 API
