@@ -1,14 +1,14 @@
 from multiprocessing import Process, Queue
 
 def foo(q):
-    q.put('hello')
+	q.put('hello')
 
 if __name__ == '__main__':
-    q = Queue()
+	q = Queue()
 
-    for i in range(10):
-        p = Process(target=foo, args=(q,))
-        p.start()
+	for i in range(10):
+		p = Process(target=foo, args=(q,))
+		p.start()
 
-    while True:
-        print(q.get())
+	while True:
+		print(q.get())

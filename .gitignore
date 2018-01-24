@@ -5,5 +5,6 @@ bot/vk/re.jpg
 trade/oanda/example/account.txt
 trade/oanda/example/token.txt
 **/set.txt
+**/keys.txt
 bot/telegram/user/*.session
 syntax/araneum_upos_skipgram_600_2_2017.bin
