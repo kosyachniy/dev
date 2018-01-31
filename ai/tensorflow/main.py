@@ -1,13 +1,14 @@
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL']='2' #чтобы не было предупреждений TensorFlow об неэффективном использовании
+﻿import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-import math
+import math, random
 import numpy as np
 import tensorflow as tf
 
 compilation = str(2) #набор данных
 countcat = 1 #количество выходов
-fault = 0.41 #1: 0.41 2: 9146 #с какой погрешностью нужен ответ
+fault = 0.005 #с какой погрешностью нужен ответ
+step = 0.05 #шаг
 
 #Данные
 with open('data/' + compilation + '/table.csv', 'r') as f:
@@ -23,7 +24,6 @@ yy = np.array([[float(i)] for i in yy])
 discharge = 0
 for i in xx:
 	for j in i[1:]:
-		print(j)
 		dis = int(math.log(j, 10)) + 1 if j != 0 else 0
 		if dis > discharge:
 			discharge = dis
@@ -34,53 +34,74 @@ for i in range(len(xx)):
 	for j in range(1, len(xx[0])):
 		xx[i][j] /= 10 ** discharge
 
-'''
-for i in range(len(yy)):
-	yy[i] /= 10 ** discharge
-'''
-
 #Объявляем входное значение x, вес w, какое значение должны получить y
-x = tf.placeholder(tf.float32, shape=(len(xx[0]),))
-y = tf.placeholder(tf.float32, shape=(1,))
-w = tf.Variable(tf.zeros([1, len(xx[0])]))
+x = tf.placeholder(tf.float32, shape=[None, len(xx[0])])
+y = tf.placeholder(tf.float32, shape=[None, 1])
+w1 = tf.Variable(tf.random_normal([len(xx[0]), 1])) #zeros
+
+'''
+W_h1 = tf.Variable(tf.zeros([len(xx[0]), 128])) #random_normal
+W_h2 = tf.Variable(tf.zeros([128, 512]))
+h1 = tf.nn.sigmoid(tf.matmul(x, W_h1))
+h2 = tf.nn.sigmoid(tf.matmul(W_h1, W_h2))
+W_out = tf.Variable(tf.random_normal([512, 1]))
+y_ = tf.matmul(h2, W_out)
+'''
 
 #Получаем выходное значение
-y2 = tf.multiply(x, w)
+y2 = tf.matmul(x, w1)
 
 #Рассчитываем ошибку выходных данных
 loss = tf.reduce_mean(tf.square(y2-y))
-optimizer = tf.train.GradientDescentOptimizer(0.005).minimize(loss) #AdamOptimizer
+train_step = tf.train.GradientDescentOptimizer(step).minimize(loss)
+correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y2, 1))
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+train_x = {str(i): np.array(j) for i, j in enumerate(xx)}
+train_y = yy.T[0]
+
+#Случайные данные из обучающий выборки (для равномерности, могут повторяться)
+def next_batch(count):
+	'''
+	arr_x = []
+	arr_y = []
+	for i in range(count):
+		j = random.randint(0, 2)
+		arr_x.append(train_x[str(j)])
+		arr_y.append(train_y[j])
+	return np.array(arr_x), np.array(arr_y)
+	'''
+	j = random.randint(0, 2)
+	return train_x[str(j)], train_y[j]
 
 #Запуск обучения
-with tf.Session() as session:
-	tf.global_variables_initializer().run()
+with tf.Session() as s:
+	s.run(tf.global_variables_initializer())
 
-	iteration = 0
-	while True: #for j in range(3):
-		iteration += 1
-		print('Iteration №{}'.format(iteration))
+	j = 0
+	while True: #for i in range(10000):
+		for i in range(len(xx)*2):
+			batch_x, batch_y = next_batch(1) #какими порциями передаём обучающие данные
+			s.run(train_step, feed_dict={x: batch_x.reshape(1, -1), y:  np.array([batch_y]).reshape(-1, 1)})
 
-		err = 0
-		for i in range(len(xx)):
-			data = {x: xx[i:(i+1)][0], y: yy[i:(i+1)][0]}
-			_, error = session.run([optimizer, loss], feed_dict=data)
+		train_accuracy = loss.eval(feed_dict={x: batch_x.reshape(1, -1), y: np.array([batch_y]).reshape(-1, 1)}) #accuracy
 
-			#print("ошибка: %f" % (error, ))
-			if error > err: err = error
-		
-		print('ошибка: %f' % (err, ))
-		if err < fault: break
+		#if i % 100 == 0:
+		j += 1
+		print('Шаг {0}. Ошибка: {1}'.format(j, train_accuracy))
 
-	iii = session.run(w)[0]
+		if train_accuracy <= fault: break
 
-for i in range(countcat, len(iii)):
-	iii[i] /= 10 ** discharge
+	w1 = s.run(w1)
+
+def sigmoid(x):
+	return (1 / (1 + np.exp(-x)))
 
 #Сохранение весов
-np.savetxt('data/' + compilation + '/weights.csv', iii, delimiter=',')
-print(iii)
+np.savetxt('data/' + compilation + '/weights.csv', w1, delimiter=',')
+print(w1)
 
 #Рассчёт прогноза
 while True:
-	x = [1] + [float(i) for i in input().split()]
-	print(sum([x[i] * iii[i] for i in range(len(x))]))
+	x = np.array([1.] + [float(i) for i in input().split()])
+	print(int(round((x@w1)[0])))
