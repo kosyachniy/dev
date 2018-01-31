@@ -34,6 +34,11 @@ for i in range(len(xx)):
 	for j in range(1, len(xx[0])):
 		xx[i][j] /= 10 ** discharge
 
+'''
+for i in range(len(yy)):
+	yy[i] /= 10 ** discharge
+'''
+
 #Объявляем входное значение x, вес w, какое значение должны получить y
 x = tf.placeholder(tf.float32, shape=(len(xx[0]),))
 y = tf.placeholder(tf.float32, shape=(1,))
@@ -44,7 +49,7 @@ y2 = tf.multiply(x, w)
 
 #Рассчитываем ошибку выходных данных
 loss = tf.reduce_mean(tf.square(y2-y))
-optimizer = tf.train.GradientDescentOptimizer(0.005).minimize(loss)
+optimizer = tf.train.GradientDescentOptimizer(0.005).minimize(loss) #AdamOptimizer
 
 #Запуск обучения
 with tf.Session() as session:

@@ -11,6 +11,13 @@ x = model[x]
 x = model.most_similar_to_given(x, formed(input().split())) #('music', ['water', 'sound', 'backpack', 'mouse']) >>> 'sound'
 '''
 
-x = model.most_similar_to_given(x, formed(input().split()))
+'''
+while True:
+	y = formed(input().split())
+	print(y)
 
-print(x)
+	x = model.most_similar_to_given(x, y)
+	print(x)
+'''
+
+print(model.most_similar_to_given(x, formed(input().split())))
