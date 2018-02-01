@@ -84,8 +84,8 @@ with tf.Session() as s:
 
 		train_accuracy = loss.eval(feed_dict={x: batch_x.reshape(1, -1), y: np.array([batch_y]).reshape(-1, 1)}) #accuracy
 
-		if i % 100 == 0:
-			print('Шаг {0}. Ошибка: {1}'.format(i, train_accuracy))
+		#if i % 100 == 0:
+		print('Шаг {0}. Ошибка: {1}'.format(i, train_accuracy))
 
 	w1 = s.run(w1)
 

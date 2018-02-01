@@ -1,12 +1,13 @@
 ﻿import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
-import math, random
-import numpy as np
 import tensorflow as tf
+import numpy as np
+from math import ceil, log
+import random
 
 compilation = str(2) #набор данных
-countcat = 1 #количество выходов
+count_out = 1 #количество выходов
 fault = 0.005 #с какой погрешностью нужен ответ
 step = 0.05 #шаг
 
@@ -16,35 +17,33 @@ with open('data/' + compilation + '/table.csv', 'r') as f:
 with open('data/' + compilation + '/table.csv', 'r') as f:
 	yy = np.loadtxt(f, delimiter=',', skiprows=1).T[0].T
 
-for i in range(len(xx)):
-	xx[i][0] = 1
+for i in range(len(xx)): xx[i][0] = 1
 yy = np.array([[float(i)] for i in yy])
 
 #Уменьшаем разряд параметров, чтобы при обучении нейронов не выходили громадные ошибки (с каждым разом увеличиваясь)
-discharge = 0
+dis = 0
 for i in xx:
-	for j in i[1:]:
-		dis = int(math.log(j, 10)) + 1 if j != 0 else 0
-		if dis > discharge:
-			discharge = dis
+	for j in i:
+		dis = max(ceil(log(j, 10)) if j != 0 else 0, dis) #int(math.log(j, 10)) + 1
 
-discharge -= 1
+xx = np.array([[j / 10 ** dis for j in i] for i in xx])
+yy = np.array([[j / 10 ** dis for j in i] for i in yy])
+fault /= 10 ** dis
 
-for i in range(len(xx)):
-	for j in range(1, len(xx[0])):
-		xx[i][j] /= 10 ** discharge
+count_in = len(xx[0])
+count_train = len(xx)
 
 #Объявляем входное значение x, вес w, какое значение должны получить y
-x = tf.placeholder(tf.float32, shape=[None, len(xx[0])])
-y = tf.placeholder(tf.float32, shape=[None, 1])
-w1 = tf.Variable(tf.random_normal([len(xx[0]), 1])) #zeros
+x = tf.placeholder(tf.float32, shape=[None, count_in])
+y = tf.placeholder(tf.float32, shape=[None, count_out])
+w1 = tf.Variable(tf.random_normal([count_in, count_out])) #zeros
 
 '''
-W_h1 = tf.Variable(tf.zeros([len(xx[0]), 128])) #random_normal
+W_h1 = tf.Variable(tf.zeros([count_in, 128])) #random_normal
 W_h2 = tf.Variable(tf.zeros([128, 512]))
 h1 = tf.nn.sigmoid(tf.matmul(x, W_h1))
 h2 = tf.nn.sigmoid(tf.matmul(W_h1, W_h2))
-W_out = tf.Variable(tf.random_normal([512, 1]))
+W_out = tf.Variable(tf.random_normal([512, count_out]))
 y_ = tf.matmul(h2, W_out)
 '''
 
@@ -53,9 +52,9 @@ y2 = tf.matmul(x, w1)
 
 #Рассчитываем ошибку выходных данных
 loss = tf.reduce_mean(tf.square(y2-y))
-train_step = tf.train.GradientDescentOptimizer(step).minimize(loss)
-correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y2, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+train_step = tf.train.GradientDescentOptimizer(step).minimize(loss) #AdamOptimizer
+#correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y2, 1))
+#accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 train_x = {str(i): np.array(j) for i, j in enumerate(xx)}
 train_y = yy.T[0]
@@ -71,8 +70,8 @@ def next_batch(count):
 		arr_y.append(train_y[j])
 	return np.array(arr_x), np.array(arr_y)
 	'''
-	j = random.randint(0, 2)
-	return train_x[str(j)], train_y[j]
+	j = random.randint(0, count_train-1)
+	return train_x[str(j)].reshape(1, -1), np.array([train_y[j]]).reshape(-1, 1)
 
 #Запуск обучения
 with tf.Session() as s:
@@ -80,11 +79,11 @@ with tf.Session() as s:
 
 	j = 0
 	while True: #for i in range(10000):
-		for i in range(len(xx)*2):
+		for i in range(count_train*10): #x10
 			batch_x, batch_y = next_batch(1) #какими порциями передаём обучающие данные
-			s.run(train_step, feed_dict={x: batch_x.reshape(1, -1), y:  np.array([batch_y]).reshape(-1, 1)})
+			s.run(train_step, feed_dict={x: batch_x, y: batch_y})
 
-		train_accuracy = loss.eval(feed_dict={x: batch_x.reshape(1, -1), y: np.array([batch_y]).reshape(-1, 1)}) #accuracy
+		train_accuracy = loss.eval(feed_dict={x: batch_x, y: batch_y}) #accuracy
 
 		#if i % 100 == 0:
 		j += 1
