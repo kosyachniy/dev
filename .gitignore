@@ -8,3 +8,4 @@ trade/oanda/example/token.txt
 **/keys.txt
 bot/telegram/user/*.session
 syntax/araneum_upos_skipgram_600_2_2017.bin
+syntax/conformity/data
