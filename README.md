@@ -30,7 +30,7 @@ Steam | [Steam](http://steam.readthedocs.io/en/latest/user_guide.html)<br>[GitHu
 ---
 Предмет | Расположение | Уроки | Код
 ---|---|---|---
-Регулярные выражения | ``` regular ``` | [Wikipedia](https://ru.wikipedia.org/wiki/%D0%A0%D0%B5%D0%B3%D1%83%D0%BB%D1%8F%D1%80%D0%BD%D1%8B%D0%B5_%D0%B2%D1%8B%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F) |
+Регулярные выражения | ``` regular ``` | [HabraHabr](https://habrahabr.ru/post/115825/) |
 MNIST | ``` ai/tensorflow/mnist ``` | [Google](https://codelabs.developers.google.com/codelabs/cloud-tensorflow-mnist/#0) | [GitHub](https://github.com/martin-gorner/tensorflow-mnist-tutorial)
 GUI | ``` gui ``` | [PythonWorld](https://pythonworld.ru/gui) |
 HTML / CSS  | ``` style ``` | [HTMLBook](http://htmlbook.ru/) |

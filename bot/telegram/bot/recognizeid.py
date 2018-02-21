@@ -8,8 +8,8 @@ bot = telebot.TeleBot(token)
 def text(message):
 #Сообщение пользователя
 	try:
-		bot.send_message(message.chat.id, message.forward_from.id)
-		print(message.chat.id, message.forward_from)
+		bot.send_message(message.chat.id, message.forward_from_chat.id)
+		print(message.chat.id, message.forward_from_chat)
 	except:
 #Сообщение чата
 		try:

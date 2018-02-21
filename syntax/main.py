@@ -1,6 +1,7 @@
 from func import *
 
 x = formed(input().split())
+print(x)
 
 '''
 x = model.wv[x]
@@ -20,4 +21,6 @@ while True:
 	print(x)
 '''
 
-print(model.most_similar_to_given(x, formed(input().split())))
+#print(model.most_similar_to_given(x, formed(input().split())))
+
+print(model[input()])
