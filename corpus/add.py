@@ -9,27 +9,26 @@ if os.path.exists('data/corpus.json'):
 
 	corp = set()
 	for i in corpus:
-		for j in corpus[i]:
-			for u in j['word']:
-				for o in j['word'][u]:
-					corp.add(o)
-	#corp = {o for o in j['word'][u] for u in j['word'] for j in corpus[i] for i in corpus}
+		for j in corpus[i]['word']:
+			corp.add(j)
 else:
-	corpus = {
-		'noun': [], #существиетльное
-		'adjective': [], #прилагательное
-		'numeral': [], #числительное
-		'pronoun': [], #местоимение
-		'verb': [], #глагол
-		'adverb': [], #наречие
-		'participle': [], #причастие
-		'transgressive': [], #деепрчиастие
-		'pretext': [], #предлог
-		'conjunction': [], #союз
-		'particle': [], #частица
-		'interjection': [], #междометие
-	}
+	corpus = {}
 	corp = set()
+
+'''
+noun - существиетльное
+adjective - прилагательное
+numeral - числительное
+pronoun - местоимение
+verb - глагол
+adverb - наречие
+participle - причастие
+transgressive - деепрчиастие
+pretext - предлог
+conjunction - союз
+particle - частица
+interjection - междометие
+'''
 
 for i in dic:
 	i = re.sub(r'([а-яa-z])\1+', r'\1\1', i)
@@ -38,7 +37,7 @@ for i in dic:
 		print(corp, '\n\n', i)
 
 		try:
-			next_ = input('Добавить в существующее? ')
+			next_ = input('Начальная форма? ')
 		except:
 			with open('data/corpus.json', 'w') as file:
 				print(json.dumps(corpus, ensure_ascii=False, indent=4), file=file)
@@ -46,15 +45,14 @@ for i in dic:
 			break
 
 		while True:
-			if next_:
-				pass
-			else:
-				part_of_speech = input('Часть речи: ')
-				typ = input('Тип слова? ')
-				if not typ: typ = 'standart'
+			if next_ in corpus:
+				print(corpus[next_], '\n')
+				if not input('Добавить в другое слово?'):
+					corpus[next_]['word'][i] = {}
+					continue
 
-				corpus[part_of_speech].append({'word': {typ: [i,]}})
-				corp.add(i)
+			part_of_speech = input('Часть речи: ')
+			corpus[next_] = {'word': {i:{}}, 'part_of_speech': part_of_speech}
 
 			if not input('Добавить ещё раз?'):
 				break
