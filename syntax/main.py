@@ -23,4 +23,4 @@ while True:
 
 #print(model.most_similar_to_given(x, formed(input().split())))
 
-print(model[input()])
+print(model.similarity(*[x]))
