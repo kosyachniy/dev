@@ -1,4 +1,6 @@
 import json, re, os
+from pymorphy2 import MorphAnalyzer
+m = MorphAnalyzer()
 
 with open('data/dict.json', 'r') as file:
 	dic = json.loads(file.read())
@@ -16,18 +18,18 @@ else:
 	corp = set()
 
 '''
-noun - существиетльное
-adjective - прилагательное
-numeral - числительное
-pronoun - местоимение
-verb - глагол
-adverb - наречие
-participle - причастие
-transgressive - деепрчиастие
-pretext - предлог
-conjunction - союз
-particle - частица
-interjection - междометие
+noun - существиетльное - NOUN
+adjective - прилагательное - ADJF / ADJS
+numeral - числительное - NUMR
+pronoun - местоимение - NPRO
+verb - глагол - VERB
+adverb - наречие - ADVB
+participle - причастие - PRTF / PRTS
+transgressive - деепрчиастие - GRND
+pretext - предлог - PREP
+conjunction - союз - CONJ
+particle - частица - PRCL
+interjection - междометие - INTJ
 '''
 
 for i in dic:
@@ -36,8 +38,10 @@ for i in dic:
 	if i not in corp:
 		print(corp, '\n\n', i)
 
+		parser = m.parse(i)
+
 		try:
-			next_ = input('Начальная форма? ')
+			next_ = input('Начальная форма (%s)? ' % ' / '.join([i.normal_form for i in parser]))
 		except:
 			with open('data/corpus.json', 'w') as file:
 				print(json.dumps(corpus, ensure_ascii=False, indent=4), file=file)
@@ -51,7 +55,7 @@ for i in dic:
 					corpus[next_]['word'][i] = {}
 					continue
 
-			part_of_speech = input('Часть речи: ')
+			part_of_speech = input('Часть речи (%s): ' % ' / '.join([i.tag.POS for i in parser]))
 			corpus[next_] = {'word': {i:{}}, 'part_of_speech': part_of_speech}
 
 			if not input('Добавить ещё раз?'):
