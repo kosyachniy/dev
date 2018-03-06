@@ -1,6 +1,6 @@
 import time, requests, vk_api, json
 
-with open('keys.txt', 'r') as file:
+with open('data/keys.txt', 'r') as file:
 	s = json.loads(file.read())
 
 	vk = vk_api.VkApi(login=s['login'], password=s['password'])
@@ -14,8 +14,18 @@ def send(user, cont, img=[]):
 				file.write(requests.get(img[i]).content)
 
 #Загружаем изображение в ВК
+			url = vk.method('photos.getMessagesUploadServer')['upload_url']
+
+			response = requests.post(url, files={'photo': open('re.jpg', 'rb')})
+			result = json.loads(response.text)
+
+			photo = vk.method('photos.saveMessagesPhoto', {'server': result['server'], 'photo': result['photo'], 'hash': result['hash']})
+
+			img[i] = 'photo{}_{}'.format(photo[0]['owner_id'], photo[0]['id'])
+			'''
 			photo = vk_api.VkUpload(vk).photo('re.jpg', group_id=151412216, album_id=247265476)[0]
 			img[i] = 'photo{}_{}'.format(photo['owner_id'], photo['id'])
+			'''
 
 	return vk.method('messages.send', {'user_id':user, 'message':cont, 'attachment':','.join(img)})
 
