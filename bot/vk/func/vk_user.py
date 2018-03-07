@@ -9,14 +9,16 @@ with open('data/keys.txt', 'r') as file:
 def send(user, cont, img=[]):
 	for i in range(len(img)):
 		if img[i][0:5] != 'photo':
+			if img[i].count('/') >= 3: #Если файл из интернета
 #Загружаем изображение на сервер
-			with open('re.jpg', 'wb') as file:
-				file.write(requests.get(img[i]).content)
+				with open('re.jpg', 'wb') as file:
+					file.write(requests.get(img[i]).content)
+				img[i] = 're.jpg'
 
 #Загружаем изображение в ВК
 			url = vk.method('photos.getMessagesUploadServer')['upload_url']
 
-			response = requests.post(url, files={'photo': open('re.jpg', 'rb')})
+			response = requests.post(url, files={'photo': open(img[i], 'rb')})
 			result = json.loads(response.text)
 
 			photo = vk.method('photos.saveMessagesPhoto', {'server': result['server'], 'photo': result['photo'], 'hash': result['hash']})
@@ -27,9 +29,9 @@ def send(user, cont, img=[]):
 			img[i] = 'photo{}_{}'.format(photo['owner_id'], photo['id'])
 			'''
 
-	return vk.method('messages.send', {'user_id':user, 'message':cont, 'attachment':','.join(img)})
+	return vk.method('messages.send', {'user_id': user, 'message': cont, 'attachment': ','.join(img)})
 
-read = lambda: [[i['user_id'], i['body']] for i in vk.method('messages.get')['items'] if not i['read_state']][::-1]
+read = lambda: [[i['user_id'], i['body'], i['attachments'] if 'attachments' in i else []] for i in vk.method('messages.get')['items'] if not i['read_state']][::-1]
 
 dial = lambda: [i['message']['user_id'] for i in vk.method('messages.getDialogs')['items']]
 
