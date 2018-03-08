@@ -3,17 +3,17 @@ from PIL import ImageFont
 from PIL import ImageDraw 
 
 TEMPLATE = 1
-IMAGE = 1
+IMAGE = '1.jpg'
 TEXT = 'Здесь шрифт FS Joey'
 
-def paste(template, image, text):
+def paste(image, text, template=TEMPLATE):
 	img = Image.open('tpl%d.png' % TEMPLATE, 'r')
 	'''
 
 	print(img_w, img_h)
 	'''
 
-	background = Image.open('%d.jpg' % IMAGE, 'r')
+	background = Image.open(image, 'r')
 	'''
 	bg_w, bg_h = background.size
 	print(bg_w, bg_h)
@@ -28,10 +28,10 @@ def paste(template, image, text):
 	bck2.paste(img, (0, 0), img)
 
 	draw = ImageDraw.Draw(bck2)
-	font = ImageFont.truetype('FS_JoeyPro.otf', 60)
+	font = ImageFont.truetype('FS_JoeyPro-MediumRegular.otf', 60)
 	draw.text((int(0.15 * img_w), int(0.86 * img_h)), text, (0, 0, 0), font=font)
 
-	bck2.save('out.png')
+	bck2.save(image[:-4]+'.png')
 
 if __name__ == '__main__':
-	paste(TEMPLATE, IMAGE, TEXT)
+	paste(IMAGE, TEXT, TEMPLATE)
