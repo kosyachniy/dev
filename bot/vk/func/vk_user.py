@@ -1,6 +1,6 @@
 import time, requests, vk_api, json
 
-with open('data/keys.txt', 'r') as file:
+with open('keys.json', 'r') as file:
 	s = json.loads(file.read())
 
 	vk = vk_api.VkApi(login=s['login'], password=s['password'])
