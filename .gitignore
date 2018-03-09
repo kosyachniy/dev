@@ -12,3 +12,5 @@ bot/telegram/user/*.session
 syntax/araneum_upos_skipgram_600_2_2017.bin
 syntax/conformity/data
 compile/exe/build
+compile/exe/dist
+compile/exe/main.spec
