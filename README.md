@@ -1,13 +1,15 @@
 # Разработка
 [![Travis CI](https://travis-ci.org/kosyachniy/dev.svg?branch=master)](https://travis-ci.org/kosyachniy/dev/)
 
-Не решено
+<br>
+Добавить
 ---
 № | Где | Ошибка | Решение
 ---|---|---|---
 1 | ``` ai/perceptron ``` | Сделать нейронные сети переобучаемыми | 
 2 | ``` compile ``` | Найти способ запуска Python как приложения | Пакетирование / Cython
 
+<br>
 Технологии
 ---
 Название | Расположение | Дополнительно
@@ -15,6 +17,7 @@
 Word2Vec | ``` ai/text ``` | [RusVectores](http://rusvectores.org/ru/)
 Telethon Update | ``` bot/telegram/user ``` |
 
+<br>
 API
 ---
 &nbsp; | Python | C++ | PHP
@@ -27,6 +30,7 @@ Twitter | [TweePy](http://docs.tweepy.org/en/v3.5.0/api.html)<br>[GitHub](https:
 InstaGram |  |  |
 Steam | [Steam](http://steam.readthedocs.io/en/latest/user_guide.html)<br>[GitHub](https://github.com/ValvePython/steam) |  |
 
+<br>
 Обучение
 ---
 Предмет | Расположение | Уроки | Код
@@ -34,22 +38,25 @@ Steam | [Steam](http://steam.readthedocs.io/en/latest/user_guide.html)<br>[GitHu
 Регулярные выражения | ``` regular ``` | [HabraHabr](https://habrahabr.ru/post/115825/) |
 MNIST | ``` ai/tensorflow/mnist ``` | [Google](https://codelabs.developers.google.com/codelabs/cloud-tensorflow-mnist/#0) | [GitHub](https://github.com/martin-gorner/tensorflow-mnist-tutorial)
 GUI | ``` gui ``` | [PythonWorld](https://pythonworld.ru/gui) |
-HTML / CSS  | ``` style ``` | [HTMLBook](http://htmlbook.ru/) |
+HTML / CSS  | ``` template/php/site ``` | [HTMLBook](http://htmlbook.ru/) |
 JS | ``` js ``` | [JavaScript](http://learn.javascript.ru/) |
 AI | ``` ai/tensorflow ``` | [Stepik](https://stepik.org/course/%D0%9D%D0%B5%D0%B9%D1%80%D0%BE%D0%BD%D0%BD%D1%8B%D0%B5-%D1%81%D0%B5%D1%82%D0%B8-401/syllabus)<br>[HabraHabr 1](https://habrahabr.ru/post/312450/)<br>[HabraHabr 2](https://habrahabr.ru/post/313216/) |
 Python |  | [PythonWorld](https://pythonworld.ru/samouchitel-python) |
 Анализ синтаксиса | ``` syntax ```<br>``` parse/text ``` | [НКРЯ](http://www.ruscorpora.ru/)<br>[OpenCorpora](http://opencorpora.org/?page=downloads)<br>[RusVectores](http://rusvectores.org/ru/calculator/)<br>[RDT](https://nlpub.ru/Russian_Distributional_Thesaurus) |
 
+<br>
 Просмотреть курсы
 ---
 Что | Расположение | Уроки
 ---|---|---
 Клиент - сервер | ``` server ``` | [TProger](https://tproger.ru/video/advanced-python/?autoplay=1)
 
+<br>
 Решение
 ---
 [Онлайн компилятор](http://ideone.com/)
 
+<br>
 Тип | Сервис
 ---|---
 Олимпиадные задачи | [CodeForces](http://codeforces.com/problemset)
@@ -65,7 +72,7 @@ MarkDown
 ---|---
 ``` <br> ``` | Энтер
 
-
+<br>
 Travis CI
 ---
 [Travis CI](https://travis-ci.org/kosyachniy/dev/)
@@ -92,7 +99,7 @@ script:
   - ....py
 ```
 
-
+<br>
 Терминал
 ---
 Код | Действие
@@ -100,6 +107,7 @@ script:
 ``` pip freeze > requirements.txt ``` | Получить requerements.txt
 ``` source tensorflow/bin/activate/ ``` | Запустить TensorFlow
 
+<br>
 Режимы файлов
 ---
 Режим | Обозначение
@@ -114,51 +122,3 @@ a | Открытие на дозапись, информация добавля�
 b | Открытие в двоичном режиме.
 t | Открытие в текстовом режиме (является значением по умолчанию).
 \+ | Открытие на чтение и запись
-
-Языки программирования
----
-&nbsp; | [Python](https://github.com/kosyachniy/dev/wiki/Python) | [C++](https://github.com/kosyachniy/dev/wiki/C) | [PHP](https://github.com/kosyachniy/dev/wiki/PHP) | [Pascal](https://github.com/kosyachniy/dev/wiki/Pascal) | [JavaScript](https://github.com/kosyachniy/dev/wiki/JavaScript)
----|---|---|---|---|---
-Расширение | .py | .cpp<br>.h | .php | .pas | .js
-Арифметические знаки | + - / // % * ** |  |  |  |
-Сложная арифметика | += -= /= //= %= *= **= |  |  |  |
-Присваивание | = | = | = | := | =
-Сравнение | == > < >= <= != | == > < >= <= != | == > < >= <= != | = > < >= <= <> | 
-Логика | and; or; not; in; not in |  |  |  | 
-Двойное присваивание<br>(a=b=1) | да |  |  |  |
-Объединённая логика<br>(4<a<6) | да |  |  |  |
-Присваивание внутри выражения<br>(if (x=2)==2) | нет |  |  |  |
-Объявление типов данных | нет | да | нет | да |
-Указатели / переменные | указатели<br>(изменяемые / неизменяемые типы данных) | переменные |  |  |
-Изменяемые переменные | списки |  |  |  |
-Неизменяемые переменные | числа<br>строки<br>кортежи |  |  |  | 
-Начало индексации | 0 | 0 | 0 |  |
-Математика<br>(0.3+0.3+0.3=0.(9)) | да |  |  |  |
-Бинарные операции | >> << |  |  |  |
-Синтаксис | функция условия:<br>&emsp;функция(параметры) | функция (условия)<br>&emsp;{<br>&emsp;функция(параметры);<br>&emsp;} |  |  |
-Разметка | … | #include <iostream><br><br>using namespace std;<br><br>int main()<br>&emsp;{<br>&emsp;…<br>&emsp;return 0;<br>&emsp;} | <?php<br>…<br>?> |  | …
-Строка | '...'<br>"..." | '...'<br>"..." | '...'<br>"..." | '...' |
-Комментарий | ```#```<br>```''' … '''```<br>```""" … """``` | ```//``` | ```//``` | ```//```<br>```{...}``` | 
-Название переменной | ```буквычисла``` | ```буквычисла```<br>!!! ```верблюжийРегистр``` | ```$буквычисла``` |  | 
-Типы данных |  |  |  |  |
-Особые параметры<br>(_=_) | да |  |  |  |
-Конец функции | enter | ```;``` | ```;``` | ```;``` | ```;```
-Объединение строк | ```+``` | ```+``` | ```.``` | ```+``` | ```+```
-Перевод строки | ```\n``` | ```\n``` | enter |  |
-Передача функций как параметр | да | да |  |  |
-Присваивание нескольких значений | да | нет |  |  |
-Тип исполнения | интерпретируемый | компилируемый | интерпретируемый | компилируемый | интерпретируемый
-Запуск | ```python _.py``` | ```g++ _.cpp -o _```<br>```./_``` | веб-страница<br>!!! веб-сервер |  | веб-страница
-Умножение строки на число | да |  |  |  |
-Подключение библиотек | ```import …```<br>```from … import … as …``` | ```#include <….h>```<br>```#include "….h"``` | ```include('…');``` |  |
-Если | if …:<br>&emsp;…<br>elif …:<br>&emsp;…<br>else:<br>&emsp;… | if (…)<br>{<br>…<br>}<br>else<br>{<br>…<br>} | if (…)<br>{<br>…<br>}<br>elseif (…)<br>{<br>…<br>}<br>else<br>{<br>…<br>} |  |
-Цикл со счётчиком | for _ in _:<br>&emsp;… | for (…;…;…)<br>&emsp;{<br>&emsp;…<br>&emsp;} | for (…;…;…)<br>&emsp;{<br>&emsp;…<br>&emsp;} |  |
-Цикл с условием | while ...:<br>&emsp;... | while (...)<br>&emsp;{<br>&emsp;...<br>&emsp;} | while (...)<br>&emsp;{<br>&emsp;...<br>&emsp;} |  |
-Цикл с постусловием | нет | do<br>&emsp;{<br>&emsp;...<br>&emsp;}<br>while (...) |  |  |
-Выбор |  |  |  |  |
-Функция | def _(…, _=_):<br>&emsp;…<br>&emsp;return … | тип данных _(…)<br>&emsp;{<br>&emsp;…<br>&emsp;return _;<br>&emsp;} | function _(…)<br>&emsp;{<br>&emsp;…<br>&emsp;return _;<br>&emsp;} | function<br>procedure | 
-Объект | class _:<br>&emsp;def<br>&emsp;\_\_init\_\_(self,…,_=_):<br>&emsp;&emsp;…<br>&emsp;…<br>&emsp;\_\_exit\_\_(self,…,_=_):<br>&emsp;&emsp;... | class имя<br>&emsp;{<br>&emsp;public:<br>&emsp;имя (…)<br>&emsp;&emsp;{<br>&emsp;&emsp;…<br>&emsp;&emsp;}<br>&emsp;…<br>&emsp;~имя ()<br>&emsp;&emsp;{<br>&emsp;&emsp;…<br>&emsp;&emsp;}<br>&emsp;private:<br>&emsp;…<br>&emsp;protected:<br>&emsp;…<br>&emsp;} |  |  |
-Ввод | ```…=input()```<br>!!! Текст, для чисел ```int(…)``` | ```cin >> _ >> _;``` | нет |  |
-Вывод | ```print(…, end='…')``` | ```cout << _ << _ << endl;``` | ```print …;```<br>```echo …;``` |  |
-Исключения |  |  |  |  |
-Особенности | List / Dictionary Comprehension<br>Однострочная функция lambda<br>Трёхместное выражение if/else<br> |  |  |  |

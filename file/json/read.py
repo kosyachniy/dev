@@ -1,5 +1,8 @@
 from json import *
 
-with open('db.json', 'r') as file:
-	a = file.read()
-print(loads(a))
+def read(file='db'):
+	with open(name+'.json', 'r') as file:
+		return loads(file.read())
+
+if __name__ == '__main__':
+	print(read())
