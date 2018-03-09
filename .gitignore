@@ -1,6 +1,7 @@
 **/__pycache__
 ai/tensorflow/log_simple_graph
 **/vk_config.json
+**/vk_config.v2.json
 bot/vk/re.jpg
 trade/oanda/example/account.txt
 trade/oanda/example/token.txt
@@ -10,3 +11,4 @@ trade/oanda/example/token.txt
 bot/telegram/user/*.session
 syntax/araneum_upos_skipgram_600_2_2017.bin
 syntax/conformity/data
+compile/exe/build

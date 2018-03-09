@@ -1,4 +1,5 @@
 import hashlib as hasher
+import os, json
 
 class Block:
 	def __init__(self, index, timestamp, data, previous_hash):
@@ -17,9 +18,8 @@ class Block:
 
 import datetime as date
 
+#Вручную создаем блок с нулевым индексом и произвольным хэшем предыдущего блока
 def create_genesis_block():
-	# Вручную создаем блок с нулевым индексом
-	# и произвольным хэшем предыдущего блока
 	return Block(0, date.datetime.now(), 'Genesis Block', '0')
 
 def next_block(last_block, data):
@@ -28,11 +28,13 @@ def next_block(last_block, data):
 	this_hash = last_block.hash
 	return Block(this_index, this_timestamp, data, this_hash)
 
-# создаем блокчейн и первый блок
+style = lambda x: {'index': x.index, 'time': str(x.timestamp), 'data': x.data, 'previous_hash': x.previous_hash, 'hash': x.hash}
+
+#Первый блок
 blockchain = [create_genesis_block()]
 previous_block = blockchain[0]
 
-# добавим блоки в цепь
+#Добавление нового блока
 while True:
 	try:
 		data = input()
@@ -45,4 +47,6 @@ while True:
 	except:
 		break
 
-print('\n\n***** Начало цепочки блоков *****\n', *[i.data for i in blockchain], '\n***** Конец цепочки блоков *****\n\n', sep='\n'+'-'*100+'\n')
+with open('blockchain', 'w') as file:
+	print(json.dumps([style(i) for i in blockchain]) ,file=file)
+#print('\n\n***** Начало цепочки блоков *****\n', *[i.data for i in blockchain], '\n***** Конец цепочки блоков *****\n\n', sep='\n'+'-'*100+'\n')

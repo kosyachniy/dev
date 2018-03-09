@@ -15,7 +15,7 @@
 Word2Vec | ``` ai/text ``` | [RusVectores](http://rusvectores.org/ru/)
 Telethon Update | ``` bot/telegram/user ``` |
 
-API
+API и библиотеки
 ---
 &nbsp; | Python | C++ | PHP
 ---|---|---|---
