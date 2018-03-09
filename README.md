@@ -1,7 +1,6 @@
 # Разработка
 [![Travis CI](https://travis-ci.org/kosyachniy/dev.svg?branch=master)](https://travis-ci.org/kosyachniy/dev/)
 
-<br>
 Добавить
 ---
 № | Где | Ошибка | Решение
@@ -9,7 +8,6 @@
 1 | ``` ai/perceptron ``` | Сделать нейронные сети переобучаемыми | 
 2 | ``` compile ``` | Найти способ запуска Python как приложения | Пакетирование / Cython
 
-<br>
 Технологии
 ---
 Название | Расположение | Дополнительно
@@ -17,7 +15,6 @@
 Word2Vec | ``` ai/text ``` | [RusVectores](http://rusvectores.org/ru/)
 Telethon Update | ``` bot/telegram/user ``` |
 
-<br>
 API
 ---
 &nbsp; | Python | C++ | PHP
@@ -30,7 +27,6 @@ Twitter | [TweePy](http://docs.tweepy.org/en/v3.5.0/api.html)<br>[GitHub](https:
 InstaGram |  |  |
 Steam | [Steam](http://steam.readthedocs.io/en/latest/user_guide.html)<br>[GitHub](https://github.com/ValvePython/steam) |  |
 
-<br>
 Обучение
 ---
 Предмет | Расположение | Уроки | Код
@@ -44,25 +40,28 @@ AI | ``` ai/tensorflow ``` | [Stepik](https://stepik.org/course/%D0%9D%D0%B5%D0%
 Python |  | [PythonWorld](https://pythonworld.ru/samouchitel-python) |
 Анализ синтаксиса | ``` syntax ```<br>``` parse/text ``` | [НКРЯ](http://www.ruscorpora.ru/)<br>[OpenCorpora](http://opencorpora.org/?page=downloads)<br>[RusVectores](http://rusvectores.org/ru/calculator/)<br>[RDT](https://nlpub.ru/Russian_Distributional_Thesaurus) |
 
-<br>
+
+# Курсы
+
 Просмотреть курсы
 ---
 Что | Расположение | Уроки
 ---|---|---
 Клиент - сервер | ``` server ``` | [TProger](https://tproger.ru/video/advanced-python/?autoplay=1)
 
-<br>
 Решение
 ---
 [Онлайн компилятор](http://ideone.com/)
 
-<br>
 Тип | Сервис
 ---|---
 Олимпиадные задачи | [CodeForces](http://codeforces.com/problemset)
 Олимпиады | [Яндекс.Алгоритм](https://academy.yandex.ru/events/algorithm/)<br>[VK Cup](http://codeforces.com/vkcup2017)<br>[Russian Code Cup](http://www.russiancodecup.ru/ru/)<br>[FaceBook Hacker Cup](https://ru.wikipedia.org/wiki/Facebook_Hacker_Cup)<br>[Google Code Jam](https://code.google.com/codejam/)<br>[КРОК](https://www.croc.ru/vacancy/students/detail/61353/)
 Конкурсы | [Web Ready](http://www.gotech.vc/)<br>[Список](https://habrahabr.ru/company/ingria_startup/blog/138718/)
 Работа | [HeadHunter](https://spb.hh.ru/search/vacancy?text=python&area=2)
+
+
+# Сервисы и технологии
 
 MarkDown
 ---
@@ -72,7 +71,6 @@ MarkDown
 ---|---
 ``` <br> ``` | Энтер
 
-<br>
 Travis CI
 ---
 [Travis CI](https://travis-ci.org/kosyachniy/dev/)
@@ -99,7 +97,9 @@ script:
   - ....py
 ```
 
-<br>
+
+# Основы
+
 Терминал
 ---
 Код | Действие
@@ -107,7 +107,6 @@ script:
 ``` pip freeze > requirements.txt ``` | Получить requerements.txt
 ``` source tensorflow/bin/activate/ ``` | Запустить TensorFlow
 
-<br>
 Режимы файлов
 ---
 Режим | Обозначение
