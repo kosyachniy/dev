@@ -8,8 +8,6 @@
 
 [FaceMash с бинарными рейтенгированием](https://github.com/kosyachniy/faceslasher)
 
-## [InstaGram](https://github.com/instabot-py/instabot.py/tree/master/src)
-
 ## Twitter
 
 [Ведение аккаунта](https://github.com/kosyachniy/SocialBot)
