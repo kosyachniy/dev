@@ -30,7 +30,20 @@ def process(mes):
 					'type': 'post',
 					'from': u['wall']['from_id'],
 					'id': u['wall']['id'],
+					'from_post': u['wall']['to_id'],
+					'time': u['wall']['date'],
+					'text': u['wall']['text'],
+					'likes': u['wall']['likes']['count'],
+					'comments': u['wall']['comments']['count'],
+					'reposts': u['wall']['reposts']['count'],
 				}
+
+				if 'views' in u['wall']:
+					y['views'] = u['wall']['views']['count']
+
+				pro = process(u['wall'])
+				if pro:
+					y['attachments'] = pro
 
 #Картинки
 			elif u['type'] == 'photo':
@@ -136,6 +149,50 @@ def process(mes):
 					'price': int(u['market']['price']['amount']) / 100,
 					'currency_id': u['market']['price']['currency']['id'],
 					'currency': u['market']['price']['currency']['name'],
+				}
+
+#Комментарии
+			elif u['type'] == 'wall_reply':
+				y = {
+					'type': 'comment',
+					'id': u['wall_reply']['id'],
+					'text': u['wall_reply']['text'],
+					'time': u['wall_reply']['date'],
+					'post': u['wall_reply']['post_id'],
+					'from_post': u['wall_reply']['owner_id'],
+					'from': u['wall_reply']['from_id'],
+					'likes': u['wall_reply']['likes']['count'],
+				}
+
+				if 'reply_to_comment' in u['wall_reply']:
+					y['to'] = u['wall_reply']['reply_to_user']
+					y['to_comment'] = u['wall_reply']['reply_to_comment']
+
+				pro = process(u)
+				if pro:
+					y['attachments'] = pro
+
+#Опросы (только в сообществах)
+			elif u['type'] == 'poll':
+				y = {
+					'type': 'poll',
+					'id': u['poll']['id'],
+					'text': u['poll']['question'],
+					'from': u['poll']['owner_id'],
+					'answers': [{'id': i['id'], 'text': i['text'], 'votes': i['votes']} for i in u['poll']['answers']],
+					'time': u['poll']['created'],
+				}
+
+#Страницы (только в сообществах)
+			elif u['type'] == 'page':
+				y = {
+					'type': 'page',
+					'id': u['page']['id'],
+					'from': u['page']['group_id'],
+					'name': u['page']['title'],
+					'time': u['page']['created'],
+					'views': u['page']['views'],
+					'url': u['page']['view_url'],
 				}
 
 #Другое
