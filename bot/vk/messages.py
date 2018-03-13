@@ -10,13 +10,13 @@ with open('re.txt', 'a') as file:
 vks = vk_api.VkApi(login=login, password=password)
 vks.auth()
 
-def max_size(lis):
+def max_size(lis, name='photo'):
 	q = set(lis.keys())
 	ma = 0
 	for t in q:
-		if 'photo_' in t and int(t[6:]) > ma:
+		if name+'_' in t and int(t[6:]) > ma:
 			ma = int(t[6:])
-	return lis['photo_' + str(ma)]
+	return lis[name+'_' + str(ma)]
 
 def process(mes):
 	attachments = []
@@ -65,6 +65,14 @@ def process(mes):
 					pro.append({'type': 'image', 'url': max_size(u['link']['photo']), 'from': u['link']['photo']['owner_id'], 'id': u['link']['photo']['id'], 'album': u['link']['photo']['album_id']})
 
 				y['attachments'] = pro
+
+#Подарок
+			elif u['type'] == 'gift':
+				y = {'type': 'gift', 'id': u['gift']['id'], 'url': max_size(u['gift'], 'thumb')}
+
+#Товары
+			elif u['type'] == 'market':
+				y = {'type': 'product', 'id': u['market']['id'], 'name': u['market']['title'], 'cont': u['market']['description'], 'url': u['market']['thumb_photo'], 'category_id': u['market']['category']['id'], 'category': u['market']['category']['name'], 'subcategory_id': u['market']['category']['section']['id'], 'subcategory': u['market']['category']['section']['name'], 'time': u['market']['date'], 'price': u['market']['price']['amount'] / 100, 'currency_id': u['market']['price']['currency']['id'], 'currency': u['market']['price']['name']}
 
 #Другое
 			else:
