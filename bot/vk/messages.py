@@ -26,53 +26,117 @@ def process(mes):
 
 #Посты https://vk.com/wall(from)_(id)
 			if u['type'] == 'wall':
-				y = {'type': 'post', 'from': u['wall']['from_id'], 'id': u['wall']['id']}
+				y = {
+					'type': 'post',
+					'from': u['wall']['from_id'],
+					'id': u['wall']['id'],
+				}
 
 #Картинки
 			elif u['type'] == 'photo':
-				y = {'type': 'image', 'url': max_size(u['photo']), 'from': u['photo']['owner_id'], 'id': u['photo']['id'], 'album': u['photo']['album_id']}
+				y = {
+					'type': 'image',
+					'url': max_size(u['photo']),
+					'from': u['photo']['owner_id'],
+					'id': u['photo']['id'],
+					'album': u['photo']['album_id'],
+				}
 
 #Голосовые сообщения
 			elif u['type'] == 'doc' and u['doc']['ext'] == 'ogg':
-				y = {'type': 'voice', 'url': u['doc']['url'], 'id': u['doc']['id']}
+				y = {
+					'type': 'voice',
+					'url': u['doc']['url'],
+					'id': u['doc']['id'],
+				}
+
 				if 'preview' in u['doc']:
 					y['src'] = u['doc']['preview']['audio_msg']['link_ogg'][:-4]
 
 #Стикеры
 			elif u['type'] == 'sticker':
-				y = {'type': 'sticker', 'url': max_size(u['sticker'])}
+				y = {
+					'type': 'sticker',
+					'url': max_size(u['sticker']),
+				}
 
 #Аудио
 			elif u['type'] == 'audio':
-				y = {'type': 'audio', 'author': u['audio']['artist'], 'name': u['audio']['title'], 'from': u['audio']['owner_id'], 'id': u['audio']['id']}
+				y = {
+					'type': 'audio',
+					'author': u['audio']['artist'],
+					'name': u['audio']['title'],
+					'from': u['audio']['owner_id'],
+					'id': u['audio']['id'],
+				}
+
 				if 'lyrics_id' in u['audio']:
 					y['lyrics_id'] = u['audio']['lyrics_id']
 
 #Документы
 			elif u['type'] == 'doc':
-				y = {'type': 'document', 'url': u['doc']['url'], 'from': u['doc']['owner_id'], 'id': u['doc']['id'], 'name': u['doc']['title']}
+				y = {
+					'type': 'document',
+					'url': u['doc']['url'],
+					'from': u['doc']['owner_id'],
+					'id': u['doc']['id'],
+					'name': u['doc']['title'],
+				}
 
 #Видео https://vk.com/video(from)_(id)
 			elif u['type'] == 'video':
-				y = {'type': 'video', 'from': u['video']['owner_id'], 'id': u['video']['id']}
+				y = {
+					'type': 'video',
+					'from': u['video']['owner_id'],
+					'id': u['video']['id'],
+				}
 
-#Ссылка
+#Ссылки
 			elif u['type'] == 'link':
-				y = {'type': 'link', 'url': u['link']['url'], 'name': u['link']['title'], 'cont': u['link']['description']}
+				y = {
+					'type': 'link',
+					'url': u['link']['url'],
+					'name': u['link']['title'],
+					'cont': u['link']['description'],
+				}
 
 				pro = []
 				if 'photo' in u['link']:
-					pro.append({'type': 'image', 'url': max_size(u['link']['photo']), 'from': u['link']['photo']['owner_id'], 'id': u['link']['photo']['id'], 'album': u['link']['photo']['album_id']})
+					pro.append({
+						'type': 'image',
+						'url': max_size(u['link']['photo']),
+						'from': u['link']['photo']['owner_id'],
+						'id': u['link']['photo']['id'],
+						'album': u['link']['photo']['album_id'],
+					})
 
 				y['attachments'] = pro
 
-#Подарок
+#Подарки
 			elif u['type'] == 'gift':
-				y = {'type': 'gift', 'id': u['gift']['id'], 'url': max_size(u['gift'], 'thumb')}
+				y = {
+					'type': 'gift',
+					'id': u['gift']['id'],
+					'url': max_size(u['gift'], 'thumb'),
+				}
 
 #Товары
 			elif u['type'] == 'market':
-				y = {'type': 'product', 'id': u['market']['id'], 'name': u['market']['title'], 'cont': u['market']['description'], 'url': u['market']['thumb_photo'], 'category_id': u['market']['category']['id'], 'category': u['market']['category']['name'], 'subcategory_id': u['market']['category']['section']['id'], 'subcategory': u['market']['category']['section']['name'], 'time': u['market']['date'], 'price': u['market']['price']['amount'] / 100, 'currency_id': u['market']['price']['currency']['id'], 'currency': u['market']['price']['name']}
+				y = {
+					'type': 'product',
+					'id': u['market']['id'],
+					'name': u['market']['title'],
+					'cont': u['market']['description'],
+					'url': u['market']['thumb_photo'],
+					'category_id': u['market']['category']['id'],
+					'category': u['market']['category']['name'],
+					'subcategory_id': u['market']['category']['section']['id'],
+					'subcategory': u['market']['category']['section']['name'],
+					'time': u['market']['date'],
+					'price': int(u['market']['price']['amount']) / 100,
+					'currency_id': u['market']['price']['currency']['id'],
+					'currency': u['market']['price']['currency']['name'],
+				}
 
 #Другое
 			else:
