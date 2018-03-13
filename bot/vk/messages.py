@@ -26,7 +26,7 @@ def process(mes):
 
 #Посты https://vk.com/wall(from)_(id)
 			if u['type'] == 'wall':
-				y = {'type': 'wall', 'from': u['wall']['from_id'], 'id': u['wall']['id']}
+				y = {'type': 'post', 'from': u['wall']['from_id'], 'id': u['wall']['id']}
 
 #Картинки
 			elif u['type'] == 'photo':
@@ -56,9 +56,20 @@ def process(mes):
 			elif u['type'] == 'video':
 				y = {'type': 'video', 'from': u['video']['owner_id'], 'id': u['video']['id']}
 
+#Ссылка
+			elif u['type'] == 'link':
+				y = {'type': 'link', 'url': u['link']['url'], 'name': u['link']['title'], 'cont': u['link']['description']}
+
+				pro = []
+				if 'photo' in u['link']:
+					pro.append({'type': 'image', 'url': max_size(u['link']['photo']), 'from': u['link']['photo']['owner_id'], 'id': u['link']['photo']['id'], 'album': u['link']['photo']['album_id']})
+
+				y['attachments'] = pro
+
 #Другое
 			else:
 				y = u
+				print(u)
 
 			attachments.append(y)
 
