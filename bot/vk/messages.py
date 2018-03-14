@@ -273,7 +273,7 @@ while True:
 			chat = i['message']['chat_id']
 		except:
 			dialog = i['message']['user_id']
-			name = user_id + '-' + dialog + '.json'
+			name = user_id + '-' + str(dialog) + '.json'
 
 			if name in all_dialogs:
 				with open('data/dialogs/'+name, 'r') as file:
@@ -283,7 +283,7 @@ while True:
 
 			dialogs.append((dialog, num))
 		else:
-			name = user_id + '-' + chat + '.json'
+			name = user_id + '-' + str(chat) + '.json'
 
 			if name in all_chats:
 				with open('data/chats/'+name, 'r') as file:
@@ -317,9 +317,6 @@ for dialogi in dialogs:
 			if pro:
 				x['attachments'] = pro
 
-			#print(x)
-			#print('-'*100)
-
 			mes.append(x)
 
 		if len(newmes) == 200:
@@ -339,7 +336,8 @@ for dialogi in dialogs:
 		with open('data/dialogs/%s-%d.json' % (user_id, dialog), 'w') as file:
 			print(json.dumps(mes, ensure_ascii=False), file=file)
 
-for chat in chats:
+for chati in chats:
+	chat = chati[0]
 	print(chat)
 
 	mes = []
@@ -352,17 +350,14 @@ for chat in chats:
 			break
 
 		for j in newmes:
-			#print(j)
-			#print('-'*100)
+			if j['id'] <= chati[1]:
+				continue
 
 			x = {'id': j['id'], 'text': j['body'], 'from': j['user_id'], 'time': j['date']}
 
 			pro = process(j)
 			if pro:
 				x['attachments'] = pro
-
-			#print(x)
-			#print('-'*100)
 
 			mes.append(x)
 
@@ -371,7 +366,14 @@ for chat in chats:
 		else:
 			break
 	
-	print(len(mes))
+	if len(mes):
+		print(len(mes))
 
-	with open('data/chats/%s-%d.json' % (user_id, chat), 'w') as file:
-		print(json.dumps(mes, ensure_ascii=False), file=file)
+		name = 'data/chats/%s-%d.json' % (user_id, chat)
+
+		if chati[1]:
+			with open(name, 'r') as file:
+				mes = json.loads(file.read()) + mes
+
+		with open(name, 'w') as file:
+			print(json.dumps(mes, ensure_ascii=False), file=file)
