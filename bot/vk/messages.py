@@ -104,7 +104,7 @@ def process(mes):
 					'id': u['video']['id'],
 				}
 
-#Ссылки !выделять статьи
+#Ссылки !выделять статьи и альбомы музыки
 			elif u['type'] == 'link':
 				y = {
 					'type': 'link',
@@ -199,7 +199,7 @@ def process(mes):
 					'url': u['page']['view_url'],
 				}
 
-#Альбом
+#Альбомы картинок (только в сообществах)
 			elif u['type'] == 'album':
 				y = {
 					'type': 'album',
@@ -314,7 +314,11 @@ for chat in chats:
 	mes = []
 	uu = 0
 	while True:
-		newmes = vks.method('messages.getHistory', {'chat_id': chat, 'rev': 1, 'offset': uu, 'count': 200})['items']
+		try:
+			newmes = vks.method('messages.getHistory', {'chat_id': chat, 'rev': 1, 'offset': uu, 'count': 200})['items']
+		except:
+			print({'chat_id': chat, 'rev': 1, 'offset': uu, 'count': 200})
+			break
 
 		for j in newmes:
 			#print(j)
