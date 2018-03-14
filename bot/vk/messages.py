@@ -1,4 +1,4 @@
-import vk_api, json
+import vk_api, json, os
 
 login = input('login: ')
 password = input('password: ')
@@ -260,6 +260,9 @@ def process(mes):
 
 	return attachments
 
+all_dialogs = os.listdir('data/dialogs')
+all_chats = os.listdir('data/chats')
+
 dialogs = []
 chats = []
 u = 0
@@ -267,15 +270,36 @@ while True:
 	x = vks.method('messages.getDialogs', {'offset': u, 'count': 200})
 	for i in x['items']:
 		try:
-			chats.append(i['message']['chat_id'])
+			chat = i['message']['chat_id']
 		except:
-			dialogs.append(i['message']['user_id'])
+			dialog = i['message']['user_id']
+			name = user_id + '-' + dialog + '.json'
+
+			if name in all_dialogs:
+				with open('data/dialogs/'+name, 'r') as file:
+					num = json.loads(file.read())[-1]['id']
+			else:
+				num = 0
+
+			dialogs.append((dialog, num))
+		else:
+			name = user_id + '-' + chat + '.json'
+
+			if name in all_chats:
+				with open('data/chats/'+name, 'r') as file:
+					num = json.loads(file.read())[-1]['id']
+			else:
+				num = 0
+
+			chats.append((chat, num))
+
 	if x['count'] == 200:
 		u += 200
 	else:
 		break
 
-for dialog in dialogs:
+for dialogi in dialogs:
+	dialog = dialogi[0]
 	print(dialog)
 
 	mes = []
@@ -284,8 +308,8 @@ for dialog in dialogs:
 		newmes = vks.method('messages.getHistory', {'user_id': dialog, 'rev': 1, 'offset': uu, 'count': 200})['items']
 
 		for j in newmes:
-			#print(j)
-			#print('-'*100)
+			if j['id'] <= dialogi[1]:
+				continue
 
 			x = {'id': j['id'], 'text': j['body'], 'out': j['out'], 'time': j['date']}
 
@@ -302,11 +326,18 @@ for dialog in dialogs:
 			uu += 200
 		else:
 			break
-	
-	print(len(mes))
 
-	with open('data/dialogs/%s-%d.json' % (user_id, dialog), 'w') as file:
-		print(json.dumps(mes, ensure_ascii=False), file=file)
+	if len(mes):
+		print(len(mes))
+
+		name = 'data/dialogs/%s-%d.json' % (user_id, dialog)
+
+		if dialogi[1]:
+			with open(name, 'r') as file:
+				mes = json.loads(file.read()) + mes
+
+		with open('data/dialogs/%s-%d.json' % (user_id, dialog), 'w') as file:
+			print(json.dumps(mes, ensure_ascii=False), file=file)
 
 for chat in chats:
 	print(chat)
