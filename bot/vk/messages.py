@@ -104,7 +104,7 @@ def process(mes):
 					'id': u['video']['id'],
 				}
 
-#Ссылки
+#Ссылки !выделять статьи
 			elif u['type'] == 'link':
 				y = {
 					'type': 'link',
@@ -179,7 +179,11 @@ def process(mes):
 					'id': u['poll']['id'],
 					'text': u['poll']['question'],
 					'from': u['poll']['owner_id'],
-					'answers': [{'id': i['id'], 'text': i['text'], 'votes': i['votes']} for i in u['poll']['answers']],
+					'answers': [{
+						'id': i['id'],
+						'text': i['text'],
+						'votes': i['votes']
+					} for i in u['poll']['answers']],
 					'time': u['poll']['created'],
 				}
 
@@ -195,6 +199,22 @@ def process(mes):
 					'url': u['page']['view_url'],
 				}
 
+#Альбом
+			elif u['type'] == 'album':
+				y = {
+					'type': 'album',
+					'id': u['album']['id'],
+					'from': u['album']['owner_id'],
+					'name': u['album']['title'],
+					'cont': u['album']['description'],
+					'time': u['album']['created'],
+					'cover_id': u['album']['thumb']['id'],
+					'cover_album': u['album']['thumb']['album_id'],
+					'cover_from': u['album']['thumb']['owner_id'],
+					'cover_url': max_size(u['album']['thumb']),
+					'text': u['album']['thumb']['text'],
+				}
+
 #Другое
 			else:
 				y = u
@@ -204,13 +224,24 @@ def process(mes):
 
 #Геолокация
 	if 'geo' in mes:
-		y = {'type': 'geolocation', 'x': float(mes['geo']['coordinates'].split()[0]), 'y': float(mes['geo']['coordinates'].split()[1])}
+		y = {
+			'type': 'geolocation',
+			'x': float(mes['geo']['coordinates'].split()[0]),
+			'y': float(mes['geo']['coordinates'].split()[1]),
+		}
+
 		attachments.append(y)
 
 #Пересланный сообщения
 	if 'fwd_messages' in mes:
 		for u in mes['fwd_messages']:
-			y = {'type': 'messages', 'text': u['body'], 'from': u['user_id'], 'time': u['date']}
+			y = {
+				'type': 'messages',
+				'text': u['body'],
+				'from': u['user_id'],
+				'time': u['date'],
+			}
+
 			pro = process(u)
 			if pro:
 				y['attachments'] = pro
@@ -218,7 +249,11 @@ def process(mes):
 
 #Действие
 	if 'action' in mes:
-		y = {'type': 'action', 'cont': mes['action']}
+		y = {
+			'type': 'action',
+			'cont': mes['action'],
+		}
+
 		if 'action_text' in mes:
 			y['text'] = mes['action_text']
 		attachments.append(y)
