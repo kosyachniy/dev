@@ -17,5 +17,5 @@ compile/exe/main.spec
 b
 bot/vk/re.txt
 bot/vk/data
-template/flask-site/flask
+**/flask
 template/flask-site/app/*.pyc
