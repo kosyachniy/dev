@@ -4,3 +4,6 @@
 ## Реализация сервера
 [Python Docs](https://docs.python.org/3/library/http.server.html)
  | [HabraHabr](https://habrahabr.ru/sandbox/28540/)
+
+## Получение лицензии для TLS
+[WorkAround](https://workaround.org/ispmail/jessie/create-certificate)

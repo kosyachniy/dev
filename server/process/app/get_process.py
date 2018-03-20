@@ -1,4 +1,4 @@
-from flask import render_template, request, jsonify
+from flask import request
 from app import app
 
 '''
@@ -8,7 +8,6 @@ def index(name):
 	return 'Hiii'
 '''
 
-'''
 @app.route('/')
 def login():
 	method = request.args.get('cm')
@@ -19,10 +18,3 @@ def login():
 		print(username, password)
 
 		return '<html><body><h1>Authorization!</h1>Hi, %s.' % username
-'''
-
-@app.route('/', methods=['POST'])
-def hello():
-	x = request.json
-	print(x)
-	return jsonify(x)
