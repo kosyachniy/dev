@@ -6,13 +6,6 @@ with open('', 'rb') as file:
 '''
 
 link = 'http://167.99.128.56/'
-'''
-	'cm': 'auth',
-	'login': 'Alex',
-	'pass': 'Poloz',
-'''
-import rsa
-
 cont = {
 	'cm': 'reg',
 	'login': 'kosyachniy',
