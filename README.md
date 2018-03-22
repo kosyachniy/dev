@@ -1,13 +1,6 @@
 # Разработка
 [![Travis CI](https://travis-ci.org/kosyachniy/dev.svg?branch=master)](https://travis-ci.org/kosyachniy/dev/)
 
-Добавить
----
-№ | Где | Ошибка | Решение
----|---|---|---
-1 | ``` ai/perceptron ``` | Сделать нейронные сети переобучаемыми | 
-2 | ``` compile ``` | Найти способ запуска Python как приложения | Пакетирование / Cython
-
 Технологии
 ---
 Название | Расположение | Дополнительно
@@ -27,7 +20,10 @@ Twitter | [TweePy](http://docs.tweepy.org/en/v3.5.0/api.html)<br>[GitHub](https:
 InstaGram |  |  |
 Steam | [Steam](http://steam.readthedocs.io/en/latest/user_guide.html)<br>[GitHub](https://github.com/ValvePython/steam) |  |
 
-Обучение
+<br>
+
+# Обучение
+Курсы
 ---
 Предмет | Расположение | Уроки | Код
 ---|---|---|---
@@ -36,18 +32,10 @@ MNIST | ``` ai/tensorflow/mnist ``` | [Google](https://codelabs.developers.googl
 GUI | ``` gui ``` | [PythonWorld](https://pythonworld.ru/gui) |
 HTML / CSS  | ``` template/php/site ``` | [HTMLBook](http://htmlbook.ru/) |
 JS | ``` js ``` | [JavaScript](http://learn.javascript.ru/) |
-AI | ``` ai/tensorflow ``` | [Stepik](https://stepik.org/course/%D0%9D%D0%B5%D0%B9%D1%80%D0%BE%D0%BD%D0%BD%D1%8B%D0%B5-%D1%81%D0%B5%D1%82%D0%B8-401/syllabus)<br>[HabraHabr 1](https://habrahabr.ru/post/312450/)<br>[HabraHabr 2](https://habrahabr.ru/post/313216/) |
+AI / ML / DML | ``` ai/tensorflow ``` | Open Data Science: [ВК](https://vk.com/mlcourse) [HabraHabr](https://habrahabr.ru/company/ods/blog/322626/)<br>ВШЭ & Яндекс: [Coursera](https://www.coursera.org/learn/vvedenie-mashinnoe-obuchenie)<br>[Stepik](https://stepik.org/course/%D0%9D%D0%B5%D0%B9%D1%80%D0%BE%D0%BD%D0%BD%D1%8B%D0%B5-%D1%81%D0%B5%D1%82%D0%B8-401/syllabus)<br>[HabraHabr 1](https://habrahabr.ru/post/312450/)<br>[HabraHabr 2](https://habrahabr.ru/post/313216/) |
 Python |  | [PythonWorld](https://pythonworld.ru/samouchitel-python) |
 Анализ синтаксиса | ``` syntax ```<br>``` parse/text ``` | [НКРЯ](http://www.ruscorpora.ru/)<br>[OpenCorpora](http://opencorpora.org/?page=downloads)<br>[RusVectores](http://rusvectores.org/ru/calculator/)<br>[RDT](https://nlpub.ru/Russian_Distributional_Thesaurus) |
 
-
-# Курсы
-
-Просмотреть курсы
----
-Что | Расположение | Уроки
----|---|---
-Клиент - сервер | ``` server ``` | [TProger](https://tproger.ru/video/advanced-python/?autoplay=1)
 
 Решение
 ---
@@ -60,8 +48,30 @@ Python |  | [PythonWorld](https://pythonworld.ru/samouchitel-python) |
 Конкурсы | [Web Ready](http://www.gotech.vc/)<br>[Список](https://habrahabr.ru/company/ingria_startup/blog/138718/)
 Работа | [HeadHunter](https://spb.hh.ru/search/vacancy?text=python&area=2)
 
+<br>
 
-# Сервисы и технологии
+# Основы
+Терминал
+---
+Код | Действие
+---|---
+``` pip freeze > requirements.txt ``` | Получить requerements.txt
+``` source tensorflow/bin/activate/ ``` | Запустить TensorFlow
+
+Режимы файлов
+---
+Режим | Обозначение
+---|---
+r | Открытие на чтение (является значением по умолчанию).
+w | Открытие на запись, содержимое файла удаляется, если файла не существует, создается новый.
+x | Открытие на запись, если файла не существует, иначе исключение.
+a | Открытие на дозапись, информация добавляется в конец файла.
+
+Приставка | Обозначение
+---|---
+b | Открытие в двоичном режиме.
+t | Открытие в текстовом режиме (является значением по умолчанию).
+\+ | Открытие на чтение и запись
 
 MarkDown
 ---
@@ -96,28 +106,3 @@ install:
 script:
   - ....py
 ```
-
-
-# Основы
-
-Терминал
----
-Код | Действие
----|---
-``` pip freeze > requirements.txt ``` | Получить requerements.txt
-``` source tensorflow/bin/activate/ ``` | Запустить TensorFlow
-
-Режимы файлов
----
-Режим | Обозначение
----|---
-r | Открытие на чтение (является значением по умолчанию).
-w | Открытие на запись, содержимое файла удаляется, если файла не существует, создается новый.
-x | Открытие на запись, если файла не существует, иначе исключение.
-a | Открытие на дозапись, информация добавляется в конец файла.
-
-Приставка | Обозначение
----|---
-b | Открытие в двоичном режиме.
-t | Открытие в текстовом режиме (является значением по умолчанию).
-\+ | Открытие на чтение и запись

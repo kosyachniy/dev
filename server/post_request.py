@@ -11,6 +11,8 @@ link = 'http://167.99.128.56/'
 	'login': 'Alex',
 	'pass': 'Poloz',
 '''
+import rsa
+
 cont = {
 	'cm': 'reg',
 	'login': 'kosyachniy',
