@@ -1,9 +1,15 @@
 # Описание
 [![Travis CI](https://travis-ci.org/kosyachniy/dev.svg?branch=master)](https://travis-ci.org/kosyachniy/dev/)
 
-Репозиторий содержит базовые реализации алгоритмов и технолгий (веб сервисы, блокчейн, парсеры, сортровки, нейронные сети, многопоточность, обработка фото / аудио, боты в соцсетях и т.д.) на различных языках (в основном Python).
+Репозиторий содержит базовые реализации алгоритмов и технолгий (веб сервисы, блокчейн, парсеры, сортировки, нейронные сети, многопоточность, обработка фото / аудио, боты в соцсетях и т.д.) на разных языках (в основном Python).
 
-Библиотека написана для личного использования в других собственных проектах и по мере обучения пополняется новыми реализациями. Цель - создание наиболее оптимального кода и дальнейшее использование готовых частей библиотеки. В директориях есть MarkDown файлы с описанием кода и списком источников, откуда была взята информация для написания соответствующего кода.
+Библиотека написана для личного использования в проектах и по мере обучения пополняется новыми реализациями. Цель - создание наиболее оптимального кода и дальнейшее использование готовых частей библиотеки. В директориях есть MarkDown файлы с описанием кода и списком источников, откуда была взята информация для написания соответствующего кода.
+
+Наиболее интересные части:
+1. ``` syntax/parse.py ``` - Парсер синтаксиса с использованием PyMorphy для определения частей речи и чисткой «грязного текста»
+2. ``` rating ``` - Бинарный алгоритм рейтингирования
+3. ``` bot/vk/meesages.py ``` - Выгрузка абсолютно всех диалогов и чатов с распознанием вложений всех типов и возможность выгрузить все вложения (``` bot/vk/attachments.py ```)
+4. ``` template/php-site ``` и ``` template/flask-site ``` - С нуля написанные веб-сервисы для максимальной оптимизации на любых устройствах (на данный момент используются как шаблоны в 3х работающих сайтах)
 
 <br>
 
@@ -36,7 +42,7 @@ Steam | [Steam](http://steam.readthedocs.io/en/latest/user_guide.html)<br>[GitHu
 ---|---|---|---
 Регулярные выражения | ``` regular ``` | [HabraHabr](https://habrahabr.ru/post/115825/) <br> [Wikipedia](https://ru.wikipedia.org/wiki/%D0%A0%D0%B5%D0%B3%D1%83%D0%BB%D1%8F%D1%80%D0%BD%D1%8B%D0%B5_%D0%B2%D1%8B%D1%80%D0%B0%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F) |
 AI / ML / DML | ``` ai ``` | Open Data Science: [ВК](https://vk.com/mlcourse), [HabraHabr](https://habrahabr.ru/company/ods/blog/322626/)<br>ВШЭ & Яндекс: [Coursera](https://www.coursera.org/learn/vvedenie-mashinnoe-obuchenie)<br>[Stepik](https://stepik.org/course/%D0%9D%D0%B5%D0%B9%D1%80%D0%BE%D0%BD%D0%BD%D1%8B%D0%B5-%D1%81%D0%B5%D1%82%D0%B8-401/syllabus)<br>[HabraHabr 1](https://habrahabr.ru/post/312450/)<br>[HabraHabr 2](https://habrahabr.ru/post/313216/) |
-Анализ синтаксиса | ``` syntax ```<br>``` parse/text ``` | [НКРЯ](http://www.ruscorpora.ru/)<br>[OpenCorpora](http://opencorpora.org/?page=downloads)<br>[RusVectores](http://rusvectores.org/ru/calculator/)<br>[RDT](https://nlpub.ru/Russian_Distributional_Thesaurus) |
+Анализ синтаксиса | ``` syntax ``` | [НКРЯ](http://www.ruscorpora.ru/)<br>[OpenCorpora](http://opencorpora.org/?page=downloads)<br>[RusVectores](http://rusvectores.org/ru/calculator/)<br>[RDT](https://nlpub.ru/Russian_Distributional_Thesaurus) |
 MNIST | ``` ai/tensorflow/mnist ``` | [Google](https://codelabs.developers.google.com/codelabs/cloud-tensorflow-mnist/#0) | [GitHub](https://github.com/martin-gorner/tensorflow-mnist-tutorial)
 HTML / CSS  | ``` style ``` <br> ``` template/php-site ``` <br> ``` template/flask-site ``` | [HTMLBook](http://htmlbook.ru/) |
 JS | ``` js ``` | [JavaScript](http://learn.javascript.ru/) |
@@ -65,7 +71,7 @@ GUI | ``` gui ``` | [PythonWorld](https://pythonworld.ru/gui) |
 ---|---
 ``` pip freeze > requirements.txt ``` | Получить requerements.txt
 ``` source tensorflow/bin/activate/ ``` | Запустить TensorFlow
-
+``` jupyter notebook ``` | Запустить блокнот
 Режимы файлов
 ---
 Режим | Обозначение
