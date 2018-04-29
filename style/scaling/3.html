@@ -1,0 +1,57 @@
+<html>
+<head><link rel="stylesheet" href="3.css"></head>
+<body>
+
+<script>
+
+function place(elem, count, margin, padding, percent) {
+	//var width = document.body.clientWidth / count - margin * 2 - padding * 2;
+	var head = document.head || document.getElementsByTagName('head')[0];
+	var style = document.createElement('style');
+
+	var max_width = 1500, min_width = 375;
+	var ots = margin * 2 + padding * 2;
+	var re = (max_width - min_width) / (count - 1);
+	var obl = max_width * percent / 100;
+	var css = elem + " > div {margin: " + margin + "px; padding: " + padding + "px;}\n@media all and (max-width: " + min_width + "px) {" + elem + " {width: 100%;} " + elem + " > div {width: calc(100% - " + ots + "px);}}\n";
+
+	for (var i = 0; i < count-1; i++) {
+		css += "@media all and (min-width: " + (min_width + re * i) + "px) {" + elem + " {width: " + percent + "%; margin-left: " + (100 - percent) / 2 + "%;} " + elem + " > div {width: calc(" + 100 / (i + 2) + "% - " + ots + "px);}}\n";
+	}
+
+	css += "@media all and (min-width: 1500px) {" + elem + " {width: " + obl + "px; margin-left: calc(50vw - " + obl / 2 + "px);} " + elem + " > div {width: " + (obl / count - ots) + "px;}}";
+
+	//var css = elem + " div {width: " + width + "px;}";
+	//style.styleSheet.cssText = css;
+	style.appendChild(document.createTextNode(css));
+
+	head.appendChild(style);
+}
+
+place('.big', 4, 5, 15, 90);
+
+</script>
+
+<div class="big">
+	<div>
+		123
+	</div><div>
+		Слова слова слова слова
+	</div><div>
+		vhjkjklwdvhjnoiewjkvdsnxvskdjnxkldsvnzhjnascm,zxkalcnszxm,jansckmxz,jaskncmz,xjcknszxmcknzmx,kdcmz,xekladc.zdlszfghgfghgfgfdfghgfdfghgfdfghgfghgfdfghgfdfhgfdfgfdfggfg
+	</div><div>
+		123
+	</div><div style="background-image: url(1.jpg);">
+	</div><div>
+		vhjkjklwdvhjnoiewjkvdsnxvskdjnxkldsvnzhjnascm,zxkalcnszxm,jansckmxz,jaskncmz,xjcknszxmcknzmx,kdcmz,xekladc.zdlszfghgfghgfgfdfghgfdfghgfdfghgfghgfdfghgfdfhgfdfgfdfggfg
+	</div><div>
+		123
+	</div><div>
+		Слова слова слова слова
+	</div><div>
+		vhjkjklwdvhjnoiewjkvdsnxvskdjnxkldsvnzhjnascm,zxkalcnszxm,jansckmxz,jaskncmz,xjcknszxmcknzmx,kdcmz,xekladc.zdlszfghgfghgfgfdfghgfdfghgfdfghgfghgfdfghgfdfhgfdfgfdfggfg
+	</div>
+</div>
+
+</body>
+</html>

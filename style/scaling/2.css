@@ -1,0 +1,89 @@
+html, body, div {margin: 0; padding: 0; vertical-align: top;}
+html, body {width: 100%;}
+div {
+	display: inline-block;
+	word-wrap: break-word;
+	font: Arial;
+
+	background: center no-repeat;
+	-moz-background-size: 100%;
+	-webkit-background-size: 100%;
+	-o-background-size: 100%;
+	background-size: 100%;
+}
+
+/**/
+
+.big div {
+	background-color: #c0543f;
+
+	font-size: 1.36vmax; /*18px;*/
+	height: 160px;
+
+	margin: 10px;
+	padding: 10px;
+}
+
+@media all and (max-width: 350px) {
+	.big {
+		width: 100%;
+
+		background-color: #1104f7;
+	}
+
+	.big div {
+		width: 100%;
+	}
+}
+
+@media all and (min-width: 350px) {
+	.big {
+		width: 80%;
+		margin-left: 10%;
+
+		background-color: #f01735;
+	}
+
+	.big div {
+		width: calc(50% - 40px);
+	}
+}
+
+@media all and (min-width: 500px) {
+	.big {
+		width: 80%;
+		margin-left: 10%;
+
+		background-color: #c0925f;
+	}
+
+	.big div {
+		width: calc(33% - 40px);
+	}
+}
+
+@media all and (min-width: 800px) {
+	.big {
+		width: 80%;
+		margin-left: 10%;
+
+		background-color: #652387;
+	}
+
+	.big div {
+		width: calc(25% - 40px);
+	}
+}
+
+@media all and (min-width: 1500px) {
+	.big {
+		width: 1200px;
+		margin-left: calc(50vw - 600px);
+
+		background-color: #ff0438;
+	}
+
+	.big div {
+		width: 260px;
+	}
+}

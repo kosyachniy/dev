@@ -4,7 +4,11 @@ Math
 
 NumPy
 
-SumPy
+SymPy
+
+SciPy
+
+Sklearn
 
 Fractions
 

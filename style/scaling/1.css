@@ -1,0 +1,29 @@
+html, body, div {margin: 0; padding: 0; vertical-align: top;}
+html, body {width: 100%;}
+div {
+	display: inline-block;
+	word-wrap: break-word;
+	font: Arial;
+
+	background: center no-repeat;
+	-moz-background-size: 100%;
+	-webkit-background-size: 100%;
+	-o-background-size: 100%;
+	background-size: 100%;
+}
+
+/**/
+
+.big {width: 100%;}
+
+.big div {
+	background-color: #c0543f;
+
+	width: 21vmax;
+	height: 30vmin;
+	margin: 1vmax;
+	padding: 1vmax;
+	font-size: 1.36vmax;
+
+	min-width: 200px;
+}
