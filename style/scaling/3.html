@@ -1,36 +1,38 @@
 <html>
-<head><link rel="stylesheet" href="3.css"></head>
-<body>
+<head>
+
+<link rel="stylesheet" href="3.css">
 
 <script>
 
-function place(elem, count, margin, padding, percent) {
+function place(elem, count=4, percent=100, margin=0, padding=0, max_width=1500, min_width=425) {
 	//var width = document.body.clientWidth / count - margin * 2 - padding * 2;
 	var head = document.head || document.getElementsByTagName('head')[0];
-	var style = document.createElement('style');
+	var style = document.getElementsByTagName('style')[0] || document.createElement('style');
 
-	var max_width = 1500, min_width = 375;
 	var ots = margin * 2 + padding * 2;
 	var re = (max_width - min_width) / (count - 1);
 	var obl = max_width * percent / 100;
+
 	var css = elem + " > div {margin: " + margin + "px; padding: " + padding + "px;}\n@media all and (max-width: " + min_width + "px) {" + elem + " {width: 100%;} " + elem + " > div {width: calc(100% - " + ots + "px);}}\n";
 
 	for (var i = 0; i < count-1; i++) {
-		css += "@media all and (min-width: " + (min_width + re * i) + "px) {" + elem + " {width: " + percent + "%; margin-left: " + (100 - percent) / 2 + "%;} " + elem + " > div {width: calc(" + 100 / (i + 2) + "% - " + ots + "px);}}\n";
+		css += "@media all and (min-width: " + ~~(min_width + re * i) + "px) {" + elem + " {width: " + percent + "%; margin-left: " + (100 - percent) / 2 + "%;} " + elem + " > div {width: calc(" + 100 / (i + 2) + "% - " + ots + "px);}}\n";
 	}
 
-	css += "@media all and (min-width: 1500px) {" + elem + " {width: " + obl + "px; margin-left: calc(50vw - " + obl / 2 + "px);} " + elem + " > div {width: " + (obl / count - ots) + "px;}}";
+	css += "@media all and (min-width: " + max_width + "px) {" + elem + " {width: " + obl + "px; margin-left: calc(50vw - " + obl / 2 + "px);} " + elem + " > div {width: " + (obl / count - ots) + "px;}}";
 
-	//var css = elem + " div {width: " + width + "px;}";
-	//style.styleSheet.cssText = css;
 	style.appendChild(document.createTextNode(css));
 
 	head.appendChild(style);
 }
 
-place('.big', 4, 5, 15, 90);
+place('.big', 4, 90, 5, 15);
 
 </script>
+
+</head>
+<body>
 
 <div class="big">
 	<div>
