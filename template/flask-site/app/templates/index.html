@@ -1,7 +1,24 @@
 {% extends "main.html" %}
 {% block cont %}
-<h1>Hi, {{user.nickname}}!</h1>
-{% for post in posts %}
-<div><p>{{post.author.nickname}} says: <b>{{post.body}}</b></p></div>
-{% endfor %}
+
+<div class="info" onclick="change();">↑ Нажми на лого ↑</div>
+
+<script>
+place('.u-notes', 3, 100, 12, 7, 850, 450);
+</script>
+
+<a href="competions"><div class="u-title">Соревнования</div></a>
+
+<div class="u-notes">
+{% for i in competions %}<a href="competions/{{i.id}}"><div><div class="u-img" style="background-image: url(/static/{% if i.images %}load/competions/{{i.images[-1]}}{% else %}photo{% endif %}.jpg);"></div><div class="u-text">{{i.name}}<p>{{i.author}}</p></div></div></a>{% endfor %}
+</div>
+
+<br><br>
+
+<a href="participants"><div class="u-title">Участники</div></a>
+
+<div class="u-notes">
+{% for i in users %}<a href="participants/{{i.login}}"><div><div class="u-img" style="background-image: url(/static/{% if i.photo %}load/users/{{i.photo}}{% else %}photo{% endif %}.jpg);"></div><div class="u-text">{{i.surname}} {{i.name}}<p>@{{i.login}}</p></div></div></a>{% endfor %}
+</div>
+
 {% endblock %}

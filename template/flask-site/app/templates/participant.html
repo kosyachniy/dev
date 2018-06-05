@@ -1,0 +1,35 @@
+{% extends "main.html" %}
+{% block cont %}
+
+<style>
+.block img {height: 200px;}
+.block a {color: blue;}
+</style>
+
+<h2 class="title2">Личная информация</h2>
+<div class="block">
+<img src="/static/{% if participant.photo %}load/users/{{participant.photo}}{% else %}photo{% endif %}.jpg"><br><br>
+
+{{participant.name}} {{participant.surname}} &nbsp; (@{{participant.login}})<br>
+Почта: {{participant.mail}}<br>
+Рейтинг: {{participant.rating}}<br>
+</div>
+
+{% if participant.description %}
+<h2 class="title2">Описание</h2>
+<div class="block">
+{{participant.description}}<br>
+</div>
+{% endif %}
+
+<h2 class="title2">История</h2>
+<div class="block">
+<история соревнований><br>
+</div>
+
+<h2 class="title2">Ещё</h2>
+<div class="block">
+<список пользователей><br>
+</div>
+
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "main.html" %}
+{% block cont %}
+
+<div class="info" onclick="change();">↑ Нажми на лого ↑</div>
+
+<!--
+<div class="menu">
+	<div>Организатор{% for i in organizer %}<a href="?org={{i}}"><div>{{i}}</div></a>{% endfor %}</div><div>Специализация{% for i in specialization %}<a href="?spec={{i}}"><div>{{i}}</div></a>{% endfor %}</div><div id="del">Тип{% for i in type %}<a href="?type={{i}}"><div>{{i}}</div></a>{% endfor %}</div><div id="del">Город{% for i in city %}<a href="?city={{i}}"><div>{{i}}</div></a>{% endfor %}</div><div>Этап{% for i in stage %}<a href="?stage={{i}}"><div>{{i}}</div></a>{% endfor %}</div>
+</div>
+<div class="exp-menu">
+	<--<hr>!->
+	<div>Добавить соревнование:</div>
+	<form action="" method="post"><input placeholder="Название" name="search"></form>
+</div>
+!-->
+
+<script>
+place('.u-notes', 3, 100, 12, 7, 850, 450);
+</script>
+
+<div class="u-title">Соревнования</div>
+
+<div class="u-notes">
+{% for i in competions %}<a href="competions/{{i.id}}"><div><div class="u-img" style="background-image: url(/static/{% if i.images %}load/competions/{{i.images[-1]}}{% else %}photo{% endif %}.jpg);"></div><div class="u-text">{{i.name}}<p>{{i.author}}</p></div></div></a>{% endfor %}
+</div>
+
+{% endblock %}

@@ -1,21 +1,14 @@
-from flask import render_template, flash, redirect
+from flask import render_template, session, request
 from app import app
 
-''' forms.py '''
+from requests import post
+from json import loads
 
-from flask.ext.wtf import Form
-from wtforms import TextField, BooleanField
-from wtforms.validators import Required
-
-class LoginForm(Form):
-	openid = TextField('openid', validators = [Required()])
-	remember_me = BooleanField('remember_me', default = False)
-
-''''''
-
-@app.route('/login', methods = ['GET', 'POST'])
+@app.route('/login')
 def login():
-	form = LoginForm()
-	return render_template('login.html', 
-		title = 'Sign In',
-		form = form)
+	return render_template('login.html',
+		title = 'Логин', #Аккаунт
+		description = 'Регистрация / авторизация',
+		url = request.args.get('url'),
+		user = {'login': session['login'] if 'token' in session else None},
+	)

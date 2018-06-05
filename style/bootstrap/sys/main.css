@@ -1,0 +1,24 @@
+.navbar {
+	background-color: #12313d!important;
+	padding-top: 0!important;
+	padding-bottom: 0!important;
+}
+
+.navbar form {
+	margin: 8px 0 8px 0;
+}
+
+.navbar img {
+	height: 25px;
+}
+
+.navbar input {
+	border-radius: 13px!important;
+	border: 0;
+}
+
+/*
+#183F4E!important; #12313d!important;
+#2D5767;
+#E4A160;
+*/

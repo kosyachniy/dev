@@ -19,3 +19,5 @@ bot/vk/re.txt
 bot/vk/data
 **/flask
 template/flask-site/app/*.pyc
+style/bootstrap/sys/bootstrap.min.css
+ai/OpenDataScience/data

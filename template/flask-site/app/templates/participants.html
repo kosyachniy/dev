@@ -1,0 +1,22 @@
+{% extends "main.html" %}
+{% block cont %}
+
+<div class="info" onclick="change();">↑ Нажми на лого ↑</div>
+
+<script>
+place('.u-notes', 3, 100, 12, 7, 850, 450);
+</script>
+
+<!--
+<div class="menu">
+	<div>Специализация{% for i in specialization %}<a href="?spec={{i}}"><div>{{i}}</div></a>{% endfor %}</div><div>Город{% for i in city %}<a href="?city={{i}}"><div>{{i}}</div></a>{% endfor %}</div><div>Опыт{% for i in experience %}<a href="?exp={{i}}"><div>{{i}}</div></a>{% endfor %}</div><div id="del">Тип участия{% for i in type %}<a href="?type={{i}}"><div>{{i}}</div></a>{% endfor %}</div><div id="del">Рейтинг{% for i in rating %}<a href="?rate={{i}}"><div>{{i}}</div></a>{% endfor %}</div>
+</div>
+!-->
+
+<div class="u-title">Участники</div>
+
+<div class="u-notes">
+{% for i in users %}<a href="participants/{{i.login}}"><div><div class="u-img" style="background-image: url(/static/{% if i.photo %}load/users/{{i.photo}}{% else %}photo{% endif %}.jpg);"></div><div class="u-text">{{i.surname}} {{i.name}}<p>@{{i.login}}</p></div></div></a>{% endfor %}
+</div>
+
+{% endblock %}
