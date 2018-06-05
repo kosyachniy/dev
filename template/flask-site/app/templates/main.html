@@ -19,12 +19,13 @@ Projectivity
 	<meta name="author" content="Poloz Alexey (polozhev@mail.ru)">
 
 {% if description %}
-	<meta name="keywords" content="{{description}}">
-	<meta name="description" content="{{description}}">
+	<meta name="keywords" content="{{ description }}">
+	<meta name="description" content="{{ description }}">
 {% else %}
 	<meta name="keywords" content="Сервис поиска сокомандников на конкурсы, стартапы и конференции">
 	<meta name="description" content="Сервис поиска сокомандников на конкурсы, стартапы и конференции">
 {% endif %}
+
 	<link rel="stylesheet" type="text/css" href="/static/main.css">
 	<script src="/static/main.js"></script>
 </head>
@@ -54,17 +55,33 @@ Projectivity
 			</form>
 		</div><div class="u-user">
 
-	{% if user.login %}
-	<a href="/cabinet">{{user.login}}</a> &nbsp;<a href="/out" class="del">Выйти</a>
-	{% else %}
-	<a class="del">Гость &nbsp;</a><a href="/login{% if url %}?url={{ url }}{% endif %}">Войти</a>
-	{% endif %}
+{% if user['login'] %}
+			<a href="/cabinet">{{ user['login'] }}</a> &nbsp;<a href="/out" class="del">Выйти</a>
+{% else %}
+			<a class="del">Гость &nbsp;</a><a href="/login{% if url %}?url={{ url }}{% endif %}">Войти</a>
+{% endif %}
 
 		</div><div class="u-menu">
 			<div><a href="/">Главная</a></div>
-			<div><a href="/competions">Соревнования</a></div>
-			<div><a href="/participants">Участники</a></div>
-			<div><a href="/about">О нас</a></div>
+
+{% for i in categories %}
+	{% if not i['parent'] %}
+			<div><a href="/{{ i['url'] }}">{{ i['name'] }}</a></div>
+
+		{% if i['url'] == url %}
+			{% for j in categories %}
+				{% if j['parent'] == i['id'] %}
+			<div><a href="/{{ j['url'] }}" class="sub">{{ j['name'] }}</a></div>
+				{% endif %}
+			{% endfor %}
+		{% endif %}
+	{% endif %}
+{% endfor %}
+
+{% if user['admin'] %}
+			<div><a href="/admin/categories">Редактировать</a></div>
+{% endif %}
+
 		</div>
 
 <!-- onclick="ahref('/competions');" -->

@@ -2,21 +2,6 @@
 
 @font-face {font-family: Myriad; src: url(8143.otf);}
 
-/*:root {
-	--main-first: #183f4e;
-	--main-second: #23527c;
-	--main-third: #2d5767;
-	--main-fourth: #e4a160;
-	--main-fifth: #f0bd86;
-}*/
-
-/*:root {
-	--main-first: #4f5a6e;
-	--main-second: #424b5f;
-	--main-third: #3a4357;
-	--main-fourth: #a7b3cb;
-}*/
-
 :root {
 	--main: #495467;
 	--search: #3a4357;
@@ -193,7 +178,6 @@ input[type="file"] {border: 0;}
 	color: var(--font-white);
 }
 
-
 .u-header input:hover::-webkit-input-placeholder {color: var(--font-white); text-align: center;}
 .u-header input:hover:-moz-placeholder {color: var(--font-white); text-align: center;}
 .u-header input:hover::-moz-placeholder {color: var(--font-white); text-align: center;}
@@ -204,65 +188,6 @@ input[type="file"] {border: 0;}
 .u-header input:focus::-moz-placeholder {color: var(--font-white); text-align: center;}
 .u-header input:focus:-ms-input-placeholder {color: var(--font-white); text-align: center;}
 
-/*
-.u-header input::-webkit-input-placeholder {
-	position: relative;
-	-webkit-transition: padding 0.5s;
-	transition: padding 0.5s;
-}
-
-.u-header input:-moz-placeholder {
-	position: relative;
-	-moz-transition: padding 0.5s;
-	transition: padding 0.5s;
-}
-
-.u-header input::-moz-placeholder {
-	position: relative;
-	-moz-transition: padding 0.5s;
-	transition: padding 0.5s;
-}
-
-.u-header input:-ms-input-placeholder {
-	position: relative;
-	-ms-transition: padding 0.5s;
-	transition: padding 0.5s;
-}
-
-.u-header input:hover::-webkit-input-placeholder, .u-header input:focus::-webkit-input-placeholder {
-	text-align: left;
-}
-
-.u-header input:hover:-moz-placeholder, .u-header input:focus:-moz-placeholder{
-	text-align: left;
-}
-
-.u-header input:hover::-moz-placeholder, .u-header input:focus::-moz-placeholder{
-	text-align: left;
-}
-
-.u-header input:hover:-ms-input-placeholder, .u-header input:focus:-ms-input-placeholder{
-	text-align: left;
-}
-*/
-
-/*
-.u-header input:hover::-webkit-input-placeholder, .u-header input:focus::-webkit-input-placeholder {
-	padding-left: 100px;
-}
-
-.u-header input:hover:-moz-placeholder, .u-header input:focus:-moz-placeholder{
-	padding-left: 100px;
-}
-
-.u-header input:hover::-moz-placeholder, .u-header input:focus::-moz-placeholder{
-	padding-left: 100px;
-}
-
-.u-header input:hover:-ms-input-placeholder, .u-header input:focus:-ms-input-placeholder{
-	padding-left: 100px;
-}
-*/
 
 .u-user a {
 	color: var(--font-black);
@@ -286,6 +211,14 @@ input[type="file"] {border: 0;}
 	border-radius: 15px;
 	color: var(--font-white);
 	height: calc(1em + 20px);
+}
+
+.u-menu a.sub {
+	padding: 7px 15px 7px 15px;
+	margin-left: 15px;
+	font-size: 0.97rem;
+	color: var(--search);
+	height: calc(1em + 14px);
 }
 
 .u-menu a:hover {

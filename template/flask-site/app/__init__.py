@@ -17,12 +17,9 @@ from app import signup
 from app import signin
 from app import out
 from app import errors
-from app import competions
-from app import competion
-from app import participants
-from app import participant
 from app import cabinet
 from app import settings
 from app import edit
 from app import avatar
 from app import image
+from app import articles

@@ -9,8 +9,6 @@ from json import dumps
 from random import randint
 from os import listdir
 
-#! если удалить пользователя - новый возможно будет с заниженным id и нарушатся связи в бд
-
 generate = lambda length=32: ''.join([chr(randint(48, 123)) for i in range(length)])
 on = lambda x, y: all([i in x for i in y])
 
@@ -39,7 +37,7 @@ def process():
 	x = request.json
 	#print(x)
 
-	if 'cm' not in x:
+	if 'method' not in x:
 		return '2'
 
 	#Убираем лишние отступы
@@ -55,7 +53,7 @@ def process():
 
 	try:
 #Регистрация
-		if x['cm'] == 'profile.reg':
+		if x['method'] == 'profile.reg':
 			#Не все поля заполнены
 			if not on(x, ('login', 'pass', 'mail')):
 				return '3'
@@ -111,7 +109,7 @@ def process():
 			return token
 
 #Авторизация
-		elif x['cm'] == 'profile.auth':
+		elif x['method'] == 'profile.auth':
 			#Не все поля заполнены
 			if not on(x, ('login', 'pass')):
 				return '3'
@@ -136,7 +134,7 @@ def process():
 			return token
 
 #Изменение личной информации
-		elif x['cm'] == 'profile.settings':
+		elif x['method'] == 'profile.settings':
 			#Не все поля заполнены
 			if not on(x, ('token',)):
 				return '3'
@@ -182,7 +180,7 @@ def process():
 			return '0'
 
 #Закрытие сессии
-		elif x['cm'] == 'profile.exit':
+		elif x['method'] == 'profile.exit':
 			#Не все поля заполнены
 			if not on(x, ('token',)):
 				return '3'
@@ -196,184 +194,52 @@ def process():
 			else:
 				return '4'
 
-#Добавление соревнований
-		elif x['cm'] == 'competions.add':
-			#Не все поля заполнены
-			if not on(x, ('name',)):
-				return '3'
+#Получение категорий
+		elif x['method'] == 'categories.gets':
+			categories = []
+			for i in db['categories'].find().sort('priority', -1):
+				del i['_id']
 
-			try:
-				id = db['competions'].find().sort('id', -1)[0]['id'] + 1
-			except:
-				id = 1
+				categories.append(i)
+			return dumps(categories)
 
-			if 'owners' in x: del x['owners']
-			if user: x['owners'] = [user,]
+# db['categories'].insert({
+# 	'id': 1,
+# 	'parent': 0,
+# 	'name': 'Раздел 1',
+# 	'url': 'art',
+# 	'priority': 50,
+# })
 
-			query = {'id': id}
-			for i in ('name', 'description', 'cont', 'time', 'durability', 'author', 'quantity', 'type', 'prize', 'url', 'geo', 'stage', 'owners'):
-				if i in x: query[i] = x[i]
-
-			query['show'] = 0
-			db['competions'].insert(query)
-
-			if 'images' in x:
-				images = []
-
-				for i in x['images']:
-					try:
-						image = load_image('app/static/load/competions', i)
-
-					#Ошибка загрузки изображения
-					except:
-						return '4'
-
-					else:
-						images.append(image)
-
-				query = db['competions'].find_one({'id': id}) #оптимизировать
-				query['images'] = images
-				db['competions'].save(query)
-
-			return 'id%d' % id
-
-#Изменение соревнования
-		elif x['cm'] == 'competions.edit':
-			#Не все поля заполнены
-			if not on(x, ('token', 'id')):
-				return '3'
-
-			i = db['tokens'].find_one({'token': x['token']})
-			if i:
-				id = i['id']
-
-				i = db['users'].find_one({'id': id})
-				admin = i['admin'] if 'admin' in i else 0
-
-			#Несуществует токен
-			else:
-				return '4'
-
-			query = db['competions'].find_one({'id': x['id']})
-			if query:
-				owners = query['owners']
-
-			#Несуществующий конкурс
-			else:
-				return '5'
-
-			#Нет прав на редактирование соревнования
-			if not admin and id not in owners:
-				return '6'
-
-			#Отображение соревнования в списке
-			if not query['show'] and 'show' in x and x['show'] and admin < 2:
-				return '8'
-
-			for i in ('name', 'description', 'cont', 'time', 'durability', 'author', 'quantity', 'type', 'prize', 'url', 'geo', 'stage', 'show', 'owners'):
-				if i in x: query[i] = x[i]
-			db['competions'].save(query)
-
-			if 'images' in x:
-				images = []
-
-				for i in x['images']:
-					if type(i) != int:
-						try:
-							image = load_image('app/static/load/competions', i)
-
-						#Ошибка загрузки изображения
-						except:
-							return '7'
-
-						else:
-							images.append(image)
-
-					else:
-						images.append(i)
-
-				query['images'] = images
-				db['competions'].save(query)
-
-			return '0'
-
-#Получить соревнования
-		elif x['cm'] == 'competions.gets':
-			num = x['num'] if 'num' in x else None
+#Получение статей
+		elif x['method'] == 'articles.gets':
+			count = x['count'] if 'count' in x else None
 
 			competions = []
-			for i in db['competions'].find().sort('id', -1)[0:num]:
-				if 'owners' in i: del i['owners'] #! добавить индикатор есть-нет право на редактирование
+			for i in db['articles'].find().sort('priority', -1)[0:count]:
 				del i['_id']
 
 				competions.append(i)
 			return dumps(competions)
 
-#Получить соревнование
-		elif x['cm'] == 'competions.get':
-			#Не все поля заполнены
-			if not on(x, ('id',)):
-				return '3'
-
-
-			x = db['competions'].find_one({'id': x['id']})
-
-			x['access'] = False
-			if user:
-				query = db['users'].find_one({'id': user})
-				if query and 'admin' in query and query['admin'] > 1:
-					x['access'] = True
-
-			del x['_id']
-			if 'owners' in x:
-				if user in x['owners']:
-					x['access'] = True
-				del x['owners']
-			return dumps(x)
-
-#Список пользователей
-		elif x['cm'] == 'participants.gets':
-			num = x['num'] if 'num' in x else None
-
-			participants = []
-			for i in db['users'].find({'rating': {'$exists': True}}).sort('id', -1)[0:num]:
-				del i['password']
-				del i['_id']
-				del i['mail']
-				if 'description' in i: del i['description']
-
-				participants.append(i)
-			return dumps(participants)
-
-#Получить участника
-		elif x['cm'] == 'participants.get':
-			#Не все поля заполнены
-			if not on(x, ('id',)) and not on(x, ('login',)) and not user:
-				return '3'
-
-			if 'id' in x:
-				query = db['users'].find_one({'id': x['id']})
-			elif 'login' in x:
-				query = db['users'].find_one({'login': x['login']})
-			else:
-				query = db['users'].find_one({'id': user})
-
-			if 'admin' in query: del query['admin']
-			del query['password']
-			del query['_id']
-
-			return dumps(query)
-
-#Получить новости
-		elif x['cm'] == 'news.gets':
-			pass
-
-#Получить новость
-		elif x['cm'] == 'news.get':
-			pass
+# db['articles'].insert({
+# 	'id': 1,
+# 	'name': 'Title',
+# 	'priority': 50,
+# 	'cont': 'Text',
+# 	'tags': ['article', 'test'],
+# 	'description': 'descr',
+# 	'author': 1,
+# 	'time': 1528238479.252285,
+# 	'category': 1,
+# 	'status': 3,
+# 	'view': [1, 2],
+# 	'like': [1,],
+# 	'dislike': [2,],
+# })
 
 #Поиск
-		elif x['cm'] == 'search':
+		elif x['method'] == 'search':
 			pass
 
 		else:
