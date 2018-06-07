@@ -55,8 +55,8 @@ Projectivity
 			</form>
 		</div><div class="u-user">
 
-{% if user['login'] %}
-			<a href="/cabinet">{{ user['login'] }}</a> &nbsp;<a href="/out" class="del">Выйти</a>
+{% if user.id %}
+			<a href="/cabinet">{{ user.login }}</a> &nbsp;<a href="/out" class="del">Выйти</a>
 {% else %}
 			<a class="del">Гость &nbsp;</a><a href="/login{% if url %}?url={{ url }}{% endif %}">Войти</a>
 {% endif %}
@@ -65,20 +65,20 @@ Projectivity
 			<div><a href="/">Главная</a></div>
 
 {% for i in categories %}
-	{% if not i['parent'] %}
-			<div><a href="/{{ i['url'] }}">{{ i['name'] }}</a></div>
+	{% if not i.parent %}
+			<div><a href="/{{ i.url }}">{{ i.name }}</a></div>
 
-		{% if i['url'] == url %}
+		{% if i.url == url.split('/')[0] %}
 			{% for j in categories %}
-				{% if j['parent'] == i['id'] %}
-			<div><a href="/{{ j['url'] }}" class="sub">{{ j['name'] }}</a></div>
+				{% if j.parent == i.id %}
+			<div><a href="/{{ i.url }}/{{ j.url }}" class="sub">{{ j.name }}</a></div>
 				{% endif %}
 			{% endfor %}
 		{% endif %}
 	{% endif %}
 {% endfor %}
 
-{% if user['admin'] %}
+{% if user.admin and user.admin >= 6 %}
 			<div><a href="/admin/categories">Редактировать</a></div>
 {% endif %}
 

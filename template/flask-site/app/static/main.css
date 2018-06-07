@@ -215,7 +215,9 @@ input[type="file"] {border: 0;}
 
 .u-menu a.sub {
 	padding: 7px 15px 7px 15px;
-	margin-left: 15px;
+	margin-left: 30px;
+	width: calc(100% - 30px);
+	border-radius: 11px; /**/
 	font-size: 0.97rem;
 	color: var(--search);
 	height: calc(1em + 14px);

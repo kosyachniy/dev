@@ -22,4 +22,5 @@ from app import settings
 from app import edit
 from app import avatar
 from app import image
+from app import article
 from app import articles

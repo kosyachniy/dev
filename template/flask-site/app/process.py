@@ -106,7 +106,21 @@ def process():
 			token = generate()
 			db['tokens'].insert({'token': token, 'id': id, 'time': time.time()})
 
-			return token
+			return dumps({'id': id, 'token': token})
+
+# db['users'].insert({
+# 	'id': 1,
+# 	'login': 'kosyachniy',
+# 	'password': '<md5>',
+# 	'name': 'Алексей',
+# 	'surname': 'Полоз',
+# 	'rating': 0,
+# 	'mail': 'polozhev@mail.ru',
+# 	'description': 'Косячь пока косячится',
+# 	'admin': 8,
+# })
+
+# 0 - удалён | 1 - заблокирован | 2 - не авторизован | 3 - обычный | 4 - продвинутый | 5 -  корректор | 6 - модератор | 7 - администратор | 8 - владелец
 
 #Авторизация
 		elif x['method'] == 'profile.auth':
@@ -131,7 +145,7 @@ def process():
 			token = generate()
 			db['tokens'].insert({'token': token, 'id': id, 'time': time.time()})
 
-			return token
+			return dumps({'id': id, 'token': token})
 
 #Изменение личной информации
 		elif x['method'] == 'profile.settings':
@@ -211,7 +225,7 @@ def process():
 # 	'priority': 50,
 # })
 
-#Получение статей
+#Получение статей #сделать выборку полей
 		elif x['method'] == 'articles.gets':
 			count = x['count'] if 'count' in x else None
 
@@ -237,6 +251,38 @@ def process():
 # 	'like': [1,],
 # 	'dislike': [2,],
 # })
+
+#Получение статьи
+		elif x['method'] == 'articles.get':
+			#Не все поля заполнены
+			if not on(x, ('id',)):
+				return '3'
+
+			i = db['articles'].find_one({'id': x['id']})
+
+			if i:
+				del i['_id']
+				return dumps(i)
+
+			#Несуществует такой статьи
+			else:
+				return '4'
+
+#Получение пользователя
+		elif x['method'] == 'users.get':
+			#Не все поля заполнены
+			if not on(x, ('id',)) and not on(x, ('login')):
+				return '3'
+
+			i = db['users'].find_one({'id': x['id']} if 'id' in x else {'login': x['login']})
+
+			if i:
+				del i['_id']
+				return dumps(i)
+
+			#Несуществует такого человека
+			else:
+				return '4'
 
 #Поиск
 		elif x['method'] == 'search':

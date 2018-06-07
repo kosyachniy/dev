@@ -7,7 +7,7 @@
 
 <h2 class="title2">Обновить аватарку</h2>
 <div class="block">
-	<img src="/static/{% if profile.photo %}load/users/{{profile.photo}}{% else %}photo{% endif %}.jpg"><br>
+	<img src="/static/{% if user.photo %}load/users/{{ user.photo }}{% else %}photo{% endif %}.jpg"><br>
 
 	<form action="avatar" method="post" enctype="multipart/form-data">
 		<input type="file" name="file">
@@ -15,22 +15,22 @@
 	</form>
 </div>
 
-<form action="settings?url={{url}}" method="post">
+<form action="settings?url={{ url }}" method="post">
 
 <h2 class="title2">Личная информация</h2>
 <div class="block">
-	<input type="text" name="name" placeholder="Имя"{% if profile.name %} value="{{profile.name}}"{% endif %}>
-	<input type="text" name="surname" placeholder="Фамилия"{% if profile.surname %} value="{{profile.surname}}"{% endif %}>
+	<input type="text" name="name" placeholder="Имя"{% if user.name %} value="{{ user.name }}"{% endif %}>
+	<input type="text" name="surname" placeholder="Фамилия"{% if user.surname %} value="{{ user.surname }}"{% endif %}>
 </div>
 
 <h2 class="title2">Описание</h2>
 <div class="block">
-	<textarea name="description" placeholder="Описание">{% if profile.description %}{{profile.description}}{% endif %}</textarea>
+	<textarea name="description" placeholder="Описание">{% if user.description %}{{ user.description }}{% endif %}</textarea>
 </div>
 
 <h2 class="title2">Контакты</h2>
 <div class="block">
-	<input type="text" name="mail" placeholder="Почта" value="{{profile.mail}}">
+	<input type="text" name="mail" placeholder="Почта" value="{{ user.mail }}">
 </div>
 
 <h2 class="title2">Изменить пароль</h2>
