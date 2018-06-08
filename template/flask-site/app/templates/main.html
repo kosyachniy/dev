@@ -62,16 +62,18 @@
 {% endif %}
 
 		</div><div class="u-menu{% if without_menu %} u-without-menu{% endif %}">
-			<div{% if url == 'index' %} class="u-selected"{% endif %}><a href="/">Главная</a></div>
+			<div onclick="location.href='/'"{% if url == 'index' %} class="u-selected"{% endif %}>Главная</div>
+
+			<hr>
 
 {% for i in categories %}
 	{% if not i.parent %}
-			<div{% if i.id == category and not subcategory %} class="u-selected"{% endif %}><a href="/{{ i.url }}">{{ i.name }}</a><a href="admin/add?cat={{ i.id }}">+</a></div>
+			<div onclick="location.href='/{{ i.url }}'"{% if i.id == category and not subcategory %} class="u-selected"{% endif %}>{{ i.name }} <a href="admin/add?cat={{ i.id }}" class="u-add">+</a></div>
 
 		{% if i.id == category %}
 			{% for j in categories %}
 				{% if j.parent == i.id %}
-			<div class="u-sub{% if j.id == subcategory %} u-selected{% endif %}"><a href="/{{ i.url }}/{{ j.url }}">{{ j.name }}</a></div>
+			<div onclick="location.href='/{{ i.url }}/{{ j.url }}'" class="u-sub{% if j.id == subcategory %} u-selected{% endif %}">{{ j.name }} <a href="admin/add?cat={{ i.id }}" class="u-add">+</a></div>
 				{% endif %}
 			{% endfor %}
 		{% endif %}
@@ -79,7 +81,9 @@
 {% endfor %}
 
 {% if user.admin and user.admin >= 6 %}
-			<div><a href="/admin/categories"{% if category == -1 %} class="u-selected"{% endif %}>Админка</a></div>
+			<hr>
+
+			<div onclick="location.href='/admin/categories'"{% if category == -1 %} class="u-selected"{% endif %}>Админка</div>
 {% endif %}
 
 		</div>
