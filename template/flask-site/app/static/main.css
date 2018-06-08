@@ -211,19 +211,20 @@ input[type="file"] {border: 0;}
 	display: none;
 }
 
-.u-menu div {
+.u-menu div { /* a */
 	width: 100%;
-}
-
-.u-menu a {
 	padding: 10px 15px 10px 15px;
-	width: 100%;
 	border-radius: 15px;
 	color: var(--font-white);
 	height: calc(1em + 20px);
 }
 
-.u-menu a.u-sub {
+.u-menu > div > a {
+	width: 100%;
+	height: 100%;
+}
+
+.u-menu .u-sub {
 	padding: 7px 15px 7px 15px;
 	margin-left: 30px;
 	width: calc(100% - 30px);
@@ -233,11 +234,21 @@ input[type="file"] {border: 0;}
 	height: calc(1em + 14px);
 }
 
-.u-menu:not(:hover) a.u-selected {
+.u-menu .u-add {
+	width: 1em;
+	height: 1em;
+	padding: 0;
+	text-align: center;
+	line-height: 1em;
+	background-color: var(--menu-hover);
+	border-radius: 50%;
+}
+
+.u-menu:not(:hover) .u-selected {
 	background-color: var(--menu-active);
 }
 
-.u-menu a:hover {
+.u-menu div:hover {
 	background-color: var(--menu-hover);
 	/*color: var(--font-white);*/
 }
@@ -311,11 +322,11 @@ input[type="file"] {border: 0;}
 		display: block;
 	}
 
-	.u-menu a {
+	.u-menu div {
 		color: var(--font-black);
 	}
 
-	.u-menu a:hover {
+	.u-menu div:hover {
 		color: var(--font-white);
 	}
 

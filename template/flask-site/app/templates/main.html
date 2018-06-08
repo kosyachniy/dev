@@ -9,9 +9,9 @@
 	<title>
 
 {% if title %}
-{{title}} - Projectivity
+{{title}} - {Source}
 {% else %}
-Projectivity
+{Source}
 {% endif %}
 
 	</title>
@@ -62,16 +62,16 @@ Projectivity
 {% endif %}
 
 		</div><div class="u-menu{% if without_menu %} u-without-menu{% endif %}">
-			<div><a href="/"{% if url == 'index' %} class="u-selected"{% endif %}>Главная</a></div>
+			<div{% if url == 'index' %} class="u-selected"{% endif %}><a href="/">Главная</a></div>
 
 {% for i in categories %}
 	{% if not i.parent %}
-			<div><a href="/{{ i.url }}"{% if i.id == category and not subcategory %} class="u-selected"{% endif %}>{{ i.name }}</a></div>
+			<div{% if i.id == category and not subcategory %} class="u-selected"{% endif %}><a href="/{{ i.url }}">{{ i.name }}</a><a href="admin/add?cat={{ i.id }}">+</a></div>
 
 		{% if i.id == category %}
 			{% for j in categories %}
 				{% if j.parent == i.id %}
-			<div><a href="/{{ i.url }}/{{ j.url }}" class="u-sub{% if j.id == subcategory %} u-selected{% endif %}">{{ j.name }}</a></div>
+			<div class="u-sub{% if j.id == subcategory %} u-selected{% endif %}"><a href="/{{ i.url }}/{{ j.url }}">{{ j.name }}</a></div>
 				{% endif %}
 			{% endfor %}
 		{% endif %}
