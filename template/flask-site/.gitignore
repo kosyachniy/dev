@@ -1,5 +1,0 @@
-**/__pycache__
--/
-flask/
-**/*.pyc
-app/static/load

@@ -148,7 +148,7 @@ def process():
 			return dumps({'id': id, 'token': token})
 
 #Изменение личной информации
-		elif x['method'] == 'profile.settings':
+		elif x['method'] == 'profile.edit':
 			#Не все поля заполнены
 			if not on(x, ('token',)):
 				return '3'
@@ -211,7 +211,9 @@ def process():
 #Получение категорий
 		elif x['method'] == 'categories.gets':
 			categories = []
-			for i in db['categories'].find().sort('priority', -1):
+			for i in db['categories'].find().sort('priority', -1): #{"$unwind": "$Applicants"}
+				# print('!!!', i)
+				# time.sleep(2)
 				del i['_id']
 
 				categories.append(i)
@@ -268,10 +270,18 @@ def process():
 			else:
 				return '4'
 
+#Редактирование статьи
+		elif x['method'] == 'articles.edit':
+			pass
+
+#Добавление статьи
+		elif x['method'] == 'articles.add':
+			pass
+
 #Получение пользователя
 		elif x['method'] == 'users.get':
 			#Не все поля заполнены
-			if not on(x, ('id',)) and not on(x, ('login')):
+			if not on(x, ('id',)) and not on(x, ('login',)):
 				return '3'
 
 			i = db['users'].find_one({'id': x['id']} if 'id' in x else {'login': x['login']})
@@ -283,6 +293,14 @@ def process():
 			#Несуществует такого человека
 			else:
 				return '4'
+
+#Поиск
+		elif x['method'] == 'search':
+			pass
+
+#Поиск
+		elif x['method'] == 'search':
+			pass
 
 #Поиск
 		elif x['method'] == 'search':

@@ -61,17 +61,17 @@ Projectivity
 			<a class="del">Гость &nbsp;</a><a href="/login{% if url %}?url={{ url }}{% endif %}">Войти</a>
 {% endif %}
 
-		</div><div class="u-menu">
-			<div><a href="/">Главная</a></div>
+		</div><div class="u-menu{% if without_menu %} u-without-menu{% endif %}">
+			<div><a href="/"{% if url == 'index' %} class="u-selected"{% endif %}>Главная</a></div>
 
 {% for i in categories %}
 	{% if not i.parent %}
-			<div><a href="/{{ i.url }}">{{ i.name }}</a></div>
+			<div><a href="/{{ i.url }}"{% if i.id == category and not subcategory %} class="u-selected"{% endif %}>{{ i.name }}</a></div>
 
-		{% if i.url == url.split('/')[0] %}
+		{% if i.id == category %}
 			{% for j in categories %}
 				{% if j.parent == i.id %}
-			<div><a href="/{{ i.url }}/{{ j.url }}" class="sub">{{ j.name }}</a></div>
+			<div><a href="/{{ i.url }}/{{ j.url }}" class="u-sub{% if j.id == subcategory %} u-selected{% endif %}">{{ j.name }}</a></div>
 				{% endif %}
 			{% endfor %}
 		{% endif %}
@@ -79,7 +79,7 @@ Projectivity
 {% endfor %}
 
 {% if user.admin and user.admin >= 6 %}
-			<div><a href="/admin/categories">Редактировать</a></div>
+			<div><a href="/admin/categories"{% if category == -1 %} class="u-selected"{% endif %}>Админка</a></div>
 {% endif %}
 
 		</div>
@@ -89,7 +89,7 @@ Projectivity
 	</div>
 </div>
 
-<div class="u-body">
+<div class="u-body{% if without_menu %} u-without-menu{% endif %}">
 
 {% block cont %}{% endblock %}
 

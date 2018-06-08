@@ -1,44 +1,29 @@
 {% extends "main.html" %}
 {% block cont %}
 
-<style>
-.block img {height: 200px;}
-</style>
-
 <h2 class="title2">Обновить аватарку</h2>
-<div class="block">
-	<img src="/static/{% if user.photo %}load/users/{{ user.photo }}{% else %}photo{% endif %}.jpg"><br>
+<img src="/static/{% if user.photo %}load/users/{{ user.photo }}{% else %}photo{% endif %}.jpg"><br>
 
-	<form action="avatar" method="post" enctype="multipart/form-data">
-		<input type="file" name="file">
-		<input type="submit" value="Обновить">
-	</form>
-</div>
+<form action="avatar" method="post" enctype="multipart/form-data">
+	<input type="file" name="file">
+	<input type="submit" value="Обновить">
+</form>
 
 <form action="settings?url={{ url }}" method="post">
-
-<h2 class="title2">Личная информация</h2>
-<div class="block">
+	<h2 class="title2">Личная информация</h2>
 	<input type="text" name="name" placeholder="Имя"{% if user.name %} value="{{ user.name }}"{% endif %}>
 	<input type="text" name="surname" placeholder="Фамилия"{% if user.surname %} value="{{ user.surname }}"{% endif %}>
-</div>
 
-<h2 class="title2">Описание</h2>
-<div class="block">
+	<h2 class="title2">Описание</h2>
 	<textarea name="description" placeholder="Описание">{% if user.description %}{{ user.description }}{% endif %}</textarea>
-</div>
 
-<h2 class="title2">Контакты</h2>
-<div class="block">
+	<h2 class="title2">Контакты</h2>
 	<input type="text" name="mail" placeholder="Почта" value="{{ user.mail }}">
-</div>
 
-<h2 class="title2">Изменить пароль</h2>
-<div class="block">
+	<h2 class="title2">Изменить пароль</h2>
 	<input type="password" name="pass" readonly onfocus="this.removeAttribute('readonly')">
 
 	<input type="submit" value="Сохранить">
-</div>
 </form>
 
 	{% endblock %}

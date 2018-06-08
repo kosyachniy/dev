@@ -29,7 +29,7 @@ font {
 
 <div class="u-signup">
 	<font>Зарегистрироваться</font>
-	<form action="signup{% if url %}?url={{ url }}{% endif %}" method="post">
+	<form action="signup{% if redirect %}?url={{ redirect }}{% endif %}" method="post">
 		<input type="text" name="name" placeholder="Имя" required>
 		<input type="text" name="surname" placeholder="Фамилия" required>
 		<input type="text" name="login" placeholder="Ник" readonly onfocus="this.removeAttribute('readonly')" required>
@@ -42,7 +42,7 @@ font {
 	</div>
 </div><div class="u-signin">
 	<font>Войти</font>
-	<form action="signin{% if url %}?url={{ url }}{% endif %}" method="post">
+	<form action="signin{% if redirect %}?url={{ redirect }}{% endif %}" method="post">
 		<input placeholder="Логин" name="login" required autofocus>
 		<input type="password" placeholder="Пароль" name="pass" required>
 		<input type="submit" value="Войти">

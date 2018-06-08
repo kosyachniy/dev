@@ -11,12 +11,25 @@ def article(id):
 
 	article = loads(post(LINK, json={'method': 'articles.get', 'id': id}).text)
 
+	category = 0
+	subcategory = 0
+	for i in categories:
+		if i['id'] == article['category']:
+			if i['parent']:
+				category = i['parent']
+				subcategory = i['id']
+			else:
+				category = i['id']
+			break
+
 	return render_template('article.html',
 		title = article['name'],
 		description = article['description'],
 		url = article['id'],
 		categories = categories,
 		user = user,
+		category = category,
+		subcategory = subcategory,
 
 		article = article,
 	)

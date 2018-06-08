@@ -4,12 +4,18 @@
 
 :root {
 	--main: #495467;
+
 	--search: #3a4357;
 	--search-hover: #fff;
-	--menu-hover: #e1e5eb;
+
+	--menu-active: #eaeef6;
+	--menu-hover: #eaeef6; /*#e1e5eb;*/
+
 	--font-black: #a7b3cb;
 	--font-white: #3a4357;
 	--font: #3a4357; /*#000;*/
+	--font-sub: #5a6377; /*#3a4357;*/
+
 	--border: #e1e5eb; /*#c0c0c0;*/
 	--border-active: #a0acc4; /*#00bfff;*/
 	--border-submit: #00e600;
@@ -201,6 +207,10 @@ input[type="file"] {border: 0;}
 	padding: 15px 15px 15px 15px;
 }
 
+.u-menu.u-without-menu {
+	display: none;
+}
+
 .u-menu div {
 	width: 100%;
 }
@@ -213,14 +223,18 @@ input[type="file"] {border: 0;}
 	height: calc(1em + 20px);
 }
 
-.u-menu a.sub {
+.u-menu a.u-sub {
 	padding: 7px 15px 7px 15px;
 	margin-left: 30px;
 	width: calc(100% - 30px);
 	border-radius: 11px; /**/
 	font-size: 0.97rem;
-	color: var(--search);
+	color: var(--font-sub);
 	height: calc(1em + 14px);
+}
+
+.u-menu:not(:hover) a.u-selected {
+	background-color: var(--menu-active);
 }
 
 .u-menu a:hover {
@@ -238,6 +252,11 @@ input[type="file"] {border: 0;}
 	width: calc(100% - 250px);
 }
 
+.u-body.u-without-menu {
+	width: 100%;
+	left: 0;
+}
+
 
 @media all and (min-width: 1100px) {
 	.u-header {
@@ -253,6 +272,11 @@ input[type="file"] {border: 0;}
 	.u-body {
 		left: calc(50% - 300px);
 		width: 850px;
+	}
+
+	.u-body.u-without-menu {
+		width: 1100px;
+		left: calc(50% - 550px);
 	}
 }
 
@@ -281,6 +305,10 @@ input[type="file"] {border: 0;}
 	.u-menu {
 		position: static;
 		width: 100%;
+	}
+
+	.u-menu.u-without-menu {
+		display: block;
 	}
 
 	.u-menu a {
