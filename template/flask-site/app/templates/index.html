@@ -15,8 +15,6 @@ place('.u-notes', 3, 100, 12, 7, 850, 450);
 	{% for i in j.articles %}<a href="/{{ i.id }}"><div><div class="u-img" style="background-image: url(/static/load/articles/{{ i.id }});"></div><div class="u-text">{{ i.name }}<p>{{ i.description }}</p></div></div></a>{% endfor %}
 </div>
 
-<!-- {% if exists('/static/load/articles/%d' % (i.id,)) %}load/articles/{{ i.id }}{% else %}photo.jpg{% endif %} -->
-
 <br><br>
 
 {% endfor %}

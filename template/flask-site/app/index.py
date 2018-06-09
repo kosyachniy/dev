@@ -4,8 +4,6 @@ from app import app, LINK
 from requests import post
 from json import loads
 
-from os.path import exists
-
 @app.route('/', methods=['GET'])
 @app.route('/index')
 def index():
@@ -32,5 +30,4 @@ def index():
 		user = user,
 
 		articles = articles,
-		exists = exists,
 	)
