@@ -231,12 +231,19 @@ def process():
 		elif x['method'] == 'articles.gets':
 			count = x['count'] if 'count' in x else None
 
-			competions = []
-			for i in db['articles'].find().sort('priority', -1)[0:count]:
-				del i['_id']
+			category = None
+			if 'category' in x:
+				category = [x['category'],]
+				for i in db['categories'].find({'parent': x['category']}):
+					category.append(i['id'])
+				category = {'category': {'$in': category}}
 
-				competions.append(i)
-			return dumps(competions)
+			articles = []
+			for i in db['articles'].find(category).sort('priority', -1)[0:count]:
+				del i['_id']
+				
+				articles.append(i)
+			return dumps(articles)
 
 # db['articles'].insert({
 # 	'id': 1,

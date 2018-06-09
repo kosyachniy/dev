@@ -66,17 +66,13 @@
 
 			<hr>
 
-{% for i in categories %}
-	{% if not i.parent %}
+{% for i in categories if not i.parent %}
 			<div onclick="location.href='/{{ i.url }}'"{% if i.id == category and not subcategory %} class="u-selected"{% endif %}>{{ i.name }} <a href="admin/add?cat={{ i.id }}" class="u-add">+</a></div>
 
-		{% if i.id == category %}
-			{% for j in categories %}
-				{% if j.parent == i.id %}
+	{% if i.id == category %}
+		{% for j in categories if j.parent == i.id %}
 			<div onclick="location.href='/{{ i.url }}/{{ j.url }}'" class="u-sub{% if j.id == subcategory %} u-selected{% endif %}">{{ j.name }} <a href="admin/add?cat={{ i.id }}" class="u-add">+</a></div>
-				{% endif %}
-			{% endfor %}
-		{% endif %}
+		{% endfor %}
 	{% endif %}
 {% endfor %}
 

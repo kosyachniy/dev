@@ -1,19 +1,21 @@
 {% extends "main.html" %}
 {% block cont %}
 
-<div class="info" onclick="change();">↑ Нажми на лого ↑</div>
+<div class="u-info" onclick="change();">↑ Нажми на лого ↑</div>
 
 <script>
 place('.u-notes', 3, 100, 12, 7, 850, 450);
 </script>
 
-{% for i in categories %}
+{% for j in articles %}
 
-<a href="{{ i.url }}"><div class="u-title">{{ i.name }}</div></a>
+<a href="{{ j.url }}"><div class="u-title">{{ j.name }}</div></a>
 
 <div class="u-notes">
-{% for i in articles %}<a href="/{{i.id}}"><div><div class="u-img" style="background-image: url(/static/{% if i.images %}load/articles/{{ i.images[-1] }}{% else %}photo{% endif %}.jpg);"></div><div class="u-text">{{ i.name }}<p>{{ i.description }}</p></div></div></a>{% endfor %}
+	{% for i in j.articles %}<a href="/{{ i.id }}"><div><div class="u-img" style="background-image: url(/static/load/articles/{{ i.id }});"></div><div class="u-text">{{ i.name }}<p>{{ i.description }}</p></div></div></a>{% endfor %}
 </div>
+
+<!-- {% if exists('/static/load/articles/%d' % (i.id,)) %}load/articles/{{ i.id }}{% else %}photo.jpg{% endif %} -->
 
 <br><br>
 

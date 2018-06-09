@@ -1,0 +1,3 @@
+<div class="u-notes">
+{% for i in articles %}<a href="/{{ i.id }}"><div><div class="u-img" style="background-image: url(/static/{% if i.images %}load/articles/{{ i.images[-1] }}{% else %}photo{% endif %}.jpg);"></div><div class="u-text">{{ i.name }}<p>{{ i.description }}</p></div></div></a>{% endfor %}
+</div>
