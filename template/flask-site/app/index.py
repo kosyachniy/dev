@@ -25,6 +25,7 @@ def index():
 	return render_template('index.html',
 		title = 'Главная',
 		description = '',
+		tags = [],
 		url = 'index',
 		categories = categories,
 		user = user,

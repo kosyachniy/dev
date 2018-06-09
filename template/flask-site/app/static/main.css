@@ -33,7 +33,7 @@ table, tr, td {border: 1px solid var(--font); border-collapse: collapse;}
 div, table, tr, td, hr {margin: 0; padding: 0;}
 body, div, td {vertical-align: top;}
 
-div, a, input, img, form {
+div, a, input, img, form, textarea {
 	box-sizing: border-box;
 	display: inline-block;
 	background: center no-repeat;
@@ -52,7 +52,7 @@ form {
 	text-align: center;
 }
 
-input, textarea {
+input, textarea, select {
 	display: inline-block;
 	vertical-align: middle;
 	width: 100%;
@@ -78,9 +78,9 @@ input[type="submit"]:hover {
 	border: 1px solid var(--border-active);
 }
 
-textarea:focus, input:focus {outline: none;}
+textarea:focus, input:focus, select:focus {outline: none;}
 
-input:hover, input:active, input:focus, textarea, textarea:active, textarea:focus {
+input:hover, input:active, input:focus, textarea:hover, textarea:active, textarea:focus, select:hover, select:active, select:focus {
 	border: 1px solid var(--border-active);
 	background-color: #fff;
 }
@@ -93,6 +93,20 @@ input[type="checkbox"] {
 }
 
 input[type="file"] {border: 0;}
+
+/* jQuery */
+
+textarea {
+	resize: none;
+}
+
+textarea.u-cont {
+	height: 250px;
+}
+
+textarea.u-descr {
+	height: 100px;
+}
 
 
 /* Верхняя полоса */
@@ -241,8 +255,6 @@ input[type="file"] {border: 0;}
 	height: 1.3rem;
 	padding: 0;
 	text-align: center;
-	font-size: 1.3rem;
-	line-height: 1.3rem;
 	background-color: var(--font-black); /*var(--menu-hover);*/
 	color: var(--font-white);
 	border-radius: 5px; /*50%;*/
@@ -252,6 +264,7 @@ input[type="file"] {border: 0;}
 
 .u-menu .u-sub .u-add {
 	margin-top: -0.165rem;
+	font-size: 1.1rem;
 }
 
 .u-menu:not(:hover) .u-selected {

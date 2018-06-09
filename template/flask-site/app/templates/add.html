@@ -1,0 +1,31 @@
+{% extends "main.html" %}
+{% block cont %}
+
+<div class="u-title">Добавить статью</div>
+
+<form action="sys_add_article" method="post">
+	<input type="text" name="name" placeholder="Название" readonly onfocus="this.removeAttribute('readonly')" required>
+
+	<select name="category" required>
+		<option disabled selected>Категория</option>
+		
+{% for i in categories %}
+		<option value="{{ i.id }}"{% if i.id == selected %} selected{% endif %}>{{ i.name }}</option>
+{% endfor %}
+
+	</select>
+
+	<textarea name="cont" placeholder="Содержание" class="u-cont" required></textarea>
+
+	<br><br>
+
+	<input type="text" name="tags" placeholder="Теги" readonly onfocus="this.removeAttribute('readonly')" required>
+
+	<textarea name="description" placeholder="Описание" class="u-descr"></textarea>
+
+	<input type="text" name="priority" placeholder="Приоритет" value="50" readonly onfocus="this.removeAttribute('readonly')">
+
+	<input type="submit" value="Добавить">
+</form>
+
+{% endblock %}

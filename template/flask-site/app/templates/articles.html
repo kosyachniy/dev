@@ -7,7 +7,7 @@
 place('.u-notes', 3, 100, 12, 7, 850, 450);
 </script>
 
-<div class="u-title">{% for i in categories %}{% if (not subcategory and i.id == category) or i.id == subcategory %}{{ i.name }}{% endif %}{% endfor %}</div>
+<div class="u-title">{% for i in categories %}{% if (not subcategory and i.id == category) or (subcategory and i.id == subcategory) %}{{ i.name }}{% endif %}{% endfor %}</div>
 
 <div class="u-notes">
 {% for i in articles %}<a href="/{{ i.id }}"><div><div class="u-img" style="background-image: url(/static/load/articles/{{ i.id }});"></div><div class="u-text">{{ i.name }}<p>{{ i.description }}</p></div></div></a>{% endfor %}

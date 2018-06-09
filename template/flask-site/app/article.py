@@ -25,6 +25,7 @@ def article(id):
 	return render_template('article.html',
 		title = article['name'],
 		description = article['description'],
+		tags = article['tags'],
 		url = article['id'],
 		categories = categories,
 		user = user,

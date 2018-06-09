@@ -14,6 +14,7 @@ def login():
 	return render_template('login.html',
 		title = 'Логин', #Аккаунт
 		description = 'Регистрация / Авторизация',
+		tags = ['Регистрация', 'Авторизация'],
 		url = 'login?url=' + redirect,
 		user = user,
 		categories = categories,

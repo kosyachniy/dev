@@ -9,9 +9,9 @@
 	<title>
 
 {% if title %}
-{{title}} - {Source}
+	{{title}} - {Source}
 {% else %}
-{Source}
+	{Source}
 {% endif %}
 
 	</title>
@@ -19,15 +19,20 @@
 	<meta name="author" content="Poloz Alexey (polozhev@mail.ru)">
 
 {% if description %}
-	<meta name="keywords" content="{{ description }}">
 	<meta name="description" content="{{ description }}">
 {% else %}
-	<meta name="keywords" content="Сервис поиска сокомандников на конкурсы, стартапы и конференции">
-	<meta name="description" content="Сервис поиска сокомандников на конкурсы, стартапы и конференции">
+	<meta name="description" content="Статейник: Статьи на различные темы, оригинальный контент, информативно и по сути.">
 {% endif %}
 
+{% if tags %}
+	<meta name="keywords" content="{% for i in tags %}{{ i }},{% endfor %}">
+{% else %}
+	<meta name="keywords" content="Статейник,">
+{% endif %}
+	
+
 	<link rel="stylesheet" type="text/css" href="/static/main.css">
-	<script src="/static/main.js"></script>
+	<script src="/static/main_header.js"></script>
 </head>
 <body>
 
@@ -67,11 +72,11 @@
 			<hr>
 
 {% for i in categories if not i.parent %}
-			<div onclick="location.href='/{{ i.url }}'"{% if i.id == category and not subcategory %} class="u-selected"{% endif %}>{{ i.name }} <a href="admin/add?cat={{ i.id }}" class="u-add">+</a></div>
+			<div onclick="location.href='/{{ i.url }}'"{% if i.id == category and not subcategory %} class="u-selected"{% endif %}>{{ i.name }} <a href="/admin/add?i={{ i.id }}" class="u-add">+</a></div>
 
 	{% if i.id == category %}
 		{% for j in categories if j.parent == i.id %}
-			<div onclick="location.href='/{{ i.url }}/{{ j.url }}'" class="u-sub{% if j.id == subcategory %} u-selected{% endif %}">{{ j.name }} <a href="admin/add?cat={{ i.id }}" class="u-add">+</a></div>
+			<div onclick="location.href='/{{ i.url }}/{{ j.url }}'" class="u-sub{% if j.id == subcategory %} u-selected{% endif %}">{{ j.name }} <a href="/admin/add?i={{ i.id }}" class="u-add">+</a></div>
 		{% endfor %}
 	{% endif %}
 {% endfor %}
@@ -79,7 +84,7 @@
 {% if user.admin and user.admin >= 6 %}
 			<hr>
 
-			<div onclick="location.href='/admin/categories'"{% if category == -1 %} class="u-selected"{% endif %}>Админка</div>
+			<div onclick="location.href='/admin'"{% if category == -1 %} class="u-selected"{% endif %}>Админка</div>
 {% endif %}
 
 		</div>
@@ -94,5 +99,8 @@
 {% block cont %}{% endblock %}
 
 </div>
+
+<script src="/static/main_footer.js"></script>
+
 </body>
 </html>

@@ -1,0 +1,70 @@
+{% extends "main.html" %}
+{% block cont %}
+
+<style>
+.u-signup, .u-signin {
+	width: 50%;
+	padding: 0 5% 0 5%;
+}
+
+font {
+	font-size: 1.7rem;
+	font-weight: bold;
+	width: 100%;
+	text-align: center;
+	display: block;
+	padding: 20px 0 15px 0;
+}
+
+.u-alert {
+	margin-top: 20px;
+}
+
+@media all and (max-width: 850px) {
+	.u-signup, .u-signin {
+		width: 100%;
+	}
+}
+</style>
+
+<div class="u-signup">
+	<font>Зарегистрироваться</font>
+	<form action="signup{% if redirect %}?url={{ redirect }}{% endif %}" method="post">
+		<input type="text" name="name" placeholder="Имя" required>
+		<input type="text" name="surname" placeholder="Фамилия" required>
+		<input type="text" name="login" placeholder="Ник" readonly onfocus="this.removeAttribute('readonly')" required>
+		<input type="email" name="mail" placeholder="Почта" readonly onfocus="this.removeAttribute('readonly')" required>
+		<input type="password" name="pass" placeholder="Пароль" readonly onfocus="this.removeAttribute('readonly')" required>
+		<input type="submit" value="Зарегистрироваться">
+	</form>
+	<div class="u-alert">
+		Нажимая кнопку «Зарегистрироваться», Вы автоматически соглашаетесь с <a href="privacy" style="color: blue;">условиями сайта</a>.
+	</div>
+</div><div class="u-signin">
+	<font>Войти</font>
+	<form action="signin{% if redirect %}?url={{ redirect }}{% endif %}" method="post">
+		<input placeholder="Логин" name="login" required autofocus>
+		<input type="password" placeholder="Пароль" name="pass" required>
+		<input type="submit" value="Войти">
+	</form>
+	<div class="u-alert">
+	Регистр пароля учитывается
+	</div>
+	<div class="u-alert u-caps">
+	</div>
+	<script>
+
+$('body').keypress(function(e) { 
+	var s = String.fromCharCode(e.which);
+	if (s.toUpperCase() === s && s.toLowerCase() !== s && !e.shiftKey) {
+		$('.u-caps').html('Включён Caps Lock!');
+	} else {
+		$('.u-caps').html('');
+	}
+});
+
+	</script>
+	<br><br>
+	</div>
+
+{% endblock %}
