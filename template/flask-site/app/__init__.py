@@ -1,13 +1,49 @@
-from flask import Flask, redirect
-from flask_compress import Compress
+from flask import Flask, redirect, request
 
-compress = Compress()
+import gzip
+import io
+import json
+from flask.views import MethodView
+
+def gzip_http_request_middleware():
+    encoding = request.headers.get('content-encoding', '')
+    if encoding == 'gzip':
+        gz = request.get_data()
+        zb = io.BytesIO(gz)
+        zf = gzip.GzipFile(fileobj=zb)
+        clear = zf.read()
+        request._cached_data = clear
+
+class JsonEchoViewClass(MethodView):
+    def post(self):
+        data = request.get_json()
+        out = 'Request Payload:\n'
+        if data:
+            out += json.dumps(data, indent=2)
+        else:
+            out += ' * No data received.'
+        out += '\n'
+        return out
+
+
+def json_echo_view_function():
+    data = request.get_json()
+    out = 'Request Payload:\n'
+    if data:
+        out += json.dumps(data, indent=2)
+    else:
+        out += ' * No data received.'
+    out += '\n'
+    return out
+
 
 app = Flask(__name__)
 app.config.from_object('config')
 
-#Compress(app)
-compress.init_app(app)
+app.before_request(gzip_http_request_middleware)
+app.add_url_rule('/', 'echo', json_echo_view_function, methods=['POST', ])
+app.add_url_rule('/alt/', view_func=JsonEchoViewClass.as_view('alt'))
+
 
 LINK = 'http://167.99.128.56/'
 
