@@ -6,30 +6,12 @@
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
 	<meta name="apple-mobile-web-app-capable" content="yes">
-	<title>
-
-{% if title %}
-	{{title}} - {Source}
-{% else %}
-	{Source}
-{% endif %}
-
-	</title>
+	<title>{% if title %}{{title}} - {% endif %}{Source}</title>
 	<link rel ="shortcut icon" type="images/png" href="/static/favicon.png">
+
 	<meta name="author" content="Poloz Alexey (polozhev@mail.ru)">
-
-{% if description %}
-	<meta name="description" content="{{ description }}">
-{% else %}
-	<meta name="description" content="Статейник: Статьи на различные темы, оригинальный контент, информативно и по сути.">
-{% endif %}
-
-{% if tags %}
-	<meta name="keywords" content="{% for i in tags %}{{ i }},{% endfor %}">
-{% else %}
-	<meta name="keywords" content="Статейник,">
-{% endif %}
-	
+	<meta name="description" content="{% if description %}{{ description }}{% else %}Статейник: Статьи на различные темы, оригинальный контент, информативно и по сути.{% endif %}">
+	<meta name="keywords" content="{% if tags %}{% for i in tags %}{{ i }},{% endfor %}{% else %}Статейник,{% endif %}">
 
 	<link rel="stylesheet" type="text/css" href="/static/main.css">
 	<script src="/static/main_header.js"></script>
@@ -52,7 +34,6 @@
 			</defs>
 			<text id="_Source_" data-name="{Source}" class="cls-1" x="-0.727" y="197.008">{Source}</text>
 		</svg>
-
 	</div><div class="u-expand">
 		<div class="u-search">
 			<form action="/search" method="post">
