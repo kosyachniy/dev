@@ -1,8 +1,9 @@
-from flask import render_template, session
+from flask import render_template, session, Markup
 from app import app, LINK, get_preview
 
 from requests import post
 from json import loads
+import markdown
 
 @app.route('/<int:id>')
 def article(id):
@@ -10,6 +11,7 @@ def article(id):
 	user = loads(post(LINK, json={'method': 'users.get', 'id': session['id']}).text) if 'id' in session else {'id': 0, 'admin': 2}
 
 	article = loads(post(LINK, json={'method': 'articles.get', 'id': id}).text)
+	article['cont'] = Markup(markdown.markdown(article['cont']))
 
 	category = 0
 	subcategory = 0

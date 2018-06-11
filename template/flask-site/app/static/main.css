@@ -33,7 +33,7 @@ table, tr, td {border: 1px solid var(--font); border-collapse: collapse;}
 div, table, tr, td, hr {margin: 0; padding: 0;}
 body, div, td {vertical-align: top;}
 
-div, a, input, img, form, textarea {
+div, a, input, img, form, textarea, label {
 	box-sizing: border-box;
 	display: inline-block;
 	background: center no-repeat;
@@ -49,10 +49,9 @@ div, a, input, img, form, textarea {
 form {
 	width: 100%;
 	vertical-align: middle;
-	text-align: center;
 }
 
-input, textarea, select {
+input, textarea, select, label {
 	display: inline-block;
 	vertical-align: middle;
 	width: 100%;
@@ -61,6 +60,7 @@ input, textarea, select {
 	margin: 7px;
 	padding: 7px 10px 7px 10px;
 	border: 1px solid var(--border);
+	color: var(--font-white);
 	appearance: none;
 	-webkit-appearance: none;
 	-moz-appearance: none;
@@ -78,9 +78,9 @@ input[type="submit"]:hover {
 	border: 1px solid var(--border-active);
 }
 
-textarea:focus, input:focus, select:focus {outline: none;}
+textarea:focus, input:focus, select:focus, label:focus {outline: none;}
 
-input:hover, input:active, input:focus, textarea:hover, textarea:active, textarea:focus, select:hover, select:active, select:focus {
+input:hover, input:active, input:focus, textarea:hover, textarea:active, textarea:focus, select:hover, select:active, select:focus, label:hover, label:active, label:focus {
 	border: 1px solid var(--border-active);
 	background-color: #fff;
 }
@@ -92,7 +92,16 @@ input[type="checkbox"] {
 	padding: 20px 0 0 0;
 }
 
-input[type="file"] {border: 0;}
+input[type="file"] {display: none;}
+
+label {cursor: pointer; text-align: left;}
+
+.u-files {
+	width: calc(100% - 25px);
+	margin: 0 0 10px 25px;
+	padding: 0 15px 0 10px;
+	border-left: 3px solid var(--border-active);
+}
 
 /* jQuery */
 

@@ -3,8 +3,24 @@
 
 <div class="u-title">Добавить статью</div>
 
-<form action="/sys_add_article" method="post">
+<form action="/sys_add_article" method="post" enctype="multipart/form-data">
 	<input type="text" name="name" placeholder="Название" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" required>
+
+	<input type="file" name="preview" class="preview" id="preview">
+	<label for="preview">Выбрать превью</label>
+	<script>
+$('.preview').on('change', function() {
+	var file = this.value.split('\\');
+	file = file[file.length-1];
+
+	if ($('div').is('.u-files')) {
+		$('.u-files').html(file);
+	} else {
+		$('label').after('<div class="u-files">' + file + '</div>');
+	}
+});
+	</script>
+
 	<select name="category" required>
 		<option disabled selected>Категория</option>
 		

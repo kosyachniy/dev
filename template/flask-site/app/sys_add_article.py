@@ -2,7 +2,7 @@ from flask import session, request, render_template, redirect
 from app import app, LINK
 
 from requests import post
-import re, json
+import re, json, base64
 
 @app.route('/sys_add_article', methods=['POST'])
 def sys_add_article():
@@ -17,6 +17,11 @@ def sys_add_article():
 		'description': x['description'],
 		'priority': x['priority'] if 'priority' in x else 50,
 	}
+
+	if 'preview' in request.files:
+		y = request.files['preview'].stream.read()
+		y = str(base64.b64encode(y))[2:-1]
+		req['preview'] = y
 
 	req = post(LINK, json=req).text
 

@@ -16,6 +16,7 @@ def get_preview(url, num=0):
 	for i in os.listdir('app' + url):
 		if str(num) + '.' in i:
 			return url + i
+	return url + '0.png'
 
 from app import process
 
