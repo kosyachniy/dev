@@ -1,49 +1,8 @@
-from flask import Flask, redirect, request
-
-import gzip
-import io
-import json
-from flask.views import MethodView
-
-def gzip_http_request_middleware():
-    encoding = request.headers.get('content-encoding', '')
-    if encoding == 'gzip':
-        gz = request.get_data()
-        zb = io.BytesIO(gz)
-        zf = gzip.GzipFile(fileobj=zb)
-        clear = zf.read()
-        request._cached_data = clear
-
-class JsonEchoViewClass(MethodView):
-    def post(self):
-        data = request.get_json()
-        out = 'Request Payload:\n'
-        if data:
-            out += json.dumps(data, indent=2)
-        else:
-            out += ' * No data received.'
-        out += '\n'
-        return out
-
-
-def json_echo_view_function():
-    data = request.get_json()
-    out = 'Request Payload:\n'
-    if data:
-        out += json.dumps(data, indent=2)
-    else:
-        out += ' * No data received.'
-    out += '\n'
-    return out
-
+from flask import Flask, redirect
+import os, re
 
 app = Flask(__name__)
-app.config.from_object('config')
-
-app.before_request(gzip_http_request_middleware)
-app.add_url_rule('/', 'echo', json_echo_view_function, methods=['POST', ])
-app.add_url_rule('/alt/', view_func=JsonEchoViewClass.as_view('alt'))
-
+#app.config.from_object('config')
 
 LINK = 'http://167.99.128.56/'
 
@@ -51,6 +10,12 @@ def get_url(url, rep='competions'):
 	if not url: url = rep
 	if url == 'index': url = ''
 	return redirect(LINK + url)
+
+def get_preview(url, num=0):
+	url = '/static/load/' + url + '/'
+	for i in os.listdir('app' + url):
+		if str(num) + '.' in i:
+			return url + i
 
 from app import process
 

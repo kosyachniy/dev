@@ -3,9 +3,8 @@
 
 <div class="u-title">Добавить статью</div>
 
-<form action="sys_add_article" method="post">
-	<input type="text" name="name" placeholder="Название" readonly onfocus="this.removeAttribute('readonly')" required>
-
+<form action="/sys_add_article" method="post">
+	<input type="text" name="name" placeholder="Название" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" required>
 	<select name="category" required>
 		<option disabled selected>Категория</option>
 		
@@ -14,15 +13,12 @@
 {% endfor %}
 
 	</select>
-
 	<textarea name="cont" placeholder="Содержание" class="u-cont" required></textarea>
 
 	<br><br>
 
 	<input type="text" name="tags" placeholder="Теги" readonly onfocus="this.removeAttribute('readonly')" required>
-
-	<textarea name="description" placeholder="Описание" class="u-descr"></textarea>
-
+	<textarea name="description" placeholder="Описание" class="u-descr" required></textarea>
 	<input type="text" name="priority" placeholder="Приоритет" value="50" readonly onfocus="this.removeAttribute('readonly')">
 
 	<input type="submit" value="Добавить">

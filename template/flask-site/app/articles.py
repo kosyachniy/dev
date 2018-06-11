@@ -1,5 +1,5 @@
 from flask import render_template, session
-from app import app, LINK
+from app import app, LINK, get_preview
 
 from requests import post
 from json import loads
@@ -40,6 +40,7 @@ def articles(cat, sub=''):
 		user = user,
 		category = category,
 		subcategory = subcategory,
+		preview = get_preview,
 
 		articles = articles,
 	)

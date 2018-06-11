@@ -22,13 +22,14 @@ def max_image(url):
 				k = j
 	return k+1
 
-def load_image(url, data, type='base64'):
+def load_image(url, data, adr=None, type='base64'):
 	if type == 'base64':
 		data = base64.b64decode(data)
 
-	id = max_image(url)
+	id = adr if adr else max_image(url)
 	with open(url+'/%d.jpg' % id, 'wb') as file:
 		file.write(data)
+
 	return id
 
 
@@ -49,7 +50,7 @@ def process():
 	if 'token' in x:
 		user = db['tokens'].find_one({'token': x['token']})['id']
 	else:
-		user = None
+		user = 0
 
 	try:
 #Регистрация
@@ -255,10 +256,11 @@ def process():
 # 	'author': 1,
 # 	'time': 1528238479.252285,
 # 	'category': 1,
-# 	'status': 3,
+# 	'status': 3, 1 - черновик 2 - на редакцию 3 - опубликовано 4 - скрыто
 # 	'view': [1, 2],
 # 	'like': [1,],
 # 	'dislike': [2,],
+# 	'comment': [],
 # })
 
 #Получение статьи
@@ -283,7 +285,44 @@ def process():
 
 #Добавление статьи
 		elif x['method'] == 'articles.add':
-			pass
+			#Не все поля заполнены
+			if not on(x, ('name', 'category', 'cont', 'tags', 'description', 'priority')):
+				return '3'
+
+			x['name'] = x['name'].strip()
+			x['description'] = x['description'].replace('\r\n', '').replace('\n', '').strip()
+			x['cont'] = x['cont'].strip()
+
+			try:
+				id = db['articles'].find().sort('id', -1)[0]['id'] + 1
+			except:
+				id = 1
+
+			query = {
+				'id': id,
+				'author': user,
+				'time': time.time(),
+				'status': 3, #!
+				'view': [user,],
+				'like': [],
+				'dislike': [],
+				'comment': [],
+			}
+
+			for i in ('name', 'category', 'cont', 'tags', 'description', 'priority'):
+				if i in x: query[i] = x[i]
+
+			db['articles'].insert(query)
+
+			if 'preview' in x:
+				try:
+					load_image('app/static/load/articles', x['preview'], id)
+
+				#Ошибка загрузки изображения
+				except:
+					return '4'
+
+			return dumps({'id': id})
 
 #Получение пользователя
 		elif x['method'] == 'users.get':

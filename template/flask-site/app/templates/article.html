@@ -2,68 +2,23 @@
 {% block cont %}
 
 <style>
-.block img {height: 200px;}
-.block a {color: blue;}
+img {width: 100%;}
+.u-block a {color: blue;}
+.u-tag {
+	background-color: var(--menu-active);
+	font-size: 0.9em;
+	padding: 12px;
+	border-radius: 15px;
+}
 </style>
 
-<h2 class="title2">Информация</h2>
-<div class="block">
-	<div style="text-align: center; width: 100%;">{% for i in article.images %}<img src="/static/load/articles/{{i}}.jpg">{% endfor %}</div>
-	<br>
-	{% if article.access %}
-	<form action="/image?id={{article.id}}" method="post" enctype="multipart/form-data">
-		<input type="file" name="file">
-		<input type="submit" value="Добавить">
-	</form><br>
-	{% endif %}
+<h2 class="title2">{{ article.name }}</h2>
 
-	{% if article.access %}<form action="/edit?id={{article.id}}" method="post">{% endif %}
+<img src="{{ preview('articles', article.id) }}" alt="{{ article.description }}"><br>
+{% for i in article.tags %}<div class="u-tag">{{ i }}</div>{% endfor %}<br><br>
 
-	{% if article.access %}<input type="text" name="name" value="{{article.name}}">{% else %}{{article.name}}{% endif %} &nbsp; (id: {{article.id}})<br>
-
-	{% if article.access %}<input type="text" name="url" placeholder="Ссылка"{% if article.url %} value="{{article.url}}"{% endif %}>{% else %}{% if article.url %}<a href="{{article.url}}">{{article.url}}</a><br>{% endif %}{% endif %}
-
-	{% if article.access %}<textarea name="description" placeholder="Краткое описание">{% if article.description %}{{article.description}}{% endif %}</textarea>{% else %}{% if article.description %}<br>{{article.description}}<br>{% endif %}{% endif %}
-
-	{% if article.access %}<textarea name="cont" placeholder="Полное описание">{% if article.cont %}{{article.cont}}{% endif %}</textarea>{% else %}{% if article.cont %}<br>{{article.cont}}<br>{% endif %}{% endif %}
+<div class="u-block">
+	{{ article.cont }}
 </div>
-
-{% if article.type or article.stage or article.quantity or article.prize or article.access %}<h2 class="title2">О соревновании</h2>
-<div class="block">
-	{% if article.access %}<input type="text" name="type" placeholder="Тип мероприятия"{% if article.type %} value="{{article.type}}"{% endif %}>{% else %}{% if article.type %}{{article.type}}<br>{% endif %}{% endif %}
-
-	{% if article.access %}<input type="text" name="stage" placeholder="Этап"{% if article.stage %} value="{{article.stage}}"{% endif %}>{% else %}{% if article.stage %}Этап: {{article.stage}}<br>{% endif %}{% endif %}
-
-	{% if article.access %}<input type="text" name="quantity" placeholder="Количество участников"{% if article.quantity %} value="{{article.quantity}}"{% endif %}>{% else %}{% if article.quantity %}Количество участников: {{article.quantity}}<br>{% endif %}{% endif %}
-
-	{% if article.access %}<input type="text" name="prize" placeholder="Главный приз"{% if article.prize %} value="{{article.prize}}"{% endif %}>{% else %}{% if article.prize %}Главный приз: {{article.prize}}<br>{% endif %}{% endif %}
-</div>
-{% endif %}
-
-{% if article.time or article.durability or article.geo or article.access %}
-<h2 class="title2">Проведение</h2>
-<div class="block">
-	{% if article.access %}<input type="text" name="time" placeholder="Начало"{% if article.time %} value="{{article.time}}"{% endif %}>{% else %}{% if article.time %}Начало: {{article.time}}<br>{% endif %}{% endif %}
-
-	{% if article.access %}<input type="text" name="durability" placeholder="Длительность"{% if article.durability %} value="{{article.durability}}"{% endif %}>{% else %}{% if article.durability %}Длительность: {{article.durability}}<br>{% endif %}{% endif %}
-
-	{% if article.access %}<input type="text" name="geo" placeholder="Место проведения"{% if article.geo %} value="{{article.geo}}"{% endif %}>{% else %}{% if article.geo %}Место проведения: {{article.geo}}<br>{% endif %}{% endif %}
-</div>
-{% endif %}
-
-<h2 class="title2">Организатор</h2>
-<div class="block">
-	{% if article.access %}<input type="text" name="author" placeholder="Организатор"{% if article.author %} value="{{article.author}}"{% endif %}>{% else %}{% if article.author %}{{article.author}}<br>{% endif %}{% endif %}
-
-	{% if article.access %}<input type="submit" value="Сохранить"></form>
-</div>{% else %}
-	<история соревнований><br>
-	</div>
-
-	<h2 class="title2">Ещё</h2>
-	<div class="block">
-		<список соревнований><br>
-</div>
-{% endif%}
 
 {% endblock %}
