@@ -4,12 +4,15 @@ from app import app, LINK
 from requests import post
 import re, json, base64
 
-@app.route('/sys_add_article', methods=['POST'])
-def sys_add_article():
+@app.route('/sys_article_edit', methods=['POST'])
+def sys_article_edit():
 	x = request.form
 
+	id = request.args.get('i')
+
 	req = {
-		'method': 'articles.add',
+		'method': 'articles.edit',
+		'id': int(id),
 		'name': x['name'],
 		'category': int(x['category']),
 		'cont': x['cont'],
@@ -25,9 +28,7 @@ def sys_add_article():
 
 	req = post(LINK, json=req).text
 
-	if req.isdigit():
+	if req.isdigit() and int(req) > 0:
 		return render_template('message.html', cont=req)
 
-	req = json.loads(req)
-
-	return redirect(LINK + str(req['id']))
+	return redirect(LINK + str(id))

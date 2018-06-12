@@ -7,7 +7,7 @@ from re import findall, match
 from hashlib import md5
 from json import dumps
 from random import randint
-from os import listdir
+from os import listdir, remove
 
 generate = lambda length=32: ''.join([chr(randint(48, 123)) for i in range(length)])
 on = lambda x, y: all([i in x for i in y])
@@ -281,7 +281,44 @@ def process():
 
 #Редактирование статьи
 		elif x['method'] == 'articles.edit':
-			pass
+			#Не все поля заполнены
+			if not on(x, ('id',)):
+				return '3'
+
+			query = db['articles'].find_one({'id': x['id']})
+
+			#Отсутствует такая статья
+			if not query:
+				return '4'
+
+			if 'name' in x:
+				query['name'] = x['name'].strip()
+			if 'description' in x:
+				query['description'] = x['description'].replace('\r\n', '').replace('\n', '').strip()
+			if 'cont' in x:
+				query['cont'] = x['cont'].strip()
+
+			query['status'] = 3 #!
+
+			for i in ('category', 'tags', 'priority'):
+				if i in x: query[i] = x[i]
+
+			db['articles'].save(query)
+
+			if 'preview' in x:
+				files = listdir('app/static/load/articles')
+				for i in files:
+					if str(x['id']) + '.' in i:
+						remove('app/static/load/articles/' + i)
+
+				try:
+					load_image('app/static/load/articles', x['preview'], x['id'])
+
+				#Ошибка загрузки изображения
+				except:
+					return '5'
+
+			return '0'
 
 #Добавление статьи
 		elif x['method'] == 'articles.add':

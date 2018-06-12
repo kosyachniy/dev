@@ -3,10 +3,11 @@
 
 <style>
 img {width: 100%;}
+
 .u-block a {color: blue;}
 
 .u-tag {
-	background-color: var(--menu-active);
+	background-color: var(--quote);
 	font-size: 0.9em;
 	padding: 12px;
 	border-radius: 15px;
@@ -26,9 +27,9 @@ code {
 }
 </style>
 
-<h2 class="title2">{{ article.name }}</h2>
+<h2 class="u-title">{{ article.name }} &nbsp; <a href="?edit=1"><img src="/static/edit.png" alt="Редактировать"></a></h2>
 
-{% if preview('articles', article.id)[0] == '0' %}<img src="{{ preview('articles', article.id) }}" alt="{{ article.description }}"><br>{% endif %}
+{% if preview('articles', article.id)[0] != '0' %}<img src="{{ preview('articles', article.id) }}" alt="{{ article.description }}"><br>{% endif %}
 {% for i in article.tags %}<div class="u-tag">{{ i }}</div>{% endfor %}<br><br>
 
 <div class="u-block">

@@ -1,0 +1,50 @@
+{% extends "main.html" %}
+{% block cont %}
+
+<style>
+img {width: 100%; margin-top: 10px;}
+</style>
+
+<div class="u-title">Редактировать статью &nbsp; <a href="?"><img src="/static/view.png" alt="Просмотреть"></a></div>
+
+<form action="/sys_article_edit?i={{ article.id }}" method="post" enctype="multipart/form-data">
+	<input type="text" name="name" placeholder="Название" value="{{ article.name }}" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" required>
+
+	{% if preview('articles', article.id)[0] != '0' %}<img src="{{ preview('articles', article.id) }}" alt="{{ article.description }}"><br>{% endif %}
+	<input type="file" name="preview" class="preview" id="preview">
+	<label for="preview">Выбрать превью</label>
+	<script>
+
+$('.preview').on('change', function() {
+	var file = this.value.split('\\');
+	file = file[file.length-1];
+
+	if ($('div').is('.u-files')) {
+		$('.u-files').html(file);
+	} else {
+		$('label').after('<div class="u-files">' + file + '</div>');
+	}
+});
+
+	</script>
+
+	<select name="category" required>
+		<option disabled selected>Категория</option>
+		
+{% for i in categories %}
+		<option value="{{ i.id }}"{% if i.id == article.category %} selected{% endif %}>{{ i.name }}</option>
+{% endfor %}
+
+	</select>
+	<textarea name="cont" placeholder="Содержание" class="u-cont" required>{{ article.cont }}</textarea>
+
+	<br><br>
+
+	<input type="text" name="tags" placeholder="Теги" value="{{ ','.join(article.tags) }}" readonly onfocus="this.removeAttribute('readonly')" required>
+	<textarea name="description" placeholder="Описание" class="u-descr" required>{{ article.description }}</textarea>
+	<input type="text" name="priority" placeholder="Приоритет" value="{{ article.priority }}" readonly onfocus="this.removeAttribute('readonly')">
+
+	<input type="submit" value="Изменить">
+</form>
+
+{% endblock %}

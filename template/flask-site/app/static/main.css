@@ -20,7 +20,7 @@
 	--border-active: #a0acc4; /*#00bfff;*/
 	--border-submit: #00e600;
 
-	--quote: #f6f7f7;
+	--quote: #eaeef6; /*#f6f7f7;*/
 }
 
 body {
@@ -393,6 +393,13 @@ textarea.u-descr {
 	font-size: 30px;
 	font-weight: bold;
 	padding: 0 0 2px 30px;
+}
+
+.u-title img {
+	height: 30px;
+	width: auto;
+	position: relative;
+	top: 5px;
 }
 
 .u-notes a > div {

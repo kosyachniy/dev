@@ -38,7 +38,8 @@ from app import add
 from app import sys_sign_up
 from app import sys_sign_in
 from app import sys_sign_out
-from app import sys_add_article
+from app import sys_article_add
+from app import sys_article_edit
 
 from app import article
 from app import articles

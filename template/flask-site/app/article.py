@@ -1,4 +1,4 @@
-from flask import render_template, session, Markup
+from flask import render_template, session, request, Markup
 from app import app, LINK, get_preview
 
 from requests import post
@@ -11,7 +11,8 @@ def article(id):
 	user = loads(post(LINK, json={'method': 'users.get', 'id': session['id']}).text) if 'id' in session else {'id': 0, 'admin': 2}
 
 	article = loads(post(LINK, json={'method': 'articles.get', 'id': id}).text)
-	article['cont'] = Markup(markdown.markdown(article['cont']).replace('<code>', '<pre class="prettyprint"><code>').replace('</code>', '</code></pre>'))
+	article2 = dict(article)
+	article2['cont'] = Markup(markdown.markdown(article2['cont']).replace('<code>', '<pre class="prettyprint"><code>').replace('</code>', '</code></pre>'))
 
 	category = 0
 	subcategory = 0
@@ -24,7 +25,9 @@ def article(id):
 				category = i['id']
 			break
 
-	return render_template('article.html',
+	edit = request.args.get('edit')
+
+	return render_template('edit.html' if edit else 'article.html',
 		title = article['name'],
 		description = article['description'],
 		tags = article['tags'],
@@ -35,5 +38,5 @@ def article(id):
 		subcategory = subcategory,
 		preview = get_preview,
 
-		article = article,
+		article = article if edit else article2,
 	)
