@@ -19,6 +19,8 @@
 	--border: #e1e5eb; /*#c0c0c0;*/
 	--border-active: #a0acc4; /*#00bfff;*/
 	--border-submit: #00e600;
+
+	--quote: #f6f7f7;
 }
 
 body {

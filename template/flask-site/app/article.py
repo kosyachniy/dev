@@ -11,7 +11,7 @@ def article(id):
 	user = loads(post(LINK, json={'method': 'users.get', 'id': session['id']}).text) if 'id' in session else {'id': 0, 'admin': 2}
 
 	article = loads(post(LINK, json={'method': 'articles.get', 'id': id}).text)
-	article['cont'] = Markup(markdown.markdown(article['cont']))
+	article['cont'] = Markup(markdown.markdown(article['cont']).replace('<code>', '<pre class="prettyprint"><code>').replace('</code>', '</code></pre>'))
 
 	category = 0
 	subcategory = 0

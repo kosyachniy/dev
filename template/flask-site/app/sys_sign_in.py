@@ -4,7 +4,7 @@ from app import app, LINK, get_url
 from requests import post
 from json import loads
 
-@app.route('/signin', methods=['POST'])
+@app.route('/sys_sign_in', methods=['POST'])
 def signin():
 	x = request.form
 

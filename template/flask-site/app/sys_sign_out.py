@@ -5,7 +5,7 @@ from requests import post
 
 LINK = 'http://167.99.128.56/'
 
-@app.route('/out')
+@app.route('/sys_sign_out')
 def out():
 	if 'token' in session:
 		post(LINK, json={'cm': 'profile.exit', 'token': session['token']})

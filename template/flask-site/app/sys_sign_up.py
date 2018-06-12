@@ -4,7 +4,7 @@ from app import app, LINK
 from requests import post
 from json import loads
 
-@app.route('/signup', methods=['POST'])
+@app.route('/sys_sign_up', methods=['POST'])
 def signup():
 	x = request.form
 

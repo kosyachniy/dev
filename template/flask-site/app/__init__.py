@@ -2,7 +2,7 @@ from flask import Flask, redirect
 import os, re
 
 app = Flask(__name__)
-#app.config.from_object('config')
+app.config.from_object('config')
 
 LINK = 'http://167.99.128.56/'
 
@@ -23,9 +23,6 @@ from app import process
 from app import index
 
 from app import login
-from app import signup
-from app import signin
-from app import out
 
 from app import errors
 
@@ -38,6 +35,9 @@ from app import image
 from app import admin
 from app import add
 
+from app import sys_sign_up
+from app import sys_sign_in
+from app import sys_sign_out
 from app import sys_add_article
 
 from app import article

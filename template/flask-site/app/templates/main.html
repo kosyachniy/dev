@@ -13,6 +13,8 @@
 	<meta name="description" content="{% if description %}{{ description }}{% else %}Статейник: Статьи на различные темы, оригинальный контент, информативно и по сути.{% endif %}">
 	<meta name="keywords" content="{% if tags %}{% for i in tags %}{{ i }},{% endfor %}{% else %}Статейник,{% endif %}">
 
+	<script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+
 	<link rel="stylesheet" type="text/css" href="/static/main.css">
 	<script src="/static/main_header.js"></script>
 </head>
@@ -42,7 +44,7 @@
 		</div><div class="u-user">
 
 {% if user.id %}
-			<a href="/cabinet">{{ user.login }}</a> &nbsp;<a href="/out" class="del">Выйти</a>
+			<a href="/cabinet">{{ user.login }}</a> &nbsp;<a href="/sys_sign_out" class="del">Выйти</a>
 {% else %}
 			<a class="del">Гость &nbsp;</a><a href="/login{% if url %}?url={{ url }}{% endif %}">Войти</a>
 {% endif %}
@@ -57,7 +59,7 @@
 
 	{% if i.id == category %}
 		{% for j in categories if j.parent == i.id %}
-			<div onclick="location.href='/{{ i.url }}/{{ j.url }}'" class="u-sub{% if j.id == subcategory %} u-selected{% endif %}">{{ j.name }} <a href="/admin/add?i={{ i.id }}" class="u-add">+</a></div>
+			<div onclick="location.href='/{{ i.url }}/{{ j.url }}'" class="u-sub{% if j.id == subcategory %} u-selected{% endif %}">{{ j.name }} <a href="/admin/add?i={% if j.id %}{{ j.id }}{% else %}{{ i.id }}{% endif %}" class="u-add">+</a></div>
 		{% endfor %}
 	{% endif %}
 {% endfor %}
