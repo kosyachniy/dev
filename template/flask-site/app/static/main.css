@@ -177,7 +177,7 @@ textarea.u-descr {
 	padding: 7px 10px 7px 10px;
 	background-color: var(--search);
 	color: var(--font-black);
-	text-align: center;
+	text-align: left; /* center */
 	border: 0!important;
 	margin: 0;
 	font-size: 18px;
@@ -198,26 +198,28 @@ textarea.u-descr {
 }*/
 /**/
 
-.u-header input::-webkit-input-placeholder {color: var(--font-black);}
-.u-header input:-moz-placeholder {color: var(--font-black);}
-.u-header input::-moz-placeholder {color: var(--font-black);}
-.u-header input:-ms-input-placeholder {color: var(--font-black);}
+.u-search input::-webkit-input-placeholder {color: var(--font-black);}
+.u-search input:-moz-placeholder {color: var(--font-black);}
+.u-search input::-moz-placeholder {color: var(--font-black);}
+.u-search input:-ms-input-placeholder {color: var(--font-black);}
 
-.u-header input:hover, .u-header input:focus {
+.u-search input:hover, .u-search input:focus {
 	background-color: var(--search-hover);
 	text-align: left;
 	color: var(--font-white);
 }
 
-.u-header input:hover::-webkit-input-placeholder {color: var(--font-white); text-align: center;}
-.u-header input:hover:-moz-placeholder {color: var(--font-white); text-align: center;}
-.u-header input:hover::-moz-placeholder {color: var(--font-white); text-align: center;}
-.u-header input:hover:-ms-input-placeholder {color: var(--font-white); text-align: center;}
+/* text-align: center; */
 
-.u-header input:focus::-webkit-input-placeholder {color: var(--font-white); text-align: center;}
-.u-header input:focus:-moz-placeholder {color: var(--font-white); text-align: center;}
-.u-header input:focus::-moz-placeholder {color: var(--font-white); text-align: center;}
-.u-header input:focus:-ms-input-placeholder {color: var(--font-white); text-align: center;}
+.u-search input:hover::-webkit-input-placeholder {color: var(--font-white);}
+.u-search input:hover:-moz-placeholder {color: var(--font-white);}
+.u-search input:hover::-moz-placeholder {color: var(--font-white);}
+.u-search input:hover:-ms-input-placeholder {color: var(--font-white);}
+
+.u-search input:focus::-webkit-input-placeholder {color: var(--font-white);}
+.u-search input:focus:-moz-placeholder {color: var(--font-white);}
+.u-search input:focus::-moz-placeholder {color: var(--font-white);}
+.u-search input:focus:-ms-input-placeholder {color: var(--font-white);}
 
 
 .u-user a {

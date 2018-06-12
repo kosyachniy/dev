@@ -1,10 +1,8 @@
-// Вызов при изменении размеров экрана
+// Менять отображение хедера
 
 $(function() {
 	$(window).resize(hideHeader);
 });
-
-// Менять отображение хедера
 
 var x = document.body.clientWidth;
 

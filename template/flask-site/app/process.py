@@ -16,18 +16,17 @@ def max_image(url):
 	x = listdir(url)
 	k = 0
 	for i in x:
-		if '.jpg' in i:
-			j = int(i.split('.')[0])
-			if j > k:
-				k = j
+		j = findall(r'\d+', i)
+		if len(j) and int(j[0]) > k:
+			k = int(j[0])
 	return k+1
 
-def load_image(url, data, adr=None, type='base64'):
+def load_image(url, data, adr=None, format='jpg', type='base64'):
 	if type == 'base64':
 		data = base64.b64decode(data)
 
 	id = adr if adr else max_image(url)
-	with open(url+'/%d.jpg' % id, 'wb') as file:
+	with open('%s/%d.%s' % (url, id, format), 'wb') as file:
 		file.write(data)
 
 	return id
@@ -312,7 +311,7 @@ def process():
 						remove('app/static/load/articles/' + i)
 
 				try:
-					load_image('app/static/load/articles', x['preview'], x['id'])
+					load_image('app/static/load/articles', x['preview'], x['id'], x['file'].split('.')[-1] if 'file' in x else None)
 
 				#Ошибка загрузки изображения
 				except:
@@ -353,7 +352,7 @@ def process():
 
 			if 'preview' in x:
 				try:
-					load_image('app/static/load/articles', x['preview'], id)
+					load_image('app/static/load/articles', x['preview'], id, x['file'].split('.')[-1] if 'file' in x else None)
 
 				#Ошибка загрузки изображения
 				except:

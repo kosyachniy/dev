@@ -12,7 +12,7 @@ def article(id):
 
 	article = loads(post(LINK, json={'method': 'articles.get', 'id': id}).text)
 	article2 = dict(article)
-	article2['cont'] = Markup(markdown.markdown(article2['cont']).replace('<code>', '<pre class="prettyprint"><code>').replace('</code>', '</code></pre>'))
+	article2['cont'] = Markup(markdown.markdown(article2['cont']))
 
 	category = 0
 	subcategory = 0

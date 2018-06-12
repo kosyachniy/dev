@@ -22,6 +22,7 @@ def sys_article_add():
 		y = request.files['preview'].stream.read()
 		y = str(base64.b64encode(y))[2:-1]
 		req['preview'] = y
+		req['file'] = request.files['preview'].filename
 
 	req = post(LINK, json=req).text
 
