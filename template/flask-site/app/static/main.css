@@ -68,6 +68,21 @@ input, textarea, select, label {
 	-moz-appearance: none;
 }
 
+/*
+input, input:active, input:hover, input:focus {
+	-webkit-tap-highlight-color: transparent!important;
+	-webkit-user-select: none!important;
+	-webkit-appearance: none!important;
+	-webkit-border: 0!important;
+	outline: none!important;
+	-webkit-outline: none!important;
+	outline-style: none;
+	outline-width: 0px !important;
+	outline-color: none !important;
+	outline-offset:0!important;
+}
+*/
+
 input[type="submit"] {
 	width: 100%;
 	margin-top: 15px;
@@ -174,29 +189,13 @@ textarea.u-descr {
 	width: 100%;
 	height: 35px;
 	border-radius: 15px;
-	padding: 7px 10px 7px 10px;
 	background-color: var(--search);
 	color: var(--font-black);
-	text-align: left; /* center */
+	text-align: center;
 	border: 0!important;
 	margin: 0;
 	font-size: 18px;
 }
-
-/**/
-/*input, input:active, input:hover, input:focus {
-	-webkit-tap-highlight-color: transparent!important;
-	-webkit-user-select: none!important;
-	-webkit-appearance: none!important;
-	-webkit-border: 0!important;
-	outline: none!important;
-	-webkit-outline: none!important;
-	outline-style: none;
-	outline-width: 0px !important;
-	outline-color: none !important;
-	outline-offset:0!important;
-}*/
-/**/
 
 .u-search input::-webkit-input-placeholder {color: var(--font-black);}
 .u-search input:-moz-placeholder {color: var(--font-black);}
@@ -205,7 +204,7 @@ textarea.u-descr {
 
 .u-search input:hover, .u-search input:focus {
 	background-color: var(--search-hover);
-	text-align: left;
+	/*text-align: left;*/
 	color: var(--font-white);
 }
 
@@ -220,6 +219,29 @@ textarea.u-descr {
 .u-search input:focus:-moz-placeholder {color: var(--font-white);}
 .u-search input:focus::-moz-placeholder {color: var(--font-white);}
 .u-search input:focus:-ms-input-placeholder {color: var(--font-white);}
+
+/*
+.u-search input::-webkit-input-placeholder {
+	position: relative;
+	-webkit-transition: padding 0.5s;
+	transition: padding 0.5s;
+}
+.u-search input:-moz-placeholder {
+	position: relative;
+	-moz-transition: padding 0.5s;
+	transition: padding 0.5s;
+}
+.u-search input::-moz-placeholder {
+	position: relative;
+	-moz-transition: padding 0.5s;
+	transition: padding 0.5s;
+}
+.u-search input:-ms-input-placeholder {
+	position: relative;
+	-ms-transition: padding 0.5s;
+	transition: padding 0.5s;
+}
+*/
 
 
 .u-user a {
@@ -340,7 +362,7 @@ textarea.u-descr {
 		top: 55px;
 		left: 0;
 		background-color: var(--main);
-		text-align: center;
+		/*text-align: center;*/
 		display: none;
 	}
 
@@ -358,11 +380,11 @@ textarea.u-descr {
 		display: block;
 	}
 
-	.u-menu div {
+	.u-menu div, .u-menu .u-sub {
 		color: var(--font-black);
 	}
 
-	.u-menu div:hover {
+	.u-menu div:hover, .u-menu .u-selected {
 		color: var(--font-white);
 	}
 
@@ -398,10 +420,10 @@ textarea.u-descr {
 }
 
 .u-title img {
-	height: 30px;
+	height: 0.7em;
 	width: auto;
 	position: relative;
-	top: 5px;
+	top: 2px;
 }
 
 .u-notes a > div {

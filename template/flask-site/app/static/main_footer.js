@@ -15,6 +15,8 @@ $('textarea').each(function() {
 
 // Анимация поисковой строки
 
+changeSearch();
+
 $(function() {
 	$(window).resize(changeSearch);
 });
@@ -28,22 +30,24 @@ function getTextWidth(text, font) {
 }
 
 function changeSearch() {
+	$('.u-search input').css('text-align', 'left');
+
 	var y = document.body.clientWidth;
 
 	var text = $('.u-search input').val();
-	if (!text) {
-		text = $('.u-search input').attr('placeholder');
-	}
+	if (!text) text = $('.u-search input').attr('placeholder');
 
-	var width = getTextWidth(text, $('body').css('font'));
+	var width_text = getTextWidth(text, $('body').css('font')) + 15; // !15
+	var width_input = $('.u-search input').outerWidth();
 
-	if (y >= 1100) {
-		var z = 300 - width / 2;
-	} else if (y > 700) {
-		var z = (y - 500 - width) / 2;
-	} else {
-		var z = y;
-	}
+	var padding = (width_input - width_text) / 2;
 
-	$('.u-search input').css('padding-left', z);
+	// Попробовать через head style + transition
+	$('.u-search input').css('padding-left', padding);
+	$('.u-search input').focus(function() {
+		$(this).animate({'padding-left': '10px'}, {'duration': 520, 'easing': 'swing'});
+	});
+	$('.u-search input').focusout(function() {
+		$(this).animate({'padding-left': padding + 'px'}, {'duration': 300, 'easing': 'swing'});
+	});
 }
