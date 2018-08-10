@@ -1,0 +1,22 @@
+{% extends "main.html" %}
+{% block cont %}
+
+<div class="u-info" onclick="change();">↑ Нажми на лого ↑</div>
+
+<script>
+place('.u-notes', 3, 100, 12, 7, 850, 450);
+</script>
+
+{% for j in questions %}
+
+<a href="{{ j.url }}"><div class="u-title">{{ j.name }}</div></a>
+
+<div class="u-notes">
+	{% for i in j.questions %}<a href="/forum/{{ i.id }}"><div><div class="u-text">{{ i.name }}<p>{{ ', '.join(i.tags) }}</p></div></div></a>{% endfor %}
+</div>
+
+<br><br>
+
+{% endfor %}
+
+{% endblock %}

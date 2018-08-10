@@ -225,6 +225,7 @@ def process():
 # 	'name': 'Раздел 1',
 # 	'url': 'art',
 # 	'priority': 50,
+#	'plus': 'article',
 # })
 
 #Получение статей #сделать выборку полей
@@ -380,9 +381,63 @@ def process():
 		elif x['method'] == 'search':
 			pass
 
-#Поиск
-		elif x['method'] == 'search':
-			pass
+#Добавить вопрос
+		elif x['method'] == 'question.add':
+			#Не все поля заполнены
+			if not on(x, ('name', 'category')):
+				return '3'
+
+			x['name'] = x['name'].strip()
+			if x['cont']: x['cont'] = x['cont'].strip()
+
+			try:
+				id = db['question'].find().sort('id', -1)[0]['id'] + 1
+			except:
+				id = 1
+
+			query = {
+				'id': id,
+				'author': user,
+				'time': time.time(),
+				'status': 3, #!
+				'view': [user,],
+				'like': [],
+				'dislike': [],
+				'answers': [],
+			}
+
+			for i in ('name', 'category', 'cont', 'tags'):
+				if i in x: query[i] = x[i]
+
+			db['questions'].insert(query)
+
+			if 'images' in x:
+				try:
+					load_image('app/static/load/questions', x['images'], id, x['file'].split('.')[-1] if 'file' in x else None)
+
+				#Ошибка загрузки изображения
+				except:
+					return '4'
+
+			return dumps({'id': id})
+
+#Получение вопросов
+		elif x['method'] == 'questions.gets':
+			count = x['count'] if 'count' in x else None
+
+			category = None
+			if 'category' in x:
+				category = [x['category'],]
+				for i in db['categories'].find({'parent': x['category']}):
+					category.append(i['id'])
+				category = {'category': {'$in': category}}
+
+			questions = []
+			for i in db['questions'].find(category).sort('time', -1)[0:count]:
+				del i['_id']
+				
+				questions.append(i)
+			return dumps(questions)
 
 #Поиск
 		elif x['method'] == 'search':

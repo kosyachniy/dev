@@ -1,0 +1,43 @@
+{% extends "main.html" %}
+{% block cont %}
+
+<div class="u-title">Задать вопрос</div>
+
+<form action="/sys_question_add" method="post" enctype="multipart/form-data">
+	<input type="text" name="name" placeholder="Короткое описание вопроса" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" required>
+	<textarea name="cont" placeholder="Полное описание вопроса" class="u-cont"></textarea>
+
+	<br><br>
+
+	<input type="file" name="images" class="images" id="images">
+	<label for="images">Выбрать картинки</label>
+	<script>
+
+$('.images').on('change', function() {
+	var file = this.value.split('\\');
+	file = file[file.length-1];
+
+	if ($('div').is('.u-files')) {
+		$('.u-files').html(file);
+	} else {
+		$('label').after('<div class="u-files">' + file + '</div>');
+	}
+});
+
+	</script>
+
+	<select name="category" required>
+		<option disabled selected>Категория</option>
+		
+{% for i in categories if i.plus == 'article' %}
+		<option value="{{ i.id }}"{% if i.id == selected %} selected{% endif %}>{{ i.name }}</option>
+{% endfor %}
+
+	</select>
+
+	<input type="text" name="tags" placeholder="Теги (через запятую)" readonly onfocus="this.removeAttribute('readonly')">
+
+	<input type="submit" value="Добавить">
+</form>
+
+{% endblock %}

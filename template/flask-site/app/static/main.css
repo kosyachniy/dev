@@ -435,10 +435,11 @@ textarea.u-descr {
 	width: 100%;
 	height: 175px;
 	border-radius: 7.5px;
+	margin-bottom: 10px;
 }
 
 .u-notes .u-text {
-	margin: 10px 0 0 7px;
+	margin-left: 7px;
 	font-size: 0.99rem;
 }
 
