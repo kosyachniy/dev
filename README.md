@@ -72,6 +72,7 @@ GUI | ``` gui ``` | [PythonWorld](https://pythonworld.ru/gui) |
 ``` pip freeze > requirements.txt ``` | Получить requerements.txt
 ``` source tensorflow/bin/activate/ ``` | Запустить TensorFlow
 ``` jupyter notebook ``` | Запустить блокнот
+
 Режимы файлов
 ---
 Режим | Обозначение
