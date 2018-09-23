@@ -1,64 +1,196 @@
-import time, requests, vk_api, json
+import json
+import time
 
-GROUP_ID = 151412216
-ALBUM_ID = 247265476
+import vk_api
+import requests
+
 
 with open('keys.json', 'r') as file:
-	s=json.loads(file.read())
+	data = json.loads(file.read())['vk']
 
-	vk=vk_api.VkApi(token=s['token'])
+	vk = vk_api.VkApi(token=data['token'])
 
-	vks=vk_api.VkApi(login=s['login'], password=s['password'])
+	vks = vk_api.VkApi(login=data['login'], password=data['password'])
 	vks.auth()
 
-def send(user, cont, img=[]):
+with open('sets.json', 'r') as file:
+	data = json.loads(file.read())['vk']
+
+	GROUP_ID = data['group']
+	ALBUM_ID = data['album']
+
+
+def max_size(lis, name='photo'):
+	q = set(lis.keys())
+	ma = 0
+	for t in q:
+		if name + '_' in t and int(t[6:]) > ma:
+			ma = int(t[6:])
+	return lis[name + '_' + str(ma)]
+
+
+# Отправить сообщение
+def send(user, cont, img=[], keyboard=None):
+	# Изображения
 	for i in range(len(img)):
-		if img[i][0:5]!='photo':
-#Загружаем изображение на сервер
-			with open('re.jpg', 'wb') as file:
-				file.write(requests.get(img[i]).content)
+		if img[i][0:5] != 'photo':
+			# Загружаем изображение на сервер
+			if img[i].count('/') >= 3: # Если файл из интернета
+				with open('re.jpg', 'wb') as file:
+					file.write(requests.get(img[i]).content)
+				img[i] = 're.jpg'
 
-#Загружаем изображение в ВК
-			photo=vk_api.VkUpload(vks).photo('re.jpg', group_id=GROUP_ID, album_id=ALBUM_ID)[0]
-			img[i]='photo{}_{}'.format(photo['owner_id'], photo['id'])
+			# Загружаем изображение в ВК
+			photo = vk_api.VkUpload(vks).photo(img[i], group_id=GROUP_ID, album_id=ALBUM_ID)[0]
+			img[i] = 'photo{}_{}'.format(photo['owner_id'], photo['id'])
 
-	return vk.method('messages.send', {'user_id':user, 'message':cont, 'attachment':','.join(img)})
+	req = {
+		'user_id': user,
+		'message': cont,
+		'attachment': ','.join(img),
+	}
 
-read = lambda: [[i['user_id'], i['body'], i['attachments'] if 'attachments' in i else []] for i in vk.method('messages.get')['items'] if not i['read_state']][::-1]
+	# Клавиатура
+	if keyboard:
+		buttons = []
+		for j in keyboard:
+			line = []
+			for i in j:
+				line.append({
+					'action': {
+						'type': 'text',
+						'payload': '{\"button\": \"1\"}',
+						'label': i,
+					},
+					'color': 'default',
+				})
+			buttons.append(line)
 
-dial = lambda: [i['message']['user_id'] for i in vk.method('messages.getDialogs')['items']]
+		req['keyboard'] = json.dumps({
+			'one_time': False,
+			'buttons': buttons,
+		}, ensure_ascii=False)
 
+	return vk.method('messages.send', req)
+
+# Последние непрочитанные сообщения
+def read():
+	messages = []
+	for i in vk.method('messages.getConversations')['items']:
+		if 'unanswered' in i['conversation']:
+			messages.append((
+				i['conversation']['peer']['id'],
+				i['last_message']['text'],
+				[max_size(j['photo']) for j in i['last_message']['attachments'] if j['type'] == 'photo'] if 'attachments' in i['last_message'] else [],
+			))
+	return messages
+
+# Список всех диалогов
+def dial():
+	messages = []
+
+	offset = 0
+	while True:
+		conversations = vk.method('messages.getConversations', {
+			'count': 200,
+			'offset': offset,
+		})['items']
+
+		for i in conversations:
+			messages.append(i['conversation']['peer']['id'])
+
+		if len(conversations) < 200:
+			break
+		offset += 200
+
+	return messages
+
+# Информация
 def info(user):
-	x=vk.method('users.get', {'user_ids': user, 'fields': 'verified, first_name, last_name, sex, bdate, photo_id, country, city, home_town, screen_name'})[0]
-	#, lang, phone, timezone
+	req = vk.method('users.get', {
+		'user_ids': user,
+		'fields': 'verified, first_name, last_name, sex, bdate, photo_id, country, city, screen_name',
+	})[0]
 
-#Форматируем дату
+	# Форматируем дату
 	try:
-		bd = x.get('bdate').count('.')
+		bd = req.get('bdate').count('.')
 	except:
 		bd = 0
 
 	if bd == 2:
-		bd = time.strftime('%Y%m%d', time.strptime(x['bdate'], '%d.%m.%Y'))
+		bd = time.strftime('%Y%m%d', time.strptime(req['bdate'], '%d.%m.%Y'))
 	elif bd == 1:
-		bd = time.strftime('%m%d', time.strptime(x['bdate'], '%d.%m'))
+		bd = time.strftime('%m%d', time.strptime(req['bdate'], '%d.%m'))
 	else:
 		bd = 0
 
-	y = (
-		x.get('verified'),
-		x.get('first_name'),
-		x.get('last_name'),
-		x.get('sex'),
-		int(bd),
-		x.get('photo_id'),
-		(str(x.get('country')['id']) if x.get('country') else '0') + '/' + (str(x.get('city')['id']) if x.get('city') else '0'),
-		user,
-		x.get('screen_name'),
-		#x.get('lang'), #0
-		#x.get('phone'), #0
-		#x.get('timezone'), #3
-		#x.get('home_town'), #0
-	)
+	data = {
+		'verified': req.get('verified'),
+		'name': req.get('first_name'),
+		'surname': req.get('last_name'),
+		'sex': req.get('sex'),
+		'bd': int(bd),
+		'photo': req.get('photo_id'),
+		'geo': (str(req.get('country')['id']) if req.get('country') else '0') + '/' + (str(req.get('city')['id']) if req.get('city') else '0'),
+		'id': user,
+		'login': req.get('screen_name'),
+	}
 
-	return tuple(i if i != None else 0 for i in y)
+	return data
+
+# Статистика сообщений
+def stats():
+	# messages = []
+	timeline = {}
+
+	offset = 0
+	while True:
+		conversations = vk.method('messages.getConversations', {
+			'count': 200,
+			'offset': offset,
+		})['items']
+
+		for i in conversations:
+			id = i['conversation']['peer']['id']
+
+			conversation = vk.method('messages.getHistory', {
+				'peer_id': id,
+			})
+
+			# k = 0
+			for j in conversation['items']:
+				if j['out'] == 0:
+					day = j['date'] // 86400
+					# k += 1
+
+					if day not in timeline:
+						timeline[day] = {
+							id: 1,
+						}
+					else:
+						if id in timeline[day]:
+							timeline[day][id] += 1
+						else:
+							timeline[day][id] = 1
+
+			# messages.append(conversation)
+
+		if len(conversations) < 200:
+			break
+		offset += 200
+
+	stat = []
+	line = sorted(list(timeline.keys()))
+	for i in line:
+		sum_mes = 0
+		for j in timeline[i]:
+			sum_mes += timeline[i][j]
+
+		stat.append((i, len(timeline[i]), sum_mes))
+
+	return stat
+
+# Участники сообщества
+def users():
+	return vk.method('groups.getMembers', {'group_id': GROUP_ID})['items']
