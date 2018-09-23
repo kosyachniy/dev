@@ -1,8 +1,8 @@
-from json import *
+import json
 
-def read(file='db'):
-	with open(name+'.json', 'r') as file:
-		return loads(file.read())
+def read(name='db'):
+	with open(name + '.json', 'r') as file:
+		return json.loads(file.read())
 
 if __name__ == '__main__':
-	print(read())
+	print(read('sets'))
