@@ -12,6 +12,15 @@ with open('keys.json', 'r') as file:
 	vk.auth()
 
 
+def max_size(lis, name='photo'):
+	q = set(lis.keys())
+	ma = 0
+	for t in q:
+		if name + '_' in t and int(t[6:]) > ma:
+			ma = int(t[6:])
+	return lis[name + '_' + str(ma)]
+
+
 # Отправить сообщение
 def send(user, cont, img=[]):
 	# Изображения

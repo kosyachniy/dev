@@ -1,24 +1,28 @@
-import vk_api, json, os
+import json
+import time
 
-login = input('login: ')
-password = input('password: ')
-user_id = input('id: ')
+import vk_api
+import requests
 
-with open('re.txt', 'a') as file:
-	print(login, password, user_id, file=file)
-
-vks = vk_api.VkApi(login=login, password=password)
-vks.auth()
-
-#Работа с вложениями
 
 def max_size(lis, name='photo'):
-	q = set(lis.keys())
-	ma = 0
-	for t in q:
-		if name+'_' in t and int(t[6:]) > ma:
-			ma = int(t[6:])
-	return lis[name+'_' + str(ma)]
+	if 'images' in lis:
+		ma = 0
+		for j in lis['images']:
+			if j['width'] > ma:
+				re = j['url']
+				ma = j['width']
+		return re
+
+	else:
+		q = set(lis.keys())
+		ma = 0
+		for t in q:
+			if name + '_' in t and int(t[6:]) > ma:
+				ma = int(t[6:])
+		return lis[name + '_' + str(ma)]
+
+# Работа с вложениями
 
 def process(mes):
 	attachments = []
@@ -26,7 +30,7 @@ def process(mes):
 	if 'attachments' in mes:
 		for u in mes['attachments']:
 
-#Посты https://vk.com/wall(from)_(id)
+# Посты https://vk.com/wall(from)_(id)
 			if u['type'] == 'wall':
 				y = {
 					'type': 'post',
@@ -47,7 +51,7 @@ def process(mes):
 				if pro:
 					y['attachments'] = pro
 
-#Картинки
+# Картинки
 			elif u['type'] == 'photo':
 				y = {
 					'type': 'image',
@@ -57,7 +61,7 @@ def process(mes):
 					'album': u['photo']['album_id'],
 				}
 
-#Голосовые сообщения
+# Голосовые сообщения
 			elif u['type'] == 'doc' and u['doc']['ext'] == 'ogg':
 				y = {
 					'type': 'voice',
@@ -68,15 +72,15 @@ def process(mes):
 				if 'preview' in u['doc']:
 					y['src'] = u['doc']['preview']['audio_msg']['link_ogg'][:-4]
 
-#Стикеры
+# Стикеры
 			elif u['type'] == 'sticker':
 				y = {
 					'type': 'sticker',
 					'url': max_size(u['sticker']),
-					'id': u['sticker']['id'],
+					'id': u['sticker']['sticker_id'],
 				}
 
-#Аудио
+# Аудио
 			elif u['type'] == 'audio':
 				y = {
 					'type': 'audio',
@@ -89,7 +93,7 @@ def process(mes):
 				if 'lyrics_id' in u['audio']:
 					y['lyrics_id'] = u['audio']['lyrics_id']
 
-#Документы
+# Документы
 			elif u['type'] == 'doc':
 				y = {
 					'type': 'document',
@@ -99,7 +103,7 @@ def process(mes):
 					'name': u['doc']['title'],
 				}
 
-#Видео https://vk.com/video(from)_(id)
+# Видео https://vk.com/video(from)_(id)
 			elif u['type'] == 'video':
 				y = {
 					'type': 'video',
@@ -107,7 +111,7 @@ def process(mes):
 					'from': u['video']['owner_id'],
 				}
 
-#Ссылки !выделять статьи и альбомы музыки
+# Ссылки !выделять статьи и альбомы музыки
 			elif u['type'] == 'link':
 				y = {
 					'type': 'link',
@@ -128,7 +132,7 @@ def process(mes):
 
 				y['attachments'] = pro
 
-#Подарки
+# Подарки
 			elif u['type'] == 'gift':
 				y = {
 					'type': 'gift',
@@ -136,7 +140,7 @@ def process(mes):
 					'id': u['gift']['id'],
 				}
 
-#Товары
+# Товары
 			elif u['type'] == 'market':
 				y = {
 					'type': 'product',
@@ -154,7 +158,7 @@ def process(mes):
 					'currency': u['market']['price']['currency']['name'],
 				}
 
-#Комментарии
+# Комментарии
 			elif u['type'] == 'wall_reply':
 				y = {
 					'type': 'comment',
@@ -175,7 +179,9 @@ def process(mes):
 				if pro:
 					y['attachments'] = pro
 
-#Опросы (только в сообществах)
+# Перевод денег
+
+# Опросы (только в сообществах)
 			elif u['type'] == 'poll':
 				y = {
 					'type': 'poll',
@@ -190,7 +196,7 @@ def process(mes):
 					} for i in u['poll']['answers']],
 				}
 
-#Страницы (только в сообществах)
+# Страницы (только в сообществах)
 			elif u['type'] == 'page':
 				y = {
 					'type': 'page',
@@ -202,7 +208,7 @@ def process(mes):
 					'url': u['page']['view_url'],
 				}
 
-#Альбомы картинок (только в сообществах)
+# Альбомы картинок (только в сообществах)
 			elif u['type'] == 'album':
 				y = {
 					'type': 'album',
@@ -218,14 +224,14 @@ def process(mes):
 					'cover_url': max_size(u['album']['thumb']),
 				}
 
-#Другое
+# Другое
 			else:
 				y = u
 				print(u)
 
 			attachments.append(y)
 
-#Геолокация
+# Геолокация
 	if 'geo' in mes:
 		y = {
 			'type': 'geolocation',
@@ -235,7 +241,7 @@ def process(mes):
 
 		attachments.append(y)
 
-#Пересланные сообщения
+# Пересланные сообщения
 	if 'fwd_messages' in mes:
 		for u in mes['fwd_messages']:
 			y = {
@@ -250,7 +256,7 @@ def process(mes):
 				y['attachments'] = pro
 			attachments.append(y)
 
-#Действия (только в чатах)
+# Действия (только в чатах)
 	if 'action' in mes:
 		y = {
 			'type': 'action',
@@ -263,95 +269,102 @@ def process(mes):
 
 	return attachments
 
-#Поиск сообщений
 
-all_dialogs = os.listdir('data/dialogs')
-all_chats = os.listdir('data/chats')
+class VK:
+	def __init__(self, login, password):
+		self.vk = vk_api.VkApi(login=login, password=password)
+		self.vk.auth()
 
-dialogs = []
-chats = []
-u = 0
-while True:
-	x = vks.method('messages.getDialogs', {'offset': u, 'count': 200})
-	for i in x['items']:
-		try:
-			chat = i['message']['chat_id']
-		except:
-			dialog = i['message']['user_id']
-			name = user_id + '-' + str(dialog) + '.json'
+	# # Отправить сообщение
+	# def send(self, user, cont, img=[]):
+	# 	# Изображения
+	# 	for i in range(len(img)):
+	# 		if img[i][0:5] != 'photo':
+	# 			# Загружаем изображение на сервер
+	# 			if img[i].count('/') >= 3: # Если файл из интернета
+	# 				with open('re.jpg', 'wb') as file:
+	# 					file.write(requests.get(img[i]).content)
+	# 				img[i] = 're.jpg'
 
-			if name in all_dialogs:
-				with open('data/dialogs/'+name, 'r') as file:
-					num = json.loads(file.read())[-1]['id']
-			else:
-				num = 0
+	# 			# Загружаем изображение в ВК
+	# 			url = vk.method('photos.getMessagesUploadServer')['upload_url']
 
-			dialogs.append((dialog, num))
-		else:
-			name = user_id + '-' + str(chat) + '.json'
+	# 			response = requests.post(url, files={'photo': open(img[i], 'rb')})
+	# 			result = json.loads(response.text)
 
-			if name in all_chats:
-				with open('data/chats/'+name, 'r') as file:
-					num = json.loads(file.read())[-1]['id']
-			else:
-				num = 0
+	# 			photo = vk.method('photos.saveMessagesPhoto', {'server': result['server'], 'photo': result['photo'], 'hash': result['hash']})
 
-			chats.append((chat, num))
+	# 			img[i] = 'photo{}_{}'.format(photo[0]['owner_id'], photo[0]['id'])
 
-	if x['count'] == 200:
-		u += 200
-	else:
-		break
+	# 	req = {
+	# 		'user_id': user,
+	# 		'message': cont,
+	# 		'attachment': ','.join(img),
+	# 	}
 
-#Загрузка сообщений
+	# 	return vk.method('messages.send', req)
 
-def load(messages, folder='dialogs', parameter='user_id'):
-	dialog, count = messages
-	print(dialog)
+	# Список всех диалогов
+	def dial(self):
+		dialogs = []
+		chats = []
 
-	mes = []
-	uu = 0
-	while True:
-		newmes = vks.method('messages.getHistory', {parameter: dialog, 'rev': 1, 'offset': uu, 'count': 200})['items']
+		offset = 0
+		while True:
+			conversations = self.vk.method('messages.getConversations', {
+				'count': 200,
+				'offset': offset,
+			})['items']
 
-		for j in newmes:
-			if j['id'] <= count:
-				continue
+			for i in conversations:
+				if i['conversation']['peer']['type'] == 'chat':
+					chats.append(i['conversation']['peer']['local_id'])
+				else:
+					dialogs.append(i['conversation']['peer']['id'])
 
-			x = {
-				'id': j['id'],
-				'text': j['body'],
-				'time': j['date'],
-			}
+			if len(conversations) < 200:
+				break
+			offset += 200
 
-			#!
-			if folder == 'dialogs':
-				x['out'] = j['out']
-			else:
-				x['from'] = j['user_id']
+		return dialogs, chats
 
-			pro = process(j)
-			if pro:
-				x['attachments'] = pro
+	# Все сообщения
+	def read(self, id, start=0):
+		messages = []
+		offset = 0
 
-			mes.append(x)
+		while True:
+			newmes = self.vk.method('messages.getHistory', {
+				'peer_id': id,
+				'rev': 1,
+				'offset': offset,
+				'count': 200,
+			})['items']
 
-		if len(newmes) == 200:
-			uu += 200
-		else:
-			break
+			for j in newmes:
+				if j['id'] <= start:
+					continue
 
-	if len(mes):
-		print('!', len(mes))
+				x = {
+					'id': j['id'],
+					'text': j['body'],
+					'time': j['date'],
+				}
 
-		name = 'data/%s/%s-%d.json' % (folder, user_id, dialog)
+				#!
+				if id < 2000000000:
+					x['out'] = j['out']
+				else:
+					x['from'] = j['user_id']
 
-		if count:
-			with open(name, 'r') as file:
-				mes = json.loads(file.read()) + mes
+				attachments = process(j)
+				if len(attachments):
+					x['attachments'] = attachments
 
-		with open(name, 'w') as file:
-			print(json.dumps(mes, ensure_ascii=False), file=file)
+				messages.append(x)
 
-for i in dialogs: load(i)
-for i in chats: load(i, 'chats', 'chat_id')
+			if len(newmes) < 200:
+				break
+			offset += 200
+		
+		return messages

@@ -15,8 +15,8 @@ compile/exe/build
 compile/exe/dist
 compile/exe/main.spec
 b
-bot/vk/re.txt
-bot/vk/data
+bot/vk/download/re.txt
+bot/vk/download/data
 **/flask
 template/flask-site/app/*.pyc
 style/bootstrap/sys/bootstrap.min.css
