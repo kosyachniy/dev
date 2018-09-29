@@ -1,23 +1,33 @@
-**/__pycache__
-ai/tensorflow/log_simple_graph
-**/vk_config.json
-**/vk_config.v2.json
-bot/vk/re.jpg
 trade/oanda/example/account.txt
 trade/oanda/example/token.txt
-**/set.txt
-**/keys.txt
-**/keys.json
-bot/telegram/user/*.session
 syntax/araneum_upos_skipgram_600_2_2017.bin
 syntax/conformity/data
 compile/exe/build
 compile/exe/dist
 compile/exe/main.spec
-b
-bot/vk/download/re.txt
+
+# Кэш
+**/__pycache__
+**/*.pyc
+**/vk_config.json
+**/vk_config.v2.json
+bot/telegram/user/*.session
+ai/tensorflow/log_simple_graph
+bot/vk/re.jpg
+
+# Ключи и настройки
+**/set.txt
+**/keys.txt
+**/keys.json
+
+# Данные
 bot/vk/download/data
-**/flask
-template/flask-site/app/*.pyc
-style/bootstrap/sys/bootstrap.min.css
+bot/vk/download/re.txt
 ai/OpenDataScience/data
+
+# Библиотеки
+
+
+# Виртуальное окружение
+server/python/flask/flask
+site/python/flask/flask
