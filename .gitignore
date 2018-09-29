@@ -14,6 +14,7 @@ compile/exe/main.spec
 bot/telegram/user/*.session
 ai/tensorflow/log_simple_graph
 bot/vk/re.jpg
+server/js/restify/package-lock.json
 
 # Ключи и настройки
 **/set.txt
@@ -26,7 +27,7 @@ bot/vk/download/re.txt
 ai/OpenDataScience/data
 
 # Библиотеки
-
+server/js/restify/node_modules
 
 # Виртуальное окружение
 server/python/flask/flask
