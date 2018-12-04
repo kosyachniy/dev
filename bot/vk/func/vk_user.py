@@ -15,10 +15,20 @@ with open('keys.json', 'r') as file:
 def max_size(lis, name='photo'):
 	q = set(lis.keys())
 	ma = 0
-	for t in q:
-		if name + '_' in t and int(t[6:]) > ma:
-			ma = int(t[6:])
-	return lis[name + '_' + str(ma)]
+
+	if 'sizes' in q:
+		for i, el in enumerate(lis['sizes']):
+			if el['width'] > lis['sizes'][ma]['width']:
+				ma = i
+
+		return lis['sizes'][ma]['url']
+
+	else:
+		for t in q:
+			if name + '_' in t and int(t[6:]) > ma:
+				ma = int(t[6:])
+
+		return lis[name + '_' + str(ma)]
 
 
 # Отправить сообщение
@@ -54,7 +64,7 @@ def send(user, cont, img=[]):
 def read():
 	messages = []
 	for i in vk.method('messages.getConversations')['items']:
-		if 'unanswered' in i['conversation']:
+		if 'unread_count' in i['conversation']: # 'unanswered'
 			messages.append((
 				i['conversation']['peer']['id'],
 				i['last_message']['text'],

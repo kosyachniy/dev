@@ -1,5 +1,7 @@
 from func import *
+
 from datetime import datetime
+
 
 time=datetime.strftime(datetime.now(), "%Y%m%d%H%M%S")
 

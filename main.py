@@ -1,4 +1,6 @@
-import sys, os
+import sys
+# import os
+
 
 def site(url='http://htmlbook.ru/'):
 	from file.site.open import get
@@ -10,6 +12,7 @@ def vk_bot(user=140420515, text='Привет'):
 
 	from func.vk_user import send
 	send(user, text)
+
 
 if __name__=='__main__':
 	if len(sys.argv) > 2:
