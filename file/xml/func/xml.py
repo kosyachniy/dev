@@ -1,11 +1,11 @@
-from dicttoxml import dicttoxml
+import dicttoxml, xmltodict
 
 from xml.dom.minidom import parseString
 
 
 def from_xml(obj):
-	pass
+	return xmltodict.parse(obj)['root']
 
 def to_xml(obj):
-	res = dicttoxml(obj, attr_type=False).decode('utf-8')
+	res = dicttoxml.dicttoxml(obj, attr_type=False).decode('utf-8')
 	return parseString(res).toprettyxml()
