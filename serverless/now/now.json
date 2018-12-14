@@ -1,1 +1,11 @@
-{}
+{
+	"name": "dev",
+	"version": 2,
+	"builds": [
+		{"src": "*.html", "use": "@now/static"},
+		{"src": "*.py", "use": "@now/python"}
+	],
+	"routes": [
+		{"src": "/api", "dest": "/index.py"}
+	]
+}
