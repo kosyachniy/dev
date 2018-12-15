@@ -22,13 +22,14 @@ server/js/restify/package-lock.json
 **/keys.json
 
 # Данные
-bot/vk/download/data
+bot/vk/download/data/
 bot/vk/download/re.txt
-ai/OpenDataScience/data
+ai/OpenDataScience/data/
 
 # Библиотеки
-server/js/restify/node_modules
+server/js/restify/node_modules/
 
 # Виртуальное окружение
-server/python/flask/flask
-site/python/flask/flask
+server/python/flask/flask/
+site/python/flask/flask/
+serverless/now-flask/flask/
