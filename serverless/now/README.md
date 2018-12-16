@@ -18,7 +18,7 @@ now login
 3. Перейти по полученной ссылке
 
 ## Разработка
-[Документация](https://zeit.co/docs/), [Примеры](https://github.com/zeit/now-examples)
+[Документация](https://zeit.co/docs/), [Примеры](https://zeit.co/examples), [Примеры](https://github.com/zeit/now-examples)
 
 ### Python
 [Flask -> Now](https://camillovisini.com/barebone-serverless-flask-rest-api-on-zeit-now/)
