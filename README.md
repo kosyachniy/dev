@@ -18,7 +18,7 @@
 ---
 Название | Расположение | Дополнительно
 ---|---|---
-Word2Vec | ``` ai/text ``` | [RusVectores](http://rusvectores.org/ru/)
+Word2Vec | ``` ml/text ``` | [RusVectores](http://rusvectores.org/ru/)
 Telethon Update | ``` bot/telegram/user ``` |
 
 API и библиотеки
@@ -40,9 +40,7 @@ Steam | [Steam](http://steam.readthedocs.io/en/latest/user_guide.html)<br>[GitHu
 ---
 Предмет | Расположение | Уроки | Код
 ---|---|---|---
-AI / ML / DML | ``` ai ``` | Open Data Science: [ВК](https://vk.com/mlcourse), [HabraHabr](https://habrahabr.ru/company/ods/blog/322626/)<br>ВШЭ & Яндекс: [Coursera](https://www.coursera.org/learn/vvedenie-mashinnoe-obuchenie)<br>[Stepik](https://stepik.org/course/%D0%9D%D0%B5%D0%B9%D1%80%D0%BE%D0%BD%D0%BD%D1%8B%D0%B5-%D1%81%D0%B5%D1%82%D0%B8-401/syllabus)<br>[HabraHabr 1](https://habrahabr.ru/post/312450/)<br>[HabraHabr 2](https://habrahabr.ru/post/313216/) |
 Анализ синтаксиса | ``` syntax ``` | [НКРЯ](http://www.ruscorpora.ru/)<br>[OpenCorpora](http://opencorpora.org/?page=downloads)<br>[RusVectores](http://rusvectores.org/ru/calculator/)<br>[RDT](https://nlpub.ru/Russian_Distributional_Thesaurus) |
-MNIST | ``` ai/tensorflow/mnist ``` | [Google](https://codelabs.developers.google.com/codelabs/cloud-tensorflow-mnist/#0) | [GitHub](https://github.com/martin-gorner/tensorflow-mnist-tutorial)
 HTML / CSS  | ``` style ``` <br> ``` template/php-site ``` <br> ``` template/flask-site ``` | [HTMLBook](http://htmlbook.ru/) |
 JS | ``` js ``` | [JavaScript](http://learn.javascript.ru/) |
 Python |  | МФТИ & Mail.Ru: [Coursera](https://www.coursera.org/learn/programming-in-python/home/welcome) <br> [YouTube](https://www.youtube.com/watch?list=PL1A2CSdiySGIPxpSlgzsZiWDavYTAx61d&time_continue=3&v=CkIrizsP64c) <br> [PythonWorld](https://pythonworld.ru/samouchitel-python) |
