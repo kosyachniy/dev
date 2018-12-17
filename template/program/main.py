@@ -1,7 +1,9 @@
 import sys
+
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+
 
 class first(QWidget):
     def __init__(self):
@@ -14,7 +16,7 @@ class first(QWidget):
         self.initUI()
 
     '''
-#Фон
+# Фон
     def resizeEvent(self, event):
         palette = QPalette()
         img = QImage('1.png')
@@ -24,7 +26,7 @@ class first(QWidget):
     '''
 
     def initUI(self):
-#Считывание контента
+# Считывание контента
         with open('set.txt', 'r') as file:
             win = file.read()
 
@@ -40,39 +42,39 @@ class first(QWidget):
         self.b = []
         q = QDesktopWidget().availableGeometry()
         for i in self.x:
-#Кнопки
+# Кнопки
             if i[:7] == '@button':
                 self.b.append(QPushButton(i[8:-1], self))
                 self.b[len(self.b) - 1].clicked.connect(self.click)
                 # self.b[len(self.b) - 1].setFixedWidth(500)
                 self.b[len(self.b) - 1].setFixedHeight(60)
-#Изображения
+# Изображения
             elif i[:6] == '@image':
                 lbl = QLabel(self)
                 lbl.setPixmap(QPixmap(i[7:-1]))
                 self.b.append(lbl)
-#Заголовок
+# Заголовок
             elif i[:6] == '@title':
                 lbl = QLabel('<div style="font-size: 40px; text-align: center;">' + i[7:-1] + '</div>')
                 self.b.append(lbl)
-#Текст
+# Текст
             else:
                 lbl = QLabel(i)
                 self.b.append(lbl)
 
-#Разметка страницы
+# Разметка страницы
         vbox = QVBoxLayout()
         for i in range(len(self.b)):
             vbox.addWidget(self.b[i])
         self.setLayout(vbox)
 
-#Параметры окна
+# Параметры окна
         self.setGeometry(self.width * 0.2, self.height * 0.2, self.width * 0.6, self.height * 0.6)
         self.setWindowTitle('Goncharov Lox')
-        #self.setWindowIcon(QIcon('icon.png'))
+        # self.setWindowIcon(QIcon('icon.png'))
         self.show()
 
-#Обработка кликов
+# Обработка кликов
     def click(self):
         with open('set.txt', 'w') as file:
             print(self.sender().text(), end='', file=file)
@@ -81,6 +83,7 @@ class first(QWidget):
             sys.exit(app.exec_())
 
         self.close()
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

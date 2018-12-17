@@ -1,5 +1,6 @@
-from func import *
+from func.tg_user import client
 from telethon.tl.functions.messages import ForwardMessagesRequest
+
 
 client.send_message(136563129, '456')
 

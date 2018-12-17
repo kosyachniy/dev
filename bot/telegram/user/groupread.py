@@ -1,4 +1,5 @@
-from func import *
+from func.tg_user import client
+
 
 from_id = -1001137807617 #-1001262712033 #-1001124440739 #-1001143136828
 to_id = 440219158 #136563129

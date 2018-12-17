@@ -1,6 +1,7 @@
-from func import *
+from func.tg_user import client
 
 import time
+
 
 def mess(cont):
 	print(cont.status)

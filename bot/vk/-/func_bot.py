@@ -1,7 +1,7 @@
 import time, requests, vk_api, json
 from io import BytesIO #
 
-with open('keys.txt', 'r') as file:
+with open('keys.json', 'r') as file:
 	s = json.loads(file.read())
 
 	vk = vk_api.VkApi(token=s['token'])

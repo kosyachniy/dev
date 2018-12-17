@@ -1,7 +1,9 @@
 from telethon import TelegramClient
 
 import json
-with open('set.txt', 'r') as file:
+
+
+with open('keys.json', 'r') as file:
 	x = json.loads(file.read())
 
 client = TelegramClient(x['name'], x['id'], x['hash'], update_workers=4)

@@ -1,4 +1,5 @@
-from func import *
+from func.tg_user import client
+
 
 '''
 total, messages, senders = client.get_message_history(136563129)

@@ -1,10 +1,12 @@
-import requests, json
+import requests
+import json
 from urllib.parse import urlencode
 
-with open('set.txt', 'r') as file:
-    key = json.loads(file.read())
-    accountid = key['accountid']
-    token = key['token']
+
+with open('keys.json', 'r') as file:
+    keys = json.loads(file.read())
+    accountid = keys['accountid']
+    token = keys['token']
 
 def connect_to_stream():
     try:

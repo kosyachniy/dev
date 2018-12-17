@@ -16,9 +16,7 @@ ai/tensorflow/log_simple_graph
 bot/vk/re.jpg
 server/js/restify/package-lock.json
 
-# Ключи и настройки
-**/set.txt
-**/keys.txt
+# Ключи
 **/keys.json
 
 # Данные

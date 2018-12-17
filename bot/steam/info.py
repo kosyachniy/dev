@@ -1,4 +1,5 @@
-from func import *
+from func.steam import *
+
 
 print(api.ISteamUser.ResolveVanityURL(vanityurl="valve", url_type=2))
 

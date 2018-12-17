@@ -1,10 +1,12 @@
-import requests, json
+import requests
+import json
 from urllib.parse import urlencode
 
-with open('set.txt', 'r') as file:
-    key = json.loads(file.read())
-    accountid = key['accountid']
-    token = key['token']
+
+with open('keys.json', 'r') as file:
+    keys = json.loads(file.read())
+    accountid = keys['accountid']
+    token = keys['token']
 
 def order(instr, take_profit, stop_loss):
     try:
@@ -35,4 +37,6 @@ def order(instr, take_profit, stop_loss):
     except Exception as e:
         print("Caught exception when connecting to orders\n" + str(e))
 
-print(order('EUR_USD', 0.0001, 0.001))
+
+if __name__ == '__main__':
+    print(order('EUR_USD', 0.0001, 0.001))

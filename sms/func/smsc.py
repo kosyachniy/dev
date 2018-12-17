@@ -12,7 +12,7 @@ except ImportError:
 	from urllib.parse import quote
 
 import json
-with open('set.txt', 'r') as file:
+with open('keys.json', 'r') as file:
 	s = json.loads(file.read())
 
 # Константы для настройки библиотеки
