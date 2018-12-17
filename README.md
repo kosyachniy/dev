@@ -22,6 +22,7 @@
 [``` serverless ```](serverless) | Реализация бессерверных технологий: Zeit Now, Flask, ...
 [``` trade ```](trade) | Автоматизированные торги на биржах
 [``` chatbot ```](chatbot) | Чатботы
+[``` markup ```](markup) | Разметка
 [``` regular ```](regular) | Регулярные выражения
 [``` parse ```](parse) | Парсинг веб-страниц
 [``` syntax ```](syntax) | Парсинг естественного языка
@@ -30,19 +31,21 @@
 [``` site ```](site) | Разработка веб-приложений
 [``` program ```](program) | Разработка ПК-приложений
 [``` sms ```](sms) | Отправка SMS-сообщений на телефон
+[``` blockchain ```](blockchain) | Реализация блокчейн
+[``` smartcontract ```](smartcontract) | Смартконтракты
+[``` image ```](image) | Обработка изображений
+[``` audio ```](audio) | Обработка аудио
 
 <br>
 
 # Разработка
-Технологии
----
+## Технологии
 Название | Расположение | Дополнительно
 ---|---|---
 Word2Vec | ``` ml/text ``` | [RusVectores](http://rusvectores.org/ru/)
 Telethon Update | ``` bot/telegram/user ``` |
 
-API и библиотеки
----
+## API и библиотеки
 &nbsp; | Python | C++ | PHP
 ---|---|---|---
 GUI | [PyQt](http://pyqt.sourceforge.net/Docs/PyQt5/) |  |
@@ -56,20 +59,16 @@ Steam | [Steam](http://steam.readthedocs.io/en/latest/user_guide.html)<br>[GitHu
 <br>
 
 # Обучение
-Курсы
----
-Предмет | Расположение | Уроки | Код
+## Курсы
+Язык | Расположение | Уроки | Код
 ---|---|---|---
-Анализ синтаксиса | ``` syntax ``` | [НКРЯ](http://www.ruscorpora.ru/)<br>[OpenCorpora](http://opencorpora.org/?page=downloads)<br>[RusVectores](http://rusvectores.org/ru/calculator/)<br>[RDT](https://nlpub.ru/Russian_Distributional_Thesaurus) |
-HTML / CSS  | ``` style ``` <br> ``` template/php-site ``` <br> ``` template/flask-site ``` | [HTMLBook](http://htmlbook.ru/) |
+HTML + CSS  | ``` style ``` <br> ``` template/php-site ``` <br> ``` template/flask-site ``` | [HTMLBook](http://htmlbook.ru/) |
 JS | ``` js ``` | [JavaScript](http://learn.javascript.ru/) |
 Python |  | МФТИ & Mail.Ru: [Coursera](https://www.coursera.org/learn/programming-in-python/home/welcome) <br> [YouTube](https://www.youtube.com/watch?list=PL1A2CSdiySGIPxpSlgzsZiWDavYTAx61d&time_continue=3&v=CkIrizsP64c) <br> [PythonWorld](https://pythonworld.ru/samouchitel-python) |
 C++ |  | Яндекс & ВШЭ: [Stepik](https://stepik.org/course/363/syllabus) |
-GUI | ``` gui ``` | [PythonWorld](https://pythonworld.ru/gui) |
 
 
-Решение
----
+## Решение
 [Онлайн компилятор](http://ideone.com/)
 
 Тип | Сервис
@@ -82,39 +81,14 @@ GUI | ``` gui ``` | [PythonWorld](https://pythonworld.ru/gui) |
 <br>
 
 # Основы
-Терминал
----
+## Терминал
 Код | Действие
 ---|---
 ``` pip freeze > requirements.txt ``` | Получить requerements.txt
 ``` source tensorflow/bin/activate/ ``` | Запустить TensorFlow
 ``` jupyter notebook ``` | Запустить блокнот
 
-Режимы файлов
----
-Режим | Обозначение
----|---
-r | Открытие на чтение (является значением по умолчанию).
-w | Открытие на запись, содержимое файла удаляется, если файла не существует, создается новый.
-x | Открытие на запись, если файла не существует, иначе исключение.
-a | Открытие на дозапись, информация добавляется в конец файла.
-
-Приставка | Обозначение
----|---
-b | Открытие в двоичном режиме.
-t | Открытие в текстовом режиме (является значением по умолчанию).
-\+ | Открытие на чтение и запись
-
-MarkDown
----
-[Разметка README.md](http://coddism.com/zametki/razmetka_readmemd_v_github)
-
-Код | Действие
----|---
-``` <br> ``` | Энтер
-
-Travis CI
----
+## Travis CI
 [Travis CI](https://travis-ci.org/kosyachniy/dev/)
 
 ### Python

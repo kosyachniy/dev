@@ -1,17 +1,18 @@
 trade/oanda/example/account.txt
 trade/oanda/example/token.txt
 syntax/araneum_upos_skipgram_600_2_2017.bin
-syntax/conformity/data
-compile/exe/build
-compile/exe/dist
+syntax/conformity/data/
+compile/exe/build/
+compile/exe/dist/
 compile/exe/main.spec
 
 # Кэш
-**/__pycache__
+**/__pycache__/
 **/*.pyc
 **/vk_config.json
 **/vk_config.v2.json
 bot/telegram/user/*.session
+**/.ipynb_checkpoints/
 ai/tensorflow/log_simple_graph
 bot/vk/re.jpg
 server/js/restify/package-lock.json
