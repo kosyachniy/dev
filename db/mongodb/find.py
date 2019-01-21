@@ -35,3 +35,9 @@ for i in db['test'].find({'list': {'$elemMatch': {'id': {'$gt': 5}, 'lang': 'ru'
 for i in db['test'].find({}, {'id'}):
 	print(i)
 # {'id': True) {'cont': False}
+
+# Выборка вложенных документов
+db_condition = {'steps.ladder': 10}
+db_filter = {'steps': {'$elemMatch': {'ladder': 10}}, 'steps.ladder': True}
+for i in db['users'].find(db_condition, db_filter):
+	print(i)
