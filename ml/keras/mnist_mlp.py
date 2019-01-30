@@ -16,6 +16,7 @@ from keras.optimizers import RMSprop
 batch_size = 128
 num_classes = 10
 epochs = 20
+filepath = 'weights.txt'
 
 # the data, split between train and test sets
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -35,8 +36,10 @@ y_test = keras.utils.to_categorical(y_test, num_classes)
 
 model = Sequential()
 
+# 0.9271
 model.add(Dense(num_classes, activation='softmax', input_shape=(784,)))
 
+# 0.9829
 # model.add(Dense(512, activation='relu', input_shape=(784,)))
 # model.add(Dropout(0.2))
 # model.add(Dense(512, activation='relu'))
@@ -54,6 +57,9 @@ history = model.fit(x_train, y_train,
                     epochs=epochs,
                     verbose=1,
                     validation_data=(x_test, y_test))
+
+model.save(filepath)
+
 score = model.evaluate(x_test, y_test, verbose=0)
 print('Test loss:', score[0])
 print('Test accuracy:', score[1])
