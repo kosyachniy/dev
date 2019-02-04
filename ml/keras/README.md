@@ -14,8 +14,8 @@
 * Ранняя остановка 
 
 ## Источники
-[Kaggle: датасеты, код, соревнования](https://www.kaggle.com/)
-[YouTube 8M: датасеты](https://research.google.com/youtube8m/download.html)
+* [Kaggle: датасеты, код, соревнования](https://www.kaggle.com/)
+* [YouTube 8M: датасеты](https://research.google.com/youtube8m/download.html)
 
 ## Статьи
 * [Классификатор текста свёрточной](https://m.habr.com/ru/post/315118/)
@@ -23,4 +23,5 @@
 
 ## Ошибки
 1. [``` ssl.SSLError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed ```](https://stackoverflow.com/questions/41691327/ssl-sslerror-ssl-certificate-verify-failed-certificate-verify-failed-ssl-c)
+
 ``` /Applications/Python\ 3.6/Install\ Certificates.command ```
