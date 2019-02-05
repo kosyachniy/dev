@@ -1,7 +1,7 @@
 import telebot, json
 
 with open('keys.json', 'r') as file:
-	token = json.loads(file.read())['tg_token']
+	token = json.loads(file.read())['tg']['token']
 bot = telebot.TeleBot(token)
 
 # Меню

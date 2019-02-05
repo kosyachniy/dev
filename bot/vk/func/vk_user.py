@@ -53,6 +53,7 @@ def send(user, cont, img=[]):
 			img[i] = 'photo{}_{}'.format(photo[0]['owner_id'], photo[0]['id'])
 
 	req = {
+		'random_id': int(time.time() * 1000000),
 		'user_id': user,
 		'message': cont,
 		'attachment': ','.join(img),
@@ -72,7 +73,7 @@ def read():
 			))
 	return messages
 
-# Список всех диалогов
+# Диалоги
 def dial():
 	messages = []
 
@@ -92,7 +93,7 @@ def dial():
 
 	return messages
 
-# Информация
+# Информация о пользователе
 def info(user):
 	req = vk.method('users.get', {
 		'user_ids': user,
@@ -181,3 +182,28 @@ def stats():
 		stat.append((i, len(timeline[i]), sum_mes))
 
 	return stat
+
+# Посты
+def wall(ids):
+	res = vk.method('wall.get', {'owner_id': ids})['items']
+
+	res = [{
+		'id': el['id'],
+		'text': el['text'],
+		'attachments': [max_size(i['photo']) for i in el['attachments'] if i['type'] == 'photo'],
+	} for el in res]
+
+	return res
+
+# Группы
+def groups():
+	res = vk.method('groups.get')['items']
+	res = vk.method('groups.getById', {'group_ids': ','.join(map(str, res))})
+
+	res = [{
+		'id': el['id'],
+		'login': el['screen_name'],
+		'name': el['name'],
+	} for el in res]
+
+	return res

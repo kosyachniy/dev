@@ -10,3 +10,7 @@ print(dial())
 print(info(140420515))
 
 print(stats())
+
+print(wall(-23303030))
+
+print(groups())

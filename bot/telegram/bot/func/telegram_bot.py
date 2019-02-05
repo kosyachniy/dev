@@ -6,7 +6,7 @@ import time
 
 
 with open('keys.json', 'r') as file:
-	TOKEN = json.loads(file.read())['tg_token']
+	TOKEN = json.loads(file.read())['tg']['token']
 
 updater = Updater(TOKEN)
 

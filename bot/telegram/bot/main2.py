@@ -2,10 +2,9 @@ from func.tg_bot import updater, keyboard
 from telegram.ext import Filters, MessageHandler, CallbackQueryHandler
 
 
-# @process
 def echo(bot, update):
-	print(update)
-	print('-'*100)
+	# print(update)
+	# print('-'*100)
 
 	user = update.message.from_user.id
 
@@ -19,9 +18,18 @@ def echo(bot, update):
 
 
 def button(bot, update):
-	query = update.callback_query
+	# print(update)
+	# print('-'*100)
 
-	bot.edit_message_text(text="Selected option: {}".format(query.data), chat_id=query.message.chat_id, message_id=query.message.message_id)
+	user = update.callback_query.message.chat.id
+
+	if user != 136563129:
+		bot.send_message(user, text='Нет доступа!')
+		return
+
+	query = update.callback_query.data
+
+	bot.send_message(user, text='Лан')
 
 
 if __name__ == '__main__':
