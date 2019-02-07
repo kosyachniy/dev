@@ -1,100 +1,69 @@
+import sys
+
 import numpy as np
-import math
 
-compilation = str(2) #набор данных
-countcat = 1 #количество выходов
-fault = 0.005 #с какой погрешностью нужен ответ
 
-act = lambda xe, we: sum([xe[i] * we[i] for i in range(len(xe))])
+def perceptron(name, outs=1, fault=0.01):
+	# Данные
 
-#Данные
-with open('data/' + compilation + '/table.csv', 'r') as f:
-	x = np.loadtxt(f, delimiter=',', skiprows=1).T[countcat-1:].T
-for i in range(len(x)):
-	x[i][0] = 1
+	dataset = np.loadtxt('../data/{}/table.csv'.format(name), delimiter=',', skiprows=1)
 
-#Уменьшаем разряд параметров, чтобы при обучении нейронов не выходили громадные ошибки (с каждым разом увеличиваясь)
-discharge = 0
-for i in x:
-	for j in i[1:]:
-		print(j)
-		dis = int(math.log(j, 10)) + 1 if j != 0 else 0
-		if dis > discharge:
-			discharge = dis
+	x = np.hstack((np.ones((dataset.shape[0], 1)), dataset[:, outs:]))
+	y = dataset[:, :outs]
 
-for i in range(len(x)):
-	for j in range(1, len(x[0])):
-		x[i][j] /= 10 ** discharge
+	# Уменьшение разрядности параметров
+	
+	dis = int(max(np.log10([i for i in x.reshape(1, -1)[0] if i>1]))) + 1
+	x = np.array([[j/10**dis for j in i] for i in x])
 
-def neiro(column):
-	print('Out №{}'.format(column))
+	# Рассчёт весов
 
-#Данные
-	with open('data/' + compilation + '/table.csv', 'r') as f:
-		y = np.loadtxt(f, delimiter=',', skiprows=1).T[column].T
+	def antigradient(y):
+		w = np.zeros((dataset.shape[0], 1))
 
-	w = [0 for j in range(len(x[0]))]
+		iteration = 0
+		while True: # for iteration in range(1, 51):
+			iteration += 1
+			error_max = 0
 
-	print(x)
-	print(y)
-	print(w)
+			for i in range(len(x)):
+				error = y[i] - x[i].dot(w).sum()
 
-	iteration = 0 #
-	while True: #for iteration in range(1, 21):
-		iteration += 1 #
-		print('iteration №{}'.format(iteration))
+				error_max = max(error, error_max)
+				# print('Error', error_max, error)
 
-		err = 0
+				for j in range(len(x[i])):
+					delta = x[i][j] * error
+					w[j] += delta
+					# print('Δw{} = {}'.format(j, delta))
 
-		for i in range(len(x)):
-			error = y[i] - act(x[i], w)
-			#print(error)
+			print('№{}: {}'.format(iteration, error_max)) #
 
-			if error > err: err = error
+			if error_max < fault:
+				break
 
-			for j in range(len(x[i])):
-				delta = x[i][j] * error
-				#print('Δw%d = %f' % (j, delta))
-				w[j] += delta
+		return w
 
-			#print('-----')
+	w = np.hstack([antigradient(i[:, 0]) for i in y.T.reshape(-1, y.shape[0], 1)])
+	w = np.array([[j/10**dis for j in i] for i in w])
 
-		print('error: %f' % (err, )) #
-
-		if err < fault:
-			break
-		'''
-		elif iteration == 1:
-			pred = err
-		elif err >= pred: #Остаться рядом с локальным минимумом
-			break
-		else:
-			pred = err
-
-		print('error: %f (%f)' % (err, pred))
-		'''
 	return w
 
-w = []
-for i in range(countcat):
-	w.append([j / (10 ** discharge) for j in neiro(i)])
-	w[len(w)-1][0] *= 10 ** discharge
-w = np.array(w).T
 
-#Сохранение весов
-np.savetxt('data/' + compilation + '/weights.csv', w, delimiter=',')
-print(w)
+if __name__ == '__main__':
+	name = sys.argv[1]
+	outs = int(sys.argv[2]) if len(sys.argv) == 3 else 1
+	fault = int(sys.argv[3]) if len(sys.argv) == 4 else 0.01
 
-#Рассчёт прогноза
-#Работает для одного выхода (матрица весов размерностью (n x 1))!
-while True:
-	x = [1] + [float(i) for i in input().split()]
-	s = act(x, w)
-	print(s)
-	'''
-	for i in s:
-		if i>=0.5:
-			print('YES ({}%)'.format(int(round(i*100))))
-		else:
-			print('NO ({}%)'.format(int(round((1-i)*100))))
-	'''
+	w = perceptron(name, outs, fault)
+
+	# Сохранение весов
+
+	print(w) #
+	np.savetxt('../data/{}/weights.csv'.format(name), w, delimiter=',')
+
+	# Прогноз
+
+	while True:
+		x = np.array([1] + list(map(float, input().split()))).reshape((outs, -1))
+		print(x.dot(w).sum(axis=0))

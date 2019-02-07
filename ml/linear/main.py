@@ -3,15 +3,15 @@ import sys
 import numpy as np
 
 
-def linear(name):
+def linear(name, outs=1):
 	# Данные
 
 	dataset = np.loadtxt('../data/{}/table.csv'.format(name), delimiter=',', skiprows=1)
 
-	x = np.hstack((np.ones((dataset.shape[0], 1)), dataset[:, 1:]))
-	y = dataset[:, 0]
+	x = np.hstack((np.ones((dataset.shape[0], 1)), dataset[:, outs:]))
+	y = dataset[:, :outs]
 
-	# Рассчёт
+	# Рассчёт весов
 
 	w = np.linalg.inv(x.T.dot(x)).dot(x.T).dot(y)
 
@@ -20,15 +20,17 @@ def linear(name):
 
 if __name__ == '__main__':
 	name = sys.argv[1]
-	w = linear(name)
+	outs = int(sys.argv[2]) if len(sys.argv) == 3 else 1
+
+	w = linear(name, outs)
 
 	# Сохранение весов
 
-	np.savetxt('../data/{}/weights.csv'.format(name), w, delimiter=',')
 	print(w) #
+	np.savetxt('../data/{}/weights.csv'.format(name), w, delimiter=',')
 
-	# Рассчёт прогноза
+	# Прогноз
 
 	while True:
-		x = np.array([1] + list(map(float, input().split())))
-		print(x.dot(w).sum())
+		x = np.array([1] + list(map(float, input().split()))).reshape((outs, -1))
+		print(x.dot(w).sum(axis=0))
