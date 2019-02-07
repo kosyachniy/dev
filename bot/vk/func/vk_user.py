@@ -184,16 +184,16 @@ def stats():
 	return stat
 
 # Посты
-def wall(ids):
-	res = vk.method('wall.get', {'owner_id': ids})['items']
+def wall(group, post=0):
+	res = vk.method('wall.get', {'owner_id': group})['items']
 
 	res = [{
 		'id': el['id'],
 		'text': el['text'],
-		'attachments': [max_size(i['photo']) for i in el['attachments'] if i['type'] == 'photo'],
-	} for el in res]
+		'attachments': [max_size(i['photo']) for i in el['attachments'] if i['type'] == 'photo'] if 'attachments' in el else [],
+	} for el in res if el['id'] > post]
 
-	return res
+	return res[::-1]
 
 # Группы
 def groups():

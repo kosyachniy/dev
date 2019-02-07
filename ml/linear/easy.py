@@ -1,24 +1,27 @@
-import urllib
 import numpy as np
 
-compilation = str(1) #набор данных
 
-#Данные
-with open('data/' + compilation + '/table.csv', 'r') as f:
-	x = np.loadtxt(f, delimiter=',', skiprows=1)
-with open('data/' + compilation + '/table.csv', 'r') as f:
-	y = np.loadtxt(f, delimiter=',', skiprows=1).T[0].T
-for i in range(len(x)):
-	x[i][0] = 1
+DATASET = 1
 
-#Рассчёт
+
+# Данные
+
+dataset = np.loadtxt('../data/{}/table.csv'.format(DATASET), delimiter=',', skiprows=1)
+
+x = np.hstack((np.ones((dataset.shape[0], 1)), dataset[:, 1:]))
+y = dataset[:, 0]
+
+# Рассчёт
+
 w = np.linalg.inv(x.T.dot(x)).dot(x.T).dot(y)
 
-#Сохранение весов
-np.savetxt('data/' + compilation + '/weights.csv', w, delimiter=',')
-print(w)
+# Сохранение весов
 
-#Рассчёт прогноза
+np.savetxt('../data/{}/weights.csv'.format(DATASET), w, delimiter=',')
+print(w) #
+
+# Рассчёт прогноза
+
 while True:
-	x = [1] + [float(i) for i in input().split()]
-	print(sum([x[i] * w[i] for i in range(len(x))]))
+	x = np.array([1] + list(map(float, input().split())))
+	print(x.dot(w).sum())

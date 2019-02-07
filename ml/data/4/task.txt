@@ -1,0 +1,2 @@
+Классификатор текстов
+https://github.com/kosyachniy/categories

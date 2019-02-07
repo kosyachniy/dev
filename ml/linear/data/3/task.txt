@@ -1,2 +1,0 @@
-Спрогнозировать курс акций Газпрома по новостям
-https://github.com/kosyachniy/twianalysis

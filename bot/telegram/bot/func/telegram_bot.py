@@ -1,4 +1,4 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater
 
 import json
@@ -8,6 +8,7 @@ import time
 with open('keys.json', 'r') as file:
 	TOKEN = json.loads(file.read())['tg']['token']
 
+bot = Bot(TOKEN)
 updater = Updater(TOKEN)
 
 
