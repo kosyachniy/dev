@@ -6,7 +6,7 @@ import numpy as np
 def linear(name, outs=1):
 	# Данные
 
-	dataset = np.loadtxt('../data/{}/table.csv'.format(name), delimiter=',', skiprows=1)
+	dataset = np.loadtxt('../data/{}/train.csv'.format(name), delimiter=',', skiprows=1)
 
 	x = np.hstack((np.ones((dataset.shape[0], 1)), dataset[:, outs:]))
 	y = dataset[:, :outs]
