@@ -10,15 +10,15 @@ def nn(name, outs=1, epochs=10):
 
 	dataset = np.loadtxt('../data/{}/train.csv'.format(name), delimiter=',', skiprows=1)
 
-	x_train = np.hstack((np.ones((dataset.shape[0], 1)), dataset[:, outs:]))
+	x_train = dataset[:, outs:]
 	y_train = dataset[:, :outs]
 
 	dataset = np.loadtxt('../data/{}/test.csv'.format(name), delimiter=',', skiprows=1)
 
-	x_test = np.hstack((np.ones((dataset.shape[0], 1)), dataset[:, outs:]))
+	x_test = dataset[:, outs:]
 	y_test = dataset[:, :outs]
 
-	# Уменьшение разрядности параметров
+	# Нормализация
 
 	el = [i for i in x_train.reshape(1, -1)[0] if i>1]
 	dis = int(max(np.log10(el))) + 1 if el else 0
@@ -30,9 +30,9 @@ def nn(name, outs=1, epochs=10):
 	# Построение модели
 
 	model = Sequential()
-	model.add(Dense(outs, activation='relu', input_shape=(x_train.shape[0],)))
+	model.add(Dense(outs, activation='sigmoid', input_shape=(x_train.shape[1],)))
 
-	model.compile(optimizer='sgd', loss='mean_squared_error', metrics=['mse'])
+	model.compile(optimizer='sgd', loss='categorical_crossentropy', metrics=['accuracy'])
 
 	# Обучение
 
@@ -48,8 +48,8 @@ def nn(name, outs=1, epochs=10):
 
 if __name__ == '__main__':
 	name = sys.argv[1]
-	outs = int(sys.argv[2]) if len(sys.argv) == 3 else 1
-	epochs = int(sys.argv[3]) if len(sys.argv) == 4 else 10
+	outs = int(sys.argv[2]) if len(sys.argv) >= 3 else 1
+	epochs = int(sys.argv[3]) if len(sys.argv) >= 4 else 10
 
 	model, history = nn(name, outs, epochs)
 

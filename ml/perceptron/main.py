@@ -11,16 +11,16 @@ def perceptron(name, outs=1, fault=0.01):
 	x = np.hstack((np.ones((dataset.shape[0], 1)), dataset[:, outs:]))
 	y = dataset[:, :outs]
 
-	# Уменьшение разрядности параметров
+	# Нормализация
 	
 	el = [i for i in x.reshape(1, -1)[0] if i>1]
-	dis = int(max(np.log10(el))) + 1 if el else 0
+	dis = int(max(np.log10(el))) + 1 if el else 1
 	x = np.array([[j/10**dis for j in i] for i in x])
 
 	# Рассчёт весов
 
 	def antigradient(y):
-		w = np.zeros((dataset.shape[1], 1))
+		w = np.zeros((x.shape[1], 1))
 
 		iteration = 0
 		while True: # for iteration in range(1, 51):
@@ -53,8 +53,8 @@ def perceptron(name, outs=1, fault=0.01):
 
 if __name__ == '__main__':
 	name = sys.argv[1]
-	outs = int(sys.argv[2]) if len(sys.argv) == 3 else 1
-	fault = float(sys.argv[3]) if len(sys.argv) == 4 else 0.01
+	outs = int(sys.argv[2]) if len(sys.argv) >= 3 else 1
+	fault = float(sys.argv[3]) if len(sys.argv) >= 4 else 0.01
 
 	w = perceptron(name, outs, fault)
 

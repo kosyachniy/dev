@@ -20,7 +20,7 @@ def linear(name, outs=1):
 
 if __name__ == '__main__':
 	name = sys.argv[1]
-	outs = int(sys.argv[2]) if len(sys.argv) == 3 else 1
+	outs = int(sys.argv[2]) if len(sys.argv) >= 3 else 1
 
 	w = linear(name, outs)
 
