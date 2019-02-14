@@ -67,6 +67,11 @@ JS | ``` js ``` | [JavaScript](http://learn.javascript.ru/) |
 Python |  | МФТИ & Mail.Ru: [Coursera](https://www.coursera.org/learn/programming-in-python/home/welcome) <br> [YouTube](https://www.youtube.com/watch?list=PL1A2CSdiySGIPxpSlgzsZiWDavYTAx61d&time_continue=3&v=CkIrizsP64c) <br> [PythonWorld](https://pythonworld.ru/samouchitel-python) |
 C++ |  | Яндекс & ВШЭ: [Stepik](https://stepik.org/course/363/syllabus) |
 
+## Полезные ссылки
+### Python 3
+* [Туториалы, примеры](https://pythonworld.ru/)
+* [Стандартные библиотеки](https://docs.python.org/3/library/)
+
 
 ## Решение
 [Онлайн компилятор](http://ideone.com/)
