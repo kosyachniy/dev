@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 OUTS = 1
 FAULT = 0.01
 COUNT = 100
+EPOCHS_COUNT = 100
+EPOCHS_DELTA = 0.999
 
 
 def perceptron(name, outs=OUTS, fault=FAULT):
@@ -27,31 +29,37 @@ def perceptron(name, outs=OUTS, fault=FAULT):
 
 	def antigradient(y):
 		w = np.zeros((x.shape[1], 1))
-		iteration = 0
-		history = []
+		history_all = []
 
-		while True: # for iteration in range(1, 51):
-			iteration += 1
-			error_max = 0
 
-			for i in range(x.shape[0]):
-				error = y[i] - x[i].dot(w).sum()
+		for j in range(x.shape[1]):
+			iteration = 0
+			history = []
 
-				error_max = max(error, error_max)
-				# print('Error', error_max, error)
+			while True:
+				error_max = 0
+				iteration += 1
 
-				for j in range(x.shape[1]):
+				for i in range(x.shape[0]):
+					error = y[i] - x[i].dot(w).sum()
+
+					error_max = max(error, error_max)
+
 					delta = x[i][j] * error
 					w[j] += delta
+
+					# print('Error', error_max, error)
+					# print(w)
 					# print('Δw{} = {}'.format(j, delta))
 
-			history.append(error_max)
-			print('№{}: {}'.format(iteration, error_max)) #
+				history.append(error_max)
+				print('№{}: {}'.format(iteration, error_max)) #
 
-			if error_max < fault:
-				break
+				if error_max < fault or (iteration % 101 == 0 and error_max >= history[-EPOCHS_COUNT]*EPOCHS_DELTA):
+					history_all.extend(history)
+					break
 
-		return w, history
+		return w, history_all
 
 	w = np.zeros(shape=(y.shape[1], x.shape[1]))
 	history = []

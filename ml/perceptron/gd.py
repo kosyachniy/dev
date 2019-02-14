@@ -31,13 +31,13 @@ def perceptron(name, outs=OUTS, fault=FAULT):
 			iteration += 1
 			error_max = 0
 
-			for i in range(len(x)):
+			for i in range(x.shape[0]):
 				error = y[i] - x[i].dot(w).sum()
 
 				error_max = max(error, error_max)
 				# print('Error', error_max, error)
 
-				for j in range(len(x[i])):
+				for j in range(x.shape[1]):
 					delta = x[i][j] * error
 					w[j] += delta
 					# print('Δw{} = {}'.format(j, delta))
