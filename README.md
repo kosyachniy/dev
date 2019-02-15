@@ -70,6 +70,7 @@ C++ |  | Яндекс & ВШЭ: [Stepik](https://stepik.org/course/363/syllabus)
 ## Полезные ссылки
 ### Python 3
 * [Туториалы, примеры](https://pythonworld.ru/)
+* [Code style: PEP8](https://pythonworld.ru/osnovy/pep-8-rukovodstvo-po-napisaniyu-koda-na-python.html)
 * [Стандартные библиотеки](https://docs.python.org/3/library/)
 
 
@@ -92,6 +93,17 @@ C++ |  | Яндекс & ВШЭ: [Stepik](https://stepik.org/course/363/syllabus)
 ``` pip freeze > requirements.txt ``` | Получить requerements.txt
 ``` source tensorflow/bin/activate/ ``` | Запустить TensorFlow
 ``` jupyter notebook ``` | Запустить блокнот
+
+## Vim
+Команда | Описание
+---|---
+``` :q ``` | Выйти
+``` :q! ``` | Выйти и сохранить
+``` :wq ``` | Записать и выйти
+``` :wq! ``` | Насильно записать и выйти
+``` :x ```, ``` :exit ``` | Записать и выйти, если есть изменения
+``` :qa ``` | Выйти отовсюду
+``` :cq ``` | Закрыть без сохранения, выйти с ошибкой
 
 ## Travis CI
 [Travis CI](https://travis-ci.org/kosyachniy/dev/)

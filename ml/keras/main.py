@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
 	# Сохранение весов
 
-	model.save('../data/{}/weights.txt'.format(name))
+	model.save('../data/{}/model.txt'.format(name))
 
 	# Прогноз
 

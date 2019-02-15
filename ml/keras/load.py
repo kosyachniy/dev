@@ -2,8 +2,9 @@ import keras
 from keras.datasets import mnist
 from keras.models import load_model
 
+
 num_classes = 10
-filepath = 'weights.txt'
+filepath = 'model.txt'
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 x_test = x_test.reshape(10000, 784)

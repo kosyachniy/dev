@@ -7,6 +7,7 @@
 ``` tensorflow ``` | Использование библиотеки Google TensorFlow
 ``` keras ``` | Использование библиотеки Keras
 ``` pytorch ``` | Использование библиотеки PyTorch
+``` scikit ``` | Использование библиотеки Scikit Learn (SKLearn)
 
 ## Обучение
 * Основы: [HabraHabr 1](https://habrahabr.ru/post/312450/), [HabraHabr 2](https://habrahabr.ru/post/313216/), [ProgLib](https://proglib.io/p/neural-nets-guide/)
