@@ -92,6 +92,7 @@ BREAKING CHANGE: It's no longer allowed to omit the '-loader' suffix when using 
 
 ## Запуск
 ```
+npm install
 webpack -w
 webpack-dev-server
 ```

@@ -16,7 +16,10 @@ bot/telegram/user/*.session
 **/.ipynb_checkpoints/
 ai/tensorflow/log_simple_graph
 bot/vk/re.jpg
+
+**/node_modules/
 **/package-lock.json
+**/dist/
 
 # Ключи
 
@@ -28,8 +31,6 @@ bot/vk/download/data/
 bot/vk/download/re.txt
 
 # Библиотеки
-
-**/node_modules/
 
 # Виртуальное окружение
 

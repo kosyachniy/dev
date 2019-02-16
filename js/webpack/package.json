@@ -2,7 +2,7 @@
 	"name": "test",
 	"version": "0.1.0",
 	"description": "",
-	"main": "./js/profile.js",
+	"main": "./js/main.js",
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},

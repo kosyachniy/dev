@@ -11,3 +11,6 @@
 ### React
 ### Vue.js
 ### AngularJS
+
+### Gatsby
+### Polymer

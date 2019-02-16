@@ -1,7 +1,7 @@
 module.exports = {
 	context: __dirname,
 	devtool: "source-map",
-	entry: "./js/profile.js",
+	entry: "./js/main.js",
 	mode: "development",
 	output: {
 		path: __dirname + "/dist",
