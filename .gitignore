@@ -16,7 +16,7 @@ bot/telegram/user/*.session
 **/.ipynb_checkpoints/
 ai/tensorflow/log_simple_graph
 bot/vk/re.jpg
-server/js/restify/package-lock.json
+**/package-lock.json
 
 # Ключи
 
@@ -29,7 +29,7 @@ bot/vk/download/re.txt
 
 # Библиотеки
 
-server/js/restify/node_modules/
+**/node_modules/
 
 # Виртуальное окружение
 

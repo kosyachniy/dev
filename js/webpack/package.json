@@ -1,0 +1,20 @@
+{
+	"name": "test",
+	"version": "0.1.0",
+	"description": "",
+	"main": "./js/profile.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "Poloz Alexey",
+	"license": "ISC",
+	"dependencies": {
+		"jquery": "^3.3.1",
+		"underscore": "^1.9.1",
+		"webpack": "^4.29.4"
+	},
+	"devDependencies": {
+		"css-loader": "^2.1.0",
+		"style-loader": "^0.23.1"
+	}
+}
