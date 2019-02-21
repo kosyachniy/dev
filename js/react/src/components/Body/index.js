@@ -13,23 +13,29 @@ class Body extends Component {
 	}
 
 	render() {
-		const leftMenu = this.state.leftMenu && <div className="column"><LeftMenu /></div>
+		const leftMenu = this.state.leftMenu && <div className="column is-one-fifth"><LeftMenu /></div>
 
 		return (
-			<div className="container">
-				<div class="columns">
+			<div className="container has-background-white" id="body">
+				<div className="columns">
 					{ leftMenu }
 
-					<div className="column is-three-fifths">
-						<Main />
+					<div className="column">
+						<Main handleLeftMenu={ this.handleLeftMenu } />
 					</div>
 
-					<div className="column">
+					<div className="column is-one-fifth">
 						<RightMenu />
 					</div>
 				</div>
 			</div>
 		)
+	}
+
+	handleLeftMenu = () => {
+		this.setState({
+			leftMenu: !this.state.leftMenu
+		})
 	}
 }
 

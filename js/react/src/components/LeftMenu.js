@@ -4,7 +4,7 @@ import 'bulma/css/bulma.css'
 
 function LeftMenu() {
 	return (
-		<div className="navbar column">
+		<div className="navbar column is-paddingless">
 			<a className="navbar-item" href="#">
 				Ссылка 1
 			</a>

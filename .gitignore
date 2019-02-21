@@ -1,7 +1,9 @@
 trade/oanda/example/account.txt
 trade/oanda/example/token.txt
-syntax/araneum_upos_skipgram_600_2_2017.bin
-syntax/conformity/data/
+syntax/russian-syntagrus-ud-2.3-181115.udpipe
+syntax/ruscorpora_upos_skipgram_300_5_2018.vec.gz
+syntax2/araneum_upos_skipgram_600_2_2017.bin
+syntax2/conformity/data/
 compile/exe/build/
 compile/exe/dist/
 compile/exe/main.spec
