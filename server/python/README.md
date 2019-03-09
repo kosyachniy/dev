@@ -1,3 +1,20 @@
+# Запуск
+## Запросы
+``` get_request.py ```
+
+``` post_request.py ```
+
+## Сервер
+``` get_flask.py ```
+
+``` post_flask.py ```
+
+``` server.py ```
+
+Запуск командой внутри директории: ``` python -m http.server ```
+
+
+# Источники
 ## POST
 [TProger](https://www.youtube.com/watch?list=PL1A2CSdiySGIPxpSlgzsZiWDavYTAx61d&v=bTThyxVy7Sk)
 

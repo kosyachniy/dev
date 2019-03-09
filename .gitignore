@@ -10,14 +10,17 @@ compile/exe/main.spec
 
 # Кэш
 
-**/__pycache__/
-**/*.pyc
-**/vk_config.json
-**/vk_config.v2.json
-bot/telegram/user/*.session
-**/.ipynb_checkpoints/
+__pycache__/
+*.pyc
+vk_config.json
+vk_config.v2.json
+*.session
+*.session-journal
+.ipynb_checkpoints/
 ai/tensorflow/log_simple_graph
 bot/vk/re.jpg
+
+.vscode
 
 **/node_modules/
 **/package-lock.json

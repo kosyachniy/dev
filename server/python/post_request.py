@@ -5,12 +5,10 @@ with open('', 'rb') as file:
 	files = {'media': file.read()}
 '''
 
-link = 'http://167.99.128.56/'
+link = 'https://tensy.org:5000/'
 cont = {
-	'cm': 'reg',
-	'login': 'kosyachniy',
-	'pass': 'asdrasdr',
-	'mail': 'polozhev@mail.ru',
+	'method': 'ladders.gets',
+	'language': 'ru',
 }
 
 cont = requests.post(link, json=cont) #, files = files)
