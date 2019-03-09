@@ -42,3 +42,11 @@ bot/vk/download/re.txt
 server/python/flask/flask/
 site/python/flask/flask/
 serverless/now-flask/flask/
+
+# Авторские права
+
+image/paste/*.otf
+image/paste/*.ttf
+media/fonts
+media/icons
+media/sounds
