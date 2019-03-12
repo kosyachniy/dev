@@ -1,13 +1,3 @@
-trade/oanda/example/account.txt
-trade/oanda/example/token.txt
-syntax/russian-syntagrus-ud-2.3-181115.udpipe
-syntax/ruscorpora_upos_skipgram_300_5_2018.vec.gz
-syntax2/araneum_upos_skipgram_600_2_2017.bin
-syntax2/conformity/data/
-compile/exe/build/
-compile/exe/dist/
-compile/exe/main.spec
-
 # Кэш
 
 __pycache__/
@@ -19,8 +9,12 @@ vk_config.v2.json
 .ipynb_checkpoints/
 ai/tensorflow/log_simple_graph
 bot/vk/re.jpg
+compile/exe/build/
+compile/exe/dist/
+compile/exe/main.spec
 
-.vscode
+.idea/
+.vscode/
 
 **/node_modules/
 **/package-lock.json
@@ -30,10 +24,17 @@ bot/vk/re.jpg
 
 **/keys.json
 
+trade/oanda/example/account.txt
+trade/oanda/example/token.txt
+
 # Данные
 
 bot/vk/download/data/
 bot/vk/download/re.txt
+syntax/russian-syntagrus-ud-2.3-181115.udpipe
+syntax/ruscorpora_upos_skipgram_300_5_2018.vec.gz
+syntax2/araneum_upos_skipgram_600_2_2017.bin
+syntax2/conformity/data/
 
 # Библиотеки
 
@@ -47,6 +48,6 @@ serverless/now-flask/flask/
 
 image/paste/*.otf
 image/paste/*.ttf
-media/fonts
-media/icons
-media/sounds
+media/fonts/
+media/icons/
+media/sounds/

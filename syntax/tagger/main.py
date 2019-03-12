@@ -3,6 +3,7 @@ import time
 from mystem import tagger as mystem
 from morphy import tagger as morphy
 from udpipe import tagger as udpipe
+from nltk_pos import tagger as nltk_pos
 
 
 text1 = 'пожарище играющий привет пустынных осветлённых'
@@ -44,3 +45,14 @@ for _ in range(1):
 print('-'*100)
 print(tag)
 print('ufal.udpipe', time.time() - start)
+
+# nltk
+
+start = time.time()
+
+for _ in range(1):
+	tag = nltk_pos(text)
+
+print('-'*100)
+print(tag)
+print('nltk', time.time() - start)
