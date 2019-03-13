@@ -1,0 +1,42 @@
+<script type="text/javascript" src="func/chart.min.js"></script>
+
+<canvas id="chart1" height="210" style="max-width: 90%;"></canvas>
+<script type="text/javascript">
+	// Данные
+
+	steps = [1, 2, 3]
+	x_me = [1, 2, 0]
+	x_other = [1, 1.5, 1]
+
+	// График
+
+	let ctx = document.getElementById('chart1').getContext('2d')
+
+	new Chart(ctx, {
+		type: 'line',
+		data: {
+			labels: steps,
+			datasets: [{
+				label: 'Попытки пользователя по степам',
+				data: x_me,
+				backgroundColor: 'rgba(255, 99, 132, 0.2)',
+				borderColor: 'rgb(255, 99, 132)',
+				borderWidth: 1
+			}, {
+				label: 'Среднее количество попыток других пользователей по степам',
+				data: x_other,
+				backgroundColor: 'rgba(255, 159, 64, 0.2)',
+				borderColor: 'rgb(255, 159, 64)',
+				borderWidth: 1
+			}]
+		},
+
+		options: {
+			title: {
+				display: true,
+				text: 'Попыток на одно решение',
+				fontSize: 40
+			}
+		},
+	})
+</script>

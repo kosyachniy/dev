@@ -1,25 +1,23 @@
-from sys import argv
-import pylab
+import matplotlib.pyplot as plt
 
-def graph(name = 'dots'):
-	#Считываем данные
-	with open('data.txt', 'r') as file:
-		y = file.read().split('\n')
-	x = [i for i in range(1, len(y) + 1)]
 
-	#Настройки
-	pylab.grid(True)
+# Данные
 
-	#Сохраняем в файл
-	pylab.plot(x, y)
-	pylab.savefig(name + '.png', format='png', dpi=150)
+with open('data.txt', 'r') as file:
+	y = list(map(int, file.read().split('\n')))
 
-	#Выводим на экран
-	pylab.plot(x, y)
-	pylab.show()
+x = [i for i in range(1, len(y) + 1)]
 
-if __name__ == '__main__':
-	if len(argv) > 1:
-		graph(argv[1])
-	else:
-		graph()
+# Настройки
+
+plt.grid(True)
+
+# Сохранить
+
+plt.plot(x, y, 'o')
+plt.savefig('dots.png', format='png', dpi=150)
+
+# Построить
+
+plt.plot(x, y, 'o')
+plt.show()

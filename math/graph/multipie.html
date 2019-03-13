@@ -1,0 +1,403 @@
+<script type="text/javascript" src="func/fusioncharts/fusioncharts.js"></script>
+
+<div id="chart-container"></div>
+<script type="text/javascript">
+	FusionCharts.ready(function() {
+		var fusioncharts = new FusionCharts({
+			type: 'multilevelpie',
+			renderAt: 'chart-container',
+			width: '100%',
+			height: '100%', // '650',
+			dataFormat: 'json',
+			dataSource: {
+				"chart": {
+					"theme": "fusion",
+					"numberprefix": "#",
+					"plottooltext": "$label",
+
+					"startingAngle": "45",
+					"showValuesInTooltip": "1",
+					"showPercentInTooltip": "0",
+					// "pieRadius": "400",
+
+					// Текст
+
+					"basefontsize": "11",
+					"baseFontColor": "#333333",
+					"baseFont": "Helvetica Neue,Arial",
+
+					// Фон
+
+					"bgColor": "#ffffff",
+					// "canvasBgColor": "#ffffff",
+
+					// Обводка
+
+					"showBorder": "0",
+					"showShadow": "0",
+					// "showCanvasBorder": "0",
+					"pieBorderThickness": "2",
+					// "pieBorderColor": "#ffffff",
+
+					// Лепестки
+
+					"pieFillAlpha": "60",
+					"showShadow": "0",
+
+					// При наведении
+
+					// "hoverFillAlpha": "60",
+					"hoverFillColor": "#cccccc",
+					// "useHoverColor": "0",
+				},
+				"category": [{
+					"label": "Области знаний",
+					"color": "#ffffff",
+					"category": [{
+						"label": "Гумманитарные",
+						"tooltext": "#1",
+						'link': 'https://ru.wikipedia.org/wiki/Гуманитарные_науки',
+						"color": "#f8bd19",
+						"value": "4",
+						"category": [{
+							"label": "Экономика",
+							"color": "#f8bd19",
+							"value": "3"
+						}, {
+							"label": "История",
+							"color": "#f8bd19",
+							"value": "3"
+						}, {
+							"label": "География",
+							"color": "#f8bd19",
+							"value": "3"
+						}, {
+							"label": "Юриспруденция",
+							"color": "#f8bd19",
+							"value": "3"
+						}, {
+							"label": "Лингвистика",
+							"color": "#f8bd19",
+							"value": "3"
+						}, {
+							"label": "Филология",
+							"color": "#f8bd19",
+							"value": "3"
+						}, {
+							"label": "Социология",
+							"color": "#f8bd19",
+							"value": "3"
+						}, {
+							"label": "Философия",
+							"color": "#f8bd19",
+							"value": "3"
+
+						// // 	"label": "Культурная антропология",
+						// // 	"color": "#f8bd19",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Археология",
+						// // 	"color": "#f8bd19",
+						// // 	"value": "2"
+						// // }, {
+						// 	"label": "Лингвистика",
+						// 	"color": "#f8bd19",
+						// 	"value": "3"
+						// }, {
+						// // 	"label": "Искусствоведение",
+						// // 	"color": "#f8bd19",
+						// // 	"value": "2"
+						// // }, {
+						// 	"label": "История",
+						// 	"color": "#f8bd19",
+						// 	"value": "3"
+						// }, {
+						// // 	"label": "Клиометрия",
+						// // 	"color": "#f8bd19",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Краеведение",
+						// // 	"color": "#f8bd19",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Культурология",
+						// // 	"color": "#f8bd19",
+						// // 	"value": "2"
+						// // }, {
+						// // 	"label": "Литературоведение",
+						// // 	"color": "#f8bd19",
+						// // 	"value": "3"
+						// // }, {
+						// 	"label": "Педагогика",
+						// 	"color": "#f8bd19",
+						// 	"value": "2"
+						// }, {
+						// 	"label": "Политология",
+						// 	"color": "#f8bd19",
+						// 	"value": "2"
+						// }, {
+						// 	"label": "Психология",
+						// 	"color": "#f8bd19",
+						// 	"value": "3"
+						// }, {
+						// // 	"label": "Религиоведение",
+						// // 	"color": "#f8bd19",
+						// // 	"value": "2"
+						// // }, {
+						// 	"label": "Социология",
+						// 	"color": "#f8bd19",
+						// 	"value": "2"
+						// }, {
+						// 	"label": "Филология",
+						// 	"color": "#f8bd19",
+						// 	"value": "3"
+						// }, {
+						// 	"label": "Философия",
+						// 	"color": "#f8bd19",
+						// 	"value": "3"
+						// }, {
+						// 	"label": "Экономика",
+						// 	"color": "#f8bd19",
+						// 	"value": "3"
+						// }, {
+						// // 	"label": "Этнография",
+						// // 	"color": "#f8bd19",
+						// // 	"value": "1"
+						// // }, {
+						// 	"label": "Юриспруденция",
+						// 	"color": "#f8bd19",
+						// 	"value": "3"
+						// // }, {
+						// // 	"label": "Библиотековедение",
+						// // 	"color": "#f8bd19",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Книговедение",
+						// // 	"color": "#f8bd19",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Документоведение",
+						// // 	"color": "#f8bd19",
+						// // 	"value": "1"
+						}, ]
+					}, {
+
+						"label": "Естественные",
+						"tooltext": "#2",
+						'link': 'https://ru.wikipedia.org/wiki/Естественные_науки',
+						"color": "#33ccff",
+						"value": "2",
+						"category": [{
+							"label": "Физика",
+							"color": "#33ccff",
+							"value": "3"
+						}, {
+							"label": "Химия",
+							"color": "#33ccff",
+							"value": "3"
+						}, {
+							"label": "Астрономия",
+							"color": "#33ccff",
+							"value": "3"
+						}, {
+							"label": "Биология",
+							"color": "#33ccff",
+							"value": "3"
+
+						// // 	"label": "Астрономия",
+						// // 	"color": "#33ccff",
+						// // 	"value": "1"
+						// // }, {
+						// 	"label": "Биология",
+						// 	"color": "#33ccff",
+						// 	"value": "2"
+						// }, {
+						// 	"label": "География",
+						// 	"color": "#33ccff",
+						// 	"value": "2"
+						// }, {
+						// // 	"label": "Геология",
+						// // 	"color": "#33ccff",
+						// // 	"value": "1"
+						// // }, {
+						// 	"label": "Медицина",
+						// 	"color": "#33ccff",
+						// 	"value": "3"
+						// }, {
+						// // 	"label": "Почвоведение",
+						// // 	"color": "#33ccff",
+						// // 	"value": "1"
+						// // }, {
+						// 	"label": "Физика",
+						// 	"color": "#33ccff",
+						// 	"value": "3"
+						// }, {
+						// 	"label": "Химия",
+						// 	"color": "#33ccff",
+						// 	"value": "3"
+						// }, {
+						// 	"label": "Математика",
+						// 	"color": "#33ccff",
+						// 	"value": "3"
+						// // }, {
+						// // 	"label": "Гидрология",
+						// // 	"color": "#33ccff",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Геофизика",
+						// // 	"color": "#33ccff",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Геохимия",
+						// // 	"color": "#33ccff",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Естествознание",
+						// // 	"color": "#33ccff",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Природоведение",
+						// // 	"color": "#33ccff",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Зоология",
+						// // 	"color": "#33ccff",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Ботаника",
+						// // 	"color": "#33ccff",
+						// // 	"value": "1"
+						}, ]
+					}, {
+
+						"label": "Точные",
+						"tooltext": "#3",
+						'link': 'https://ru.wikipedia.org/wiki/Точные_науки',
+						"color": "#ffcccc",
+						"value": "3",
+						"category": [{
+							"label": "Математика",
+							"color": "#ffcccc",
+							"value": "14",
+							"category": [{
+								"label": "Алгебра",
+								"value": 3,
+								"color": "#ffcccc"
+							}, {
+								"label": "Геометрия",
+								"value": 3,
+								"color": "#ffcccc"
+							}, {
+								"label": "Математический{br}анализ",
+								"value": 3,
+								"color": "#ffcccc"
+							}, {
+								"label": "Дискретная{br}математика",
+								"value": 3,
+								"color": "#ffcccc"
+							}]
+						}, {
+							"label": "Информатика",
+							"color": "#ffcccc",
+							"value": "3"
+						}, {
+							"label": "Робототехника",
+							"color": "#ffcccc",
+							"value": "3"
+						}, {
+							"label": "Электротехника",
+							"color": "#ffcccc",
+							"value": "3"
+
+						// // 	"label": "Агрономия",
+						// // 	"color": "#ffcccc",
+						// // 	"value": "1"
+						// // }, {
+						// 	"label": "Архитектура",
+						// 	"color": "#ffcccc",
+						// 	"value": "2"
+						// }, {
+						// // 	"label": "Аэронавтика",
+						// // 	"color": "#ffcccc",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Баллистика",
+						// // 	"color": "#ffcccc",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Бионика",
+						// // 	"color": "#ffcccc",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Биотехнологии",
+						// // 	"color": "#ffcccc",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Геомеханика",
+						// // 	"color": "#ffcccc",
+						// // 	"value": "1"
+						// // }, {
+						// 	"label": "Информатика",
+						// 	"color": "#ffcccc",
+						// 	"value": "3"
+						// }, {
+						// // 	"label": "Кораблестроение",
+						// // 	"color": "#ffcccc",
+						// // 	"value": "1"
+						// // }, {
+						// 	"label": "Пищевые технологии{br}и кулинария",
+						// 	"color": "#ffcccc",
+						// 	"value": "3"
+						// }, {
+						// 	"label": "Криптография",
+						// 	"color": "#ffcccc",
+						// 	"value": "2"
+						// }, {
+						// // 	"label": "Материаловедение",
+						// // 	"color": "#ffcccc",
+						// // 	"value": "1"
+						// // }, {
+						// 	"label": "Машиноведение",
+						// 	"color": "#ffcccc",
+						// 	"value": "2"
+						// }, {
+						// // 	"label": "Метрология",
+						// // 	"color": "#ffcccc",
+						// // 	"value": "1"
+						// // }, {
+						// 	"label": "Механика",
+						// 	"color": "#ffcccc",
+						// 	"value": "2"
+						// }, {
+						// // 	"label": "Нанотехнология",
+						// // 	"color": "#ffcccc",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Промышленность",
+						// // 	"color": "#ffcccc",
+						// // 	"value": "1"
+						// // }, {
+						// 	"label": "Робототехника",
+						// 	"color": "#ffcccc",
+						// 	"value": "3"
+						// }, {
+						// // 	"label": "Системотехника",
+						// // 	"color": "#ffcccc",
+						// // 	"value": "1"
+						// // }, {
+						// // 	"label": "Трибология",
+						// // 	"color": "#ffcccc",
+						// // 	"value": "1"
+						// // }, {
+						// 	"label": "Электротехника",
+						// 	"color": "#ffcccc",
+						// 	"value": "3"
+						}],
+					}],
+				}],
+			}
+		});
+
+		fusioncharts.render();
+	});
+</script>

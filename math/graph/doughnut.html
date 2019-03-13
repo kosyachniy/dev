@@ -1,0 +1,49 @@
+<script type="text/javascript" src="func/chart.min.js"></script>
+
+<canvas id="chart2" height="210" style="max-width: 90%;"></canvas>
+<script type="text/javascript">
+	// Данные
+
+	labels = ['Экономика', 'Программирование', 'Хакатоны']
+	data = [0.4, 0.35, 0.25]
+
+	// График
+
+	ctx = document.getElementById('chart2').getContext('2d')
+
+	new Chart(ctx,{
+		type: 'doughnut',
+		data: {
+			labels: labels,
+			datasets: [{
+				data: data,
+				backgroundColor: [
+					'rgba(255, 99, 132, 0.2)',
+					'rgba(255, 159, 64, 0.2)',
+					'rgba(255, 205, 86, 0.2)',
+					'rgba(75, 192, 192, 0.2)',
+					'rgba(54, 162, 235, 0.2)',
+					'rgba(153, 102, 255, 0.2)',
+					'rgba(201, 203, 207, 0.2)'
+				],
+				borderColor: [
+					'rgb(255, 99, 132)',
+					'rgb(255, 159, 64)',
+					'rgb(255, 205, 86)',
+					'rgb(75, 192, 192)',
+					'rgb(54, 162, 235)',
+					'rgb(153, 102, 255)',
+					'rgb(201, 203, 207)'
+				],
+				borderWidth: 1
+			}]
+		},
+		options: {
+			title: {
+				display: true,
+				text: 'Пройдено материала по областям знаний',
+				fontSize: 40
+			}
+		}
+	})
+</script>

@@ -1,0 +1,68 @@
+<script type="text/javascript" src="func/fusioncharts/fusioncharts.js"></script>
+
+<div id="chart-container"></div>
+<script type="text/javascript">
+	FusionCharts.ready(function() {
+		var fusioncharts = new FusionCharts({
+			type: 'pie2d',
+			renderAt: 'chart-container',
+			width: '100%',
+			height: '650',
+			dataFormat: 'json',
+			dataSource: {
+				"chart": {
+					"theme": "fusion",
+					"numberPrefix": "$",
+					"startingAngle": "45",
+
+					// Текст
+
+					"caption": "Split of revenue by product categories",
+					"subCaption": "Last year",
+					"captionFontSize": "16",
+					"subcaptionFontSize": "14",
+					"basefontsize": "12",
+
+					// Фон
+
+					"bgColor": "#ffffff",
+					// "canvasBgColor": "#ffffff",
+
+					// Обводка
+
+					"showBorder": "0",
+					// "showCanvasBorder": "0",
+					"pieBorderThickness": "0",
+					// "pieBorderColor": "#ffffff",
+					"use3DLighting": "0",
+
+					// Лепестки
+
+					"paletteColors": "5d63af,5ec0bd,e27973,f7c653",
+
+					// При наведении
+
+					"plotHoverEffect": "1",
+
+					"showPercentValues": "1",
+					"showPercentInTooltip": "0",
+					"decimals": "1",
+				},
+
+				"data": [{
+					"label": "Food",
+					"value": "285040"
+				}, {
+					"label": "Apparels",
+					"value": "146330"
+				}, {
+					"label": "Electronics",
+					"value": "105070"
+				}, {
+					"label": "Household",
+					"value": "49100"
+				}],
+			}
+		}).render();
+	});
+</script>
