@@ -1,12 +1,11 @@
 import sys
 
 import numpy as np
-import matplotlib.pyplot as plt
+from scipy.misc import derivative
 
 
 OUTS = 1
 FAULT = 0.01
-COUNT = 100
 
 
 def perceptron(name, outs=OUTS, fault=FAULT):
@@ -28,48 +27,50 @@ def perceptron(name, outs=OUTS, fault=FAULT):
 	def backpropagation(y):
 		w = np.zeros((x.shape[1], 1))
 		iteration = 0
-		history = []
+
+		def gradient(f, x):
+			return derivative(f, x, 1e-6)
 
 		while True: # for iteration in range(1, 51):
 			iteration += 1
 			error_max = 0
 
 			for i in range(x.shape[0]):
-				error = y[i] - x[i].dot(w).sum()
+				f = lambda o: y[i] - x[i].dot(o).sum()
 
+				error = f(w)
+				# print(error)
 				error_max = max(error, error_max)
+
 				# print('Error', error_max, error)
 
+				antigrad = -1 * gradient(f, w)
+
+				# print('-∇ = {}'.format(antigrad)) #
+
+				n = 2
+				delta = error * antigrad * n
+
 				for j in range(x.shape[1]):
-					delta = x[i][j] * error
-					w[j] += delta
+					w[j] += delta * x[i][j]
 					# print('Δw{} = {}'.format(j, delta))
 
-			history.append(error_max)
 			print('№{}: {}'.format(iteration, error_max)) #
 
 			if error_max < fault:
 				break
 
-		return w, history
+		return w
 
-	w = np.zeros(shape=(y.shape[1], x.shape[1]))
-	history = []
-
-	for i, el in enumerate(y.T.reshape(-1, y.shape[0], 1)):
-		w_re, history_re = backpropagation(el[:, 0])
-		w[i] = w_re.T[0]
-		history.append(history_re)
-
-	w = w.T
+	w = np.hstack([backpropagation(i[:, 0]) for i in y.T.reshape(-1, y.shape[0], 1)])
 
 	# Учёт нормализации
-
+	
 	w = np.array([[j/10**dis for j in i] for i in w])
 
 	#
 
-	return w, history
+	return w
 
 
 if __name__ == '__main__':
@@ -77,23 +78,12 @@ if __name__ == '__main__':
 	outs = int(sys.argv[2]) if len(sys.argv) >= 3 else OUTS
 	fault = float(sys.argv[3]) if len(sys.argv) >= 4 else FAULT
 
-	w, history = perceptron(name, outs, fault)
+	w = perceptron(name, outs, fault)
 
 	# Сохранение весов
 
 	print(w) #
 	np.savetxt('../data/{}/weights.csv'.format(name), w, delimiter=',')
-
-	# Визуализация
-
-	for i in history:
-		# step = len(i) // COUNT
-		y = i # i[::step]
-		x = range(1, len(y)+1) # list(map(lambda j: j*step, range(1, len(y)+1)))
-
-		plt.plot(x, y)
-
-	plt.show()
 
 	# Прогноз
 

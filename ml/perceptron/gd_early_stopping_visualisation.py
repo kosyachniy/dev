@@ -27,7 +27,7 @@ def perceptron(name, outs=OUTS, fault=FAULT):
 
 	# Рассчёт весов
 
-	def antigradient(y):
+	def backpropagation(y):
 		w = np.zeros((x.shape[1], 1))
 		iteration = 0
 		history = []
@@ -59,7 +59,7 @@ def perceptron(name, outs=OUTS, fault=FAULT):
 	history = []
 
 	for i, el in enumerate(y.T.reshape(-1, y.shape[0], 1)):
-		w_re, history_re = antigradient(el[:, 0])
+		w_re, history_re = backpropagation(el[:, 0])
 		w[i] = w_re.T[0]
 		history.append(history_re)
 

@@ -23,7 +23,7 @@ def perceptron(name, outs=OUTS, fault=FAULT):
 
 	# Рассчёт весов
 
-	def antigradient(y):
+	def backpropagation(y):
 		w = np.zeros((x.shape[1], 1))
 		iteration = 0
 
@@ -49,7 +49,7 @@ def perceptron(name, outs=OUTS, fault=FAULT):
 
 		return w
 
-	w = np.hstack([antigradient(i[:, 0]) for i in y.T.reshape(-1, y.shape[0], 1)])
+	w = np.hstack([backpropagation(i[:, 0]) for i in y.T.reshape(-1, y.shape[0], 1)])
 
 	# Учёт нормализации
 	
