@@ -13,7 +13,7 @@ class App extends Component {
 
 	render() {
 		return (
-			<div className="has-background-white-bis" style={ {height: '100vh'} }>
+			<div className="has-background-white-bis" style={ {'min-height': '100vh'} }>
 				<Header />
 				<Body leftMenu={ this.state.leftMenu }/>
 				<Footer />

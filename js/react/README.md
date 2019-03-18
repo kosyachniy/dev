@@ -12,6 +12,6 @@ npm install -g create-react-app
 create-react-app имя
 ```
 
-Добавить библиотеку: ``` yarn add имя ```
+Добавить библиотеку: ``` npm install имя ``` / ``` yarn add имя ```
 
 Запуск сервера (с горячей перезагрузкой): ``` npm start ```

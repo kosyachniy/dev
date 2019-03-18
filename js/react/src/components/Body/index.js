@@ -1,4 +1,4 @@
-import React, {Component} from 'react'
+import React from 'react'
 
 import LeftMenu from '../LeftMenu'
 import Main from '../Main'
@@ -7,7 +7,7 @@ import RightMenu from '../RightMenu'
 import 'bulma/css/bulma.css'
 import './style.css'
 
-class Body extends Component {
+class Body extends React.Component {
 	state = {
 		leftMenu: this.props.leftMenu,
 	}

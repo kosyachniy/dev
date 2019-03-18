@@ -38,6 +38,8 @@ syntax2/conformity/data/
 
 # Библиотеки
 
+math/graph/func/
+
 # Виртуальное окружение
 
 server/python/flask/flask/
@@ -46,8 +48,7 @@ serverless/now-flask/flask/
 
 # Авторские права
 
-image/paste/*.otf
-image/paste/*.ttf
-media/fonts/
-media/icons/
-media/sounds/
+*.otf
+*.ttf
+# media/icons/
+# media/sounds/
