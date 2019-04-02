@@ -1,5 +1,7 @@
 # Кэш
 
+.DS_Store
+
 __pycache__/
 *.pyc
 vk_config.json
@@ -20,9 +22,10 @@ compile/exe/main.spec
 **/package-lock.json
 **/dist/
 
-# Ключи
+# Ключи и настройки
 
-**/keys.json
+keys.json
+keys.js
 
 trade/oanda/example/account.txt
 trade/oanda/example/token.txt
