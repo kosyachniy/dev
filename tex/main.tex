@@ -1,0 +1,65 @@
+\documentclass{article}
+
+% Свои операторы
+\usepackage{amsmath}
+\DeclareMathOperator{\tg}{tg}
+
+%
+\usepackage{natbib}
+\usepackage{graphicx}
+
+% Кодировка
+\usepackage[utf8]{inputenc}
+
+% Для написаний
+\usepackage{amssymb}
+
+% Русский язык
+\usepackage[russian]{babel}
+
+% Шрифт
+\renewcommand{\familydefault}{\sfdefault}
+
+% Графики
+% \usepackage{pgfplots}
+% \RequirePackage{luatex85,shellesc}
+
+% Ссылки
+\usepackage{hyperref}
+
+
+\title{Проект}
+\author{Полоз А. Е.}
+\date{2019}
+
+
+\begin{document}
+	
+\maketitle
+
+\section{Введение}
+\label{section:introduction}
+\subsection{Понятие}
+\begin{itemize}
+	\item Пункт 1
+	\item  Пункт 2
+\end{itemize}
+
+\noindent\rule{\textwidth}{1pt}
+
+$x \mapsto \in \mathbb{R} \frac{1}{x-1} \backslash \{1\} \Delta x_0 f^\prime (1 + x)^\frac{1}{x} \infty \tg \alpha \rightarrow$ 
+$$\lim_{x \to a} f(x) =$$
+
+\hyperref[section:introduction]{ссылка}\\
+
+\begin{tabular}{ | l | r | }
+	\hline
+	Хедер 1 & Хедер 2 \\ \hline
+	строка 1, столбец 1 & строка 1, столбец 2 \\
+	\hline
+\end{tabular}
+
+\newpage
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}

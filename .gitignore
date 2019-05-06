@@ -45,6 +45,7 @@ math/graph/func/
 
 # Виртуальное окружение
 
+env/
 server/python/flask/flask/
 site/python/flask/flask/
 serverless/now-flask/flask/
