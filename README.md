@@ -35,16 +35,13 @@
 [``` smartcontract ```](smartcontract) | Смартконтракты
 [``` image ```](image) | Обработка изображений
 [``` audio ```](audio) | Обработка аудио
+[``` git ```](git) | Git команды
+[``` bash ```](bash) | BASH команды
+[``` js ```](js) | JavaScript разработка
 
 <br>
 
 # Разработка
-## Технологии
-Название | Расположение | Дополнительно
----|---|---
-Word2Vec | ``` ml/text ``` | [RusVectores](http://rusvectores.org/ru/)
-Telethon Update | ``` bot/telegram/user ``` |
-
 ## API и библиотеки
 &nbsp; | Python | C++ | PHP
 ---|---|---|---
@@ -91,19 +88,8 @@ C++ |  | Яндекс & ВШЭ: [Stepik](https://stepik.org/course/363/syllabus)
 Код | Действие
 ---|---
 ``` pip freeze > requirements.txt ``` | Получить requerements.txt
-``` source tensorflow/bin/activate/ ``` | Запустить TensorFlow
 ``` jupyter notebook ``` | Запустить блокнот
 
-## Vim
-Команда | Описание
----|---
-``` :q ``` | Выйти
-``` :q! ``` | Выйти и сохранить
-``` :wq ``` | Записать и выйти
-``` :wq! ``` | Насильно записать и выйти
-``` :x ```, ``` :exit ``` | Записать и выйти, если есть изменения
-``` :qa ``` | Выйти отовсюду
-``` :cq ``` | Закрыть без сохранения, выйти с ошибкой
 
 ## Travis CI
 [Travis CI](https://travis-ci.org/kosyachniy/dev/)
