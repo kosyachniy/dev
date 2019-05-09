@@ -208,3 +208,19 @@ def stats():
 # Участники сообщества
 def users():
 	return vk.method('groups.getMembers', {'group_id': GROUP_ID})['items']
+
+# Предшествующее значащее сообщение
+def prev(user):
+	t = True
+
+	for i in vk.method('messages.getHistory', {'user_id': user})['items']:
+		if i['from_id'] == user:
+			if t:
+				t = False
+				continue
+
+			return (
+				i['from_id'],
+				i['text'],
+				[max_size(j['photo']) for j in i['attachments'] if j['type'] == 'photo'] if 'attachments' in i else [],
+			)
