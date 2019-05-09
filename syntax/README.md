@@ -21,6 +21,7 @@
 * [Список POS тегов NLTK](https://stackoverflow.com/questions/15388831/what-are-all-possible-pos-tags-of-nltk)
 
 ### Принцип
+* [LDA](https://habr.com/ru/post/417167/)
 * [Латентно-семантический анализ](https://habr.com/ru/post/110078/)
 * [ODS NLP](https://habr.com/ru/company/ods/blog/329410/)
 * [Примеры Word2Vec](https://habr.com/ru/post/249215/)
