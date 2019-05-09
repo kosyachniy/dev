@@ -1,6 +1,7 @@
 # JavaScript
 ## Обучение
 ### JS
+* [JavaScript](http://learn.javascript.ru/)
 
 ### Webpack
 ### Node.JS
