@@ -20,7 +20,7 @@
 [``` regular ```](regular) | Регулярные выражения
 [``` style ```](style) | Стили, дизайн
 [``` media ```](media) | Медиафайлы: шрифты, иконки, значки, звуки
-[``` site ```](site) | Разработка веб-приложений
+[``` tls ```](tls) | Найстрока HTTPS шифрования на сервере
 [``` program ```](program) | Разработка приложений
 [``` js ```](js) | JavaScript разработка
 [``` python ```](python) | Python разработка
@@ -56,10 +56,24 @@
 
 <br>
 
-# Сервисы
-Тип | Сервис
----|---
-Олимпиадные задачи | [CodeForces](http://codeforces.com/problemset)
-Олимпиады | [Яндекс.Алгоритм](https://academy.yandex.ru/events/algorithm/)<br>[VK Cup](http://codeforces.com/vkcup2017)<br>[Russian Code Cup](http://www.russiancodecup.ru/ru/)<br>[FaceBook Hacker Cup](https://ru.wikipedia.org/wiki/Facebook_Hacker_Cup)<br>[Google Code Jam](https://code.google.com/codejam/)<br>[КРОК](https://www.croc.ru/vacancy/students/detail/61353/)
-Конкурсы | [Web Ready](http://www.gotech.vc/)<br>[Список](https://habrahabr.ru/company/ingria_startup/blog/138718/)
-Работа | [HeadHunter](https://spb.hh.ru/search/vacancy?text=python&area=2)
+# Ссылки
+## Олимпиадные задачи
+* [CodeForces](http://codeforces.com/problemset)
+
+## Олимпиады
+* [Яндекс.Алгоритм](https://academy.yandex.ru/events/algorithm/)
+* [VK Cup](http://codeforces.com/vkcup2017)
+* [Russian Code Cup](http://www.russiancodecup.ru/ru/)
+* [FaceBook Hacker Cup](https://ru.wikipedia.org/wiki/Facebook_Hacker_Cup)
+* [Google Code Jam](https://code.google.com/codejam/)
+* [КРОК](https://www.croc.ru/vacancy/students/detail/61353/)
+
+## Хакатоны
+* [Russian Hackers](https://russianhackers.org)
+
+## Конкурсы
+* [Web Ready](http://www.gotech.vc/)
+* [Список](https://habrahabr.ru/company/ingria_startup/blog/138718/)
+
+## Работа
+* [HeadHunter](https://spb.hh.ru/search/vacancy?text=python&area=2)
