@@ -4,55 +4,38 @@
 
 __pycache__/
 *.pyc
+
 vk_config.json
 vk_config.v2.json
+
 *.session
 *.session-journal
+
 .ipynb_checkpoints/
-ai/tensorflow/log_simple_graph
-bot/vk/re.jpg
-compile/exe/build/
-compile/exe/dist/
-compile/exe/main.spec
 
 .idea/
 .vscode/
 
-**/node_modules/
-**/package-lock.json
-**/dist/
+node_modules/
+package-lock.json
+dist/
+build/
 
 # Ключи и настройки
 
+keys.py
 keys.json
 keys.js
 
-trade/oanda/example/account.txt
-trade/oanda/example/token.txt
-
 # Данные
 
-bot/vk/download/data/
-bot/vk/download/re.txt
-syntax/russian-syntagrus-ud-2.3-181115.udpipe
-syntax/ruscorpora_upos_skipgram_300_5_2018.vec.gz
-syntax2/araneum_upos_skipgram_600_2_2017.bin
-syntax2/conformity/data/
-
 # Библиотеки
-
-math/graph/func/
 
 # Виртуальное окружение
 
 env/
-server/python/flask/flask/
-site/python/flask/flask/
-serverless/now-flask/flask/
 
 # Авторские права
 
 *.otf
 *.ttf
-# media/icons/
-# media/sounds/

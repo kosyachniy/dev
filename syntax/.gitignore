@@ -1,0 +1,5 @@
+# Данные
+
+*.udpipe
+*.vec.gz
+*.bin
