@@ -1,25 +1,44 @@
 # Кэш
 
+##  MacOS
+
 .DS_Store
+
+## Python
 
 __pycache__/
 *.pyc
 
+## ВКонтакте
+
 vk_config.json
 vk_config.v2.json
+
+## 
 
 *.session
 *.session-journal
 
+## Jupyter Notebook
+
 .ipynb_checkpoints/
+
+## Редакторы
 
 .idea/
 .vscode/
+
+## JS
 
 node_modules/
 package-lock.json
 dist/
 build/
+
+## Мобильная разработка
+
+.expo/
+.expo-shared/
 
 # Ключи и настройки
 
@@ -36,6 +55,8 @@ keys.js
 env/
 
 # Авторские права
+
+## Шрифты
 
 *.otf
 *.ttf
