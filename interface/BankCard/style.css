@@ -1,0 +1,33 @@
+.field {
+	padding: 0 25px 0 25px;
+	margin: 0;
+}
+
+.main-form {
+	margin-top: 75px;
+	padding-top: 25px;
+	margin-bottom: 0;
+	padding-bottom: 0;
+}
+
+.control {
+	margin: 15px 0 15px 0;
+}
+
+.owner .button {
+	margin: 25px 0 25px 0;
+}
+
+@media (min-width: 500px) {
+	.field {
+		width: 80%;
+		margin-left: 10%;
+	}
+}
+
+@media (min-width: 1000px) {
+	.field {
+		width: 800px;
+		margin-left: calc(50% - 400px);
+	}
+}
