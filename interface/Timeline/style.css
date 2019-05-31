@@ -1,0 +1,137 @@
+/* @import '//fonts.googleapis.com/css?family=Muli:300'; */
+
+.timeline {
+	display: -webkit-flex;
+	display: flex;
+	-webkit-flex-direction: column;
+	flex-direction: column;
+	padding: 0 62px;
+	margin: 0;
+	list-style: none;
+	position: relative;
+	overflow: hidden;
+}
+
+.timeline::before {
+	position: absolute;
+	top: 0;
+	height: 100%;
+	padding-right: 11px;
+	border-right: 2px solid #6db1336b;
+	content: '';
+}
+
+.timeline__item {
+	display: -webkit-flex;
+	display: flex;
+	-webkit-align-items: stretch;
+	align-items: stretch;
+	padding: 62px 0;
+}
+
+.timeline__step {
+	padding-right: 62px;
+}
+
+.timeline__step__marker {
+	position: relative;
+	display: table-cell;
+	height: 24px;
+	min-height: 24px;
+	width: 24px;
+	min-width: 24px;
+	border: 4px solid #f2f2f2;
+	-moz-border-radius: 50%;
+	-webkit-border-radius: 50%;
+	border-radius: 50%;
+	background-color: white;
+	z-index: 0;
+}
+
+.timeline__step__marker--red {
+	border-color: #ff3467;
+}
+
+.timeline__step__marker--blue {
+	border-color: #6db133;
+}
+
+.timeline__step__marker--salmon {
+	border-color: #f48a6d;
+}
+
+.timeline__step__marker--purple {
+	border-color: #c178fa;
+}
+
+.timeline__time {
+	width: 20%;
+	font-size: 26px;
+}
+
+.timeline__title {
+	padding-bottom: 26px;
+	font-size: 32px;
+}
+
+.timeline__points {
+	padding: 0;
+	list-style: none;
+	font-size: 24px;
+	color: #77777d;
+}
+
+.timeline__points > * {
+	padding: 0 0 12px 0;
+}
+
+@media (max-width: 768px) {
+	.card {
+		max-width: 375;
+	}
+
+	.timeline {
+		padding: 0 10px;
+	}
+	.timeline::before {
+		padding-right: 6.28571px;
+	}
+	.timeline__item {
+		padding: 25px 0;
+	}
+	.timeline__step {
+		padding-right: 25px;
+	}
+	.timeline__step__marker {
+		height: 13.71429px;
+		min-height: 13.71429px;
+		width: 13.71429px;
+		min-width: 13.71429px;
+		border-width: 2.28571px;
+	}
+	.timeline__time {
+		font-size: 14.85714px;
+	}
+	.timeline__title {
+		padding-bottom: 14.85714px;
+		font-size: 18.28571px;
+	}
+	.timeline__points {
+		font-size: 13.71429px;
+	}
+	.timeline__points > * {
+		padding-bottom: 6.85714px;
+	}
+}
+
+*,
+*:before,
+*:after {
+	box-sizing: inherit;
+}
+
+.card {
+	margin-top: 50px;
+	line-height: 1.5rem;
+	box-sizing: border-box;
+}
