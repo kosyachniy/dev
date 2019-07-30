@@ -275,6 +275,8 @@ class VK:
 		self.vk = vk_api.VkApi(login=login, password=password)
 		self.vk.auth()
 
+		self.method = self.vk.method
+
 	# # Отправить сообщение
 	# def send(self, user, cont, img=[]):
 	# 	# Изображения

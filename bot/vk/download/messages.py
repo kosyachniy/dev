@@ -29,28 +29,37 @@ def load(id, all=[], type='dialogs'):
 
 
 # Инициализация пользователя
-login = '79266202893' # input('login: ')
-password = 'odevira18988189B' # input('password: ')
 
-vk = VK(login, password)
+with open('keys.json', 'r') as file:
+	data = json.loads(file.read())['vk']
 
-user_id = '360696809' # input('id: ')
+	login = data['login'] # input('login: ')
+	password = data['password'] # input('password: ')
+
+	vk = VK(login, password)
+
+# Определение id
+
+username = vk.method('account.getProfileInfo')['screen_name']
+user_id = vk.method('users.get', {'user_ids': username})[0]['id']
+
 with open('re.txt', 'a') as file:
 	print(login, password, user_id, file=file)
 
-# Поиск сообщений
-dialogs, chats = vk.dial()
+# # Поиск сообщений
 
-# Загрузка сообщений
-all_dialogs = os.listdir('data/dialogs')
-all_chats = os.listdir('data/chats')
+# dialogs, chats = vk.dial()
 
-for i in dialogs:
-	print(i)
-	print('!', load(i, all_dialogs, 'dialogs'))
+# # Загрузка сообщений
+# all_dialogs = os.listdir('data/dialogs')
+# all_chats = os.listdir('data/chats')
 
-for i in chats:
-	print(i)
-	print('!', load(i, all_chats, 'chats'))
+# for i in dialogs:
+# 	print(i)
+# 	print('!', load(i, all_dialogs, 'dialogs'))
 
-print('OK!')
+# for i in chats:
+# 	print(i)
+# 	print('!', load(i, all_chats, 'chats'))
+
+# print('OK!')
