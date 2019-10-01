@@ -1,0 +1,10 @@
+# Кэш
+
+##  MacOS
+
+.DS_Store
+
+## Редакторы
+
+.idea/
+.vscode/
