@@ -16,7 +16,6 @@ export default class App extends React.Component {
 		this.yourCandidate = null;
 		this.newCandidate = null;
 
-		this.addcandidate = this.addcandidate.bind(this);
 		this.answer = this.answer.bind(this);
 
 		this.candidate1 = null;
@@ -34,48 +33,34 @@ export default class App extends React.Component {
 		this.peer.onicecandidate = e => {
 			if (e.candidate) {
 				this.yourCandidate = e.candidate;
-				// document.getElementById('yourCandidate').value = JSON.stringify(this.yourCandidate);
 				if (this.yourCandidate) {
 					this.sended++;
-					console.log(this.sended, this.yourCandidate)
+					console.log(this.sended, this.yourCandidate);
 
-					// if (this.sended === 1) {
-						console.log('!', this.sended)
-						this.sio.emit('candidate2', this.yourCandidate);
-					// }
+					this.sio.emit('candidate2', this.yourCandidate);
 				}
 			}
 		}
 
 		this.sio.on('candidate1', (mes) => {
 			console.log('!cand1', mes)
-			// this.candidate1 = mes;
 			this.peer.addIceCandidate(mes);
-
-			// if (this.candidate1 && this.description1) {
-			// 	this.answer()
-			// }
 		});
 
 		this.sio.on('description1', (mes) => {
 			console.log('!desc1', mes)
 			this.description1 = mes;
 			this.answer();
-
-			// if (this.candidate1 && this.description1) {
-			// 	this.answer()
-			// }
 		});
 	}
 
-	addcandidate() {
-		// this.peer.addIceCandidate(this.candidate1);
-	}
-
 	answer() {
-		navigator.mediaDevices.getUserMedia({ video:true })
+		navigator.mediaDevices.getUserMedia({ video: true, audio: true })
 		.then(stream => {
-			document.getElementById("local").srcObject = stream;
+			const videoLocal = document.getElementById('local');
+			videoLocal.autoplay = true;
+			videoLocal.muted = true;
+			videoLocal.srcObject = stream;
 
 			// iOS
 			let peer = this.peer;
@@ -85,7 +70,6 @@ export default class App extends React.Component {
 
 			this.peer.setRemoteDescription(this.description1);
 		})
-		.then(() => this.addcandidate())
 		.then(() => this.peer.createAnswer())
 		.then(answer => {
 			// Mozilla
