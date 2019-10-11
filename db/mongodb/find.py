@@ -11,7 +11,7 @@ for i in db['test'].find():
 # Все коллекция с строго больше указанным параметром
 for i in db['test'].find({'id': {'$gt': 5}}):
 	print(i)
-# $eq $ne $gt $gte $lt $lte $exsist $type $regex
+# $eq $ne $gt $gte $lt $lte $exists $type $regex
 
 # Все коллекции, у которых параметр входит в список
 for i in db['test'].find({'id': {'$in': (5, 8)}}):

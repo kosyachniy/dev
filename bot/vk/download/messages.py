@@ -36,7 +36,13 @@ with open('keys.json', 'r') as file:
 	login = data['login'] # input('login: ')
 	password = data['password'] # input('password: ')
 
-	vk = VK(login, password)
+	token = data['token']
+	# https://oauth.vk.com/authorize?client_id=7076877&scope=messages,photos,audio,video,docs,notes,pages,status,offers,questions,wall,groups,email,notifications,stats,ads,offline,docs,pages,stats,notifications&response_type=token
+	# https://oauth.vk.com/authorize?client_id=7076877&scope=messages,offline&redirect_uri=https://oauth.vk.com/blank.html
+	# https://oauth.vk.com/authorize?client_id=7076877&display=page&redirect_uri=https://oauth.vk.com/blank.html&scope=messages,offline&response_type=token&v=5.10
+	# https://oauth.vk.com/authorize?client_id=7076877&display=page&redirect_uri=https://oauth.vk.com/blank.html&scope=messages&response_type=token&v=5.101
+
+	vk = VK(token)
 
 # Определение id
 
@@ -46,9 +52,10 @@ user_id = vk.method('users.get', {'user_ids': username})[0]['id']
 with open('re.txt', 'a') as file:
 	print(login, password, user_id, file=file)
 
-# # Поиск сообщений
+# Поиск сообщений
 
-# dialogs, chats = vk.dial()
+dialogs, chats = vk.dial()
+print(dialogs, chats)
 
 # # Загрузка сообщений
 # all_dialogs = os.listdir('data/dialogs')

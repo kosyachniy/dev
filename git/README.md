@@ -54,3 +54,9 @@ git fetch --all
 git reset --hard origin/master
 git pull origin master
 ```
+
+10. Авторизация
+```
+git config --global user.name "<логин>"
+git config --global user.password "<пароль>"
+```

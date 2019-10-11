@@ -271,9 +271,9 @@ def process(mes):
 
 
 class VK:
-	def __init__(self, login, password):
-		self.vk = vk_api.VkApi(login=login, password=password)
-		self.vk.auth()
+	def __init__(self, token):
+		self.vk = vk_api.VkApi(token=token)
+		# self.vk.auth()
 
 		self.method = self.vk.method
 
