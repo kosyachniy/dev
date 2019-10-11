@@ -4,7 +4,7 @@ import subprocess
 file_in = 'test.mp3'
 file_out = 'test.ogg'
 
-frommp3 = subprocess.Popen(['data', '-w', '-', 'data/' + file_in], stdout=subprocess.PIPE)
+frommp3 = subprocess.Popen(['mpg123', '-w', '-', 'data/' + file_in], stdout=subprocess.PIPE)
 toogg = subprocess.Popen(['oggenc', '-'], stdin=frommp3.stdout, stdout=subprocess.PIPE)
 
 with open('data/' + file_out, 'wb') as outfile:

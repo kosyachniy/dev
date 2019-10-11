@@ -1,4 +1,4 @@
-from func.tg_bot import updater, keyboard
+from func.telegram_bot import updater, keyboard
 from telegram.ext import Filters, MessageHandler, CallbackQueryHandler
 
 
