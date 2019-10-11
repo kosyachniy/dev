@@ -82,3 +82,44 @@
 
 ## Работа
 * [HeadHunter](https://spb.hh.ru/search/vacancy?text=python&area=2)
+
+# Быстрый доступ
+## JSON
+```
+json.dumps(cont, ensure_ascii=False, indent='\t')
+```
+
+## GIT
+```
+git fetch --all
+git reset --hard origin/master
+git pull origin master
+```
+
+## Python
+```
+env/bin/pip freeze > requirements.txt
+```
+
+## Python сервер
+```
+python -m SimpleHTTPServer 8000
+```
+
+```
+python3 -m http.server
+```
+
+## NGINX
+```
+sudo nano /etc/nginx/sites-available/<>
+
+sudo ln -s /etc/nginx/sites-available/<> /etc/nginx/sites-enabled
+
+sudo systemctl restart nginx
+```
+
+## Let’s Encrypt
+```
+sudo certbot --nginx
+```
