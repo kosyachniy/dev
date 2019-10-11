@@ -1,5 +1,4 @@
 # Настройка Flask + Apache + Let's Encrypt на Ubuntu 18.04.02 x64
-
 ## Создаём сервер
 [DigitalOcean](https://cloud.digitalocean.com/)
 
@@ -123,7 +122,7 @@ And it uses 127.0.1.1 if it is inside your /etc/hosts:
 
 
 ## Настройка
-### Доступ к серверу:
+### Доступ к серверу
 ```
 ssh tensy@<ip>
 <password>
@@ -131,9 +130,11 @@ sudo service mongod start
 systemctl start apache2
 ```
 
-### Ссылки:
+### Ссылки
 * [http://157.230.103.16/](http://157.230.103.16/)
 * [http://157.230.103.16:5000/](http://157.230.103.16:5000/)
 
-### Логи:
+### Логи
+```
 sudo nano /var/log/apache2/error.log
+```
