@@ -1,0 +1,2 @@
+dicttoxml==1.7.4
+xmltodict==0.12.0

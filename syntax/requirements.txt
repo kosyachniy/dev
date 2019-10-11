@@ -1,0 +1,13 @@
+certifi==2019.9.11
+chardet==3.0.4
+DAWG-Python==0.7.2
+docopt==0.6.2
+idna==2.8
+nltk==3.4.5
+pymorphy2==0.8
+pymorphy2-dicts==2.4.393442.3710985
+pymystem3==0.2.0
+requests==2.22.0
+six==1.12.0
+ufal.udpipe==1.2.0.2
+urllib3==1.25.6
