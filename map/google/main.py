@@ -59,11 +59,37 @@ print(matrix)
 
 # Место в радиусе
 
-place = gmaps.find_place(
-	'Restaurant',
-	'textquery',
-	fields=['geometry/location', 'name'],
-	location_bias='circle:0.5@47.390325,8.515934',
-)
+# place = gmaps.find_place(
+# 	'Restaurant',
+# 	'textquery',
+# 	fields=[
+# 		'place_id',
+# 		'geometry/location',
+# 		'name',
+# 		'formatted_address',
+# 		'photos',
+# 		'price_level',
+# 		'rating',
+# 		'types',
+# 	],
+# 	location_bias='circle:0.5@47.390325,8.515934',
+# )
 
-print(place)
+# print(place)
+
+geo = {
+	'lat': 47.390325,
+	'lng': 8.515934,
+}
+
+radius = 1000 # в метрах
+
+category = 'Food'
+
+places = gmaps.places_nearby(
+	location=(geo['lat'], geo['lng']),
+	radius=radius,
+	keyword = category,
+)['results']
+
+print(places)
