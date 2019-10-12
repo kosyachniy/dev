@@ -1,9 +1,16 @@
 import re
 
 
-def replace(cont):
-	return re.sub(r'^qwe\w+: ', '', cont)
+def check_phone(cont):
+	if cont[0] == '8':
+		cont = '7' + cont[1:]
+
+	cont = re.sub('[^0-9]', '', cont)
+
+	if not len(cont):
+		raise Exception('not phone')
+
+	return int(cont)
 
 
-if __name__ == '__main__':
-	print(replace('qweblabla: 123'))
+print(check_phone('8 (981) 163-55-78'))
