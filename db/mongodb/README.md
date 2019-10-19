@@ -15,6 +15,43 @@ sudo apt-get install -y mongodb-org
 brew install mongodb
 ```
 
+## Настройка аутентификации
+### Создания пользователей
+``` mongo ```
+
+``` use admin ```
+
+```
+db.createUser(
+	{
+		user: "admin",
+		pwd: "<пароль>",
+		roles: [ "userAdminAnyDatabase", "dbAdminAnyDatabase", "readWriteAnyDatabase", "root" ]
+	}
+)
+```
+
+### Отключение доступа вне пользователя
+``` sudo nano /etc/mongod.conf ```
+
+```
+security:
+  authorization: "enabled"
+```
+
+``` sudo service mongod restart ```
+
+## Настройка удалённого подключения
+``` sudo nano /etc/mongod.conf ```
+
+```
+net:
+  port: 27017
+  bindIp: 0.0.0.0
+```
+
+``` sudo service mongod restart ```
+
 ## Запуск сервера
 ### Linux
 ``` sudo service mongod start ```
@@ -23,7 +60,14 @@ brew install mongodb
 ``` brew services start mongodb ```
 
 ## Подключение к серверу
-Глобальный: ``` mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database.collection][?options]] ```
+### Локально
+``` mongo ```
+
+### На своём сервере
+``` mongo <ip> --port 27017 -u "admin" --authenticationDatabase "admin" ```
+
+### В базе Mongo
+``` mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database.collection][?options]] ```
 
 Добавление IP адреса в белый список: ``` Clusters -> Security -> IP Whitelist ```
 
