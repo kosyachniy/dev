@@ -1,0 +1,35 @@
+.panel {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    background: #fff;
+    width: 90%;
+    margin: auto;
+    border-radius: 8px;
+    padding: 20px 10px;
+    box-shadow: 0 2px 20px 0 rgba(0, 0, 0, 0.05);
+}
+
+.panel_deposit .title {
+    font-size: 18px;
+    margin: 10px auto;
+}
+
+.panel_deposit .title i {
+    margin-left: 10px;
+    font-size: 18px !important;
+}
+
+.panel_deposit form {
+    width: 90%;
+}
+
+.form_deposit label {
+    display: flex;
+    align-items: center;
+    margin: 0 10px;
+}
+
+.form_deposit label input {
+    margin: 0 10px 0 0;
+}
