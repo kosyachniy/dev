@@ -12,12 +12,14 @@ sudo apt-get install -y mongodb-org
 
 ### MacOS
 ```
-brew install mongodb
+brew tap mongodb/brew
+brew install mongodb-community@4.2
+mongod --config /usr/local/etc/mongod.conf
 ```
 
 ## Настройка аутентификации
 ### Создания пользователей
-``` mongo ```
+``` mongo ``` (сначала нужно запустить ``` sudo service mongod start ```)
 
 ``` use admin ```
 
@@ -32,7 +34,9 @@ db.createUser(
 ```
 
 ### Отключение доступа вне пользователя
-``` sudo nano /etc/mongod.conf ```
+Linux: ``` sudo nano /etc/mongod.conf ```
+
+MacOS: ``` sudo nano /usr/local/etc/mongod.conf ```
 
 ```
 security:
@@ -58,6 +62,8 @@ net:
 
 ### MacOS
 ``` brew services start mongodb ```
+
+``` brew services start mongodb-community@4.2 ```
 
 ## Подключение к серверу
 ### Локально

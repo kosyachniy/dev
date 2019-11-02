@@ -1,4 +1,4 @@
-from func.db_mongo import *
+from func.db_mongo import db
 
 # Одна коллекция
 x = db['test'].find_one({'id': 1})
@@ -41,3 +41,32 @@ db_condition = {'steps.ladder': 10}
 db_filter = {'steps': {'$elemMatch': {'ladder': 10}}, 'steps.ladder': True}
 for i in db['users'].find(db_condition, db_filter):
 	print(i)
+
+# Логические условия
+db_condition = {'$or': [{'teacher': i['user']}, {'student': i['user']}]}
+space = db['study'].find_one(db_condition)
+print(space)
+# $and $nor
+
+# Вывод определённых вложенных элементов списка в коллекции
+db_condition = {
+	'steps': {
+		'$elemMatch': {
+			'step': 1,
+			'price': {'$exists': True},
+			}
+		},
+	}
+db_filter = {
+	'_id': False,
+	'user': True,
+	'steps': {
+		'$elemMatch': {
+			'step': 1,
+			'price': {'$exists': True},
+		}
+	},
+	'steps.price': True,
+}
+teacher = db['online'].find_one(db_condition, db_filter)
+print(teacher)
