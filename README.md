@@ -94,9 +94,9 @@ json.dumps(cont, ensure_ascii=False, indent='\t')
 
 ## GIT
 ```
-git fetch --all
-git reset --hard origin/master
-git pull origin master
+sudo git fetch --all
+sudo git reset --hard origin/master
+sudo git pull origin master
 ```
 
 ## Python

@@ -10,6 +10,14 @@
 * [Code style: PEP8](https://pythonworld.ru/osnovy/pep-8-rukovodstvo-po-napisaniyu-koda-na-python.html)
 * [Стандартные библиотеки](https://docs.python.org/3/library/)
 
+## Справка
+### Получение запросов
+Команда | Значение
+---|---
+``` request.json['name'] ``` | POST параметры
+``` request.args.get('name') ``` | GET параметры
+``` request.values.get('name') ``` | Пара ключ/значение в виде параметра POST-запроса
+``` request.get_data() ``` | 
 
 ## Список команд
 ### Терминал

@@ -50,6 +50,12 @@ alias python=python3
 12. MD5 сумма папки
 ``` cat ./* | md5 ```
 
+13. Изменить права
+MacOS: ``` sudo chown -R `whoami`:admin /<путь> ```
+
+14. Список ip-адресов посредников
+``` traceroute yandex.ru ```
+
 
 ## Команды Tmux
 [Шпаргалка](https://habr.com/ru/post/126996/)

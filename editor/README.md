@@ -1,6 +1,18 @@
 # WYSWYG - редакторы
 
 ## CKEditor
+### Создание своей сборки
+[Базовая сборка](https://github.com/ckeditor/ckeditor5-build-classic)
+
+[Инструкция](https://ckeditor.com/docs/ckeditor5/latest/builds/guides/development/custom-builds.html)
+
+[Плагины](https://www.npmjs.com/search?q=ckeditor5)
+
+[Пример конфигурации плагина 1](https://www.npmjs.com/package/ckeditor5-math-preview)
+
+[Пример конфигурации плагина 2](https://www.npmjs.com/package/@wiris/mathtype-ckeditor5)
+
+### Реализации
 Версии | [Старый](ckeditor_old) | [Однострочный](ckeditor_one) | [Двустрочный](ckeditor_two) | [Универсальный](ckeditor_universal)
 Строк | 2 | 1 | 2 | 2
 Вставка без форматирования | + | + | + | +
