@@ -19,3 +19,4 @@ WantedBy=multi-user.target
 ```
 
 ### Источники
+[Инструкция](https://www.8host.com/blog/obsluzhivanie-prilozhenij-flask-s-pomoshhyu-gunicorn-i-nginx-v-ubuntu-16-04/)

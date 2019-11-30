@@ -5,7 +5,7 @@
 [Онлайн компилятор](http://ideone.com/)
 
 ## Front-end
-[Готовые примеры, онлайн запуск](https://codepen.io)
+[Готовые примеры, онлайн запуск](https://codepen.io), [ещё](https://codesandbox.io/), [без поиска](https://jsfiddle.net/)
 
 [Иконки и значки](https://fontawesome.com/)
 

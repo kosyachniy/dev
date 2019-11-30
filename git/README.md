@@ -60,3 +60,8 @@ git pull origin master
 git config --global user.name "<логин>"
 git config --global user.password "<пароль>"
 ```
+
+11. Дополнить сделанный коммит (не глобальный)
+```
+git commit -a --amend
+```

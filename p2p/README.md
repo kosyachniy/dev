@@ -50,6 +50,21 @@ Google идеально работающий пример на сложном с
 
 [Код](https://github.com/webrtc/apprtc)
 
+### Daily.co
+Бесплатный, либо дешёвый готовый видеочат
+
+[Основная страница документации](https://docs.daily.co/docs)
+
+[Front-end](https://docs.daily.co/reference#using-the-dailyco-front-end-library)
+
+[Примеры](https://docs.daily.co/docs/demos)
+
+[Методы API](https://docs.daily.co/reference#set-room-configuration)
+
+[GitHub](https://github.com/daily-co/daily-js)
+
+[Разработка](https://dashboard.daily.co/)
+
 ## Ключевые слова
 * MultiStreamsMixer VideoChat
 * RTCPeerConnection

@@ -50,7 +50,7 @@ python3 -m venv env
 env/bin/pip install -r requirements.txt
 ```
 
-## Настраиваем
+## Настраиваем (если требуется для бэка)
 ```
 nano keys.py
 ```
@@ -74,9 +74,14 @@ y
 npm install
 ```
 
-## Настраиваем
+## Настраиваем (если требуется для фронта)
 ```
 nano src/keys.js
+```
+
+## Запускаем фронт
+```
+npm start
 ```
 
 ## Ещё сессия
@@ -89,6 +94,7 @@ ctrl+b c
 cd /etc/nginx/
 ```
 
+Если будет загрузка больших файлов:
 ```
 sudo nano nginx.conf
 ```
@@ -106,6 +112,7 @@ cd /etc/nginx/sites-available
 ```
 sudo nano <>
 ```
+Вставляем конфигурацию из репозитория
 
 ```
 sudo ln -s /etc/nginx/sites-available/<> /etc/nginx/sites-enabled
@@ -130,6 +137,7 @@ sudo apt-get install -y mongodb-org
 sudo service mongod start
 ```
 
+Если требуются пользователи для БД:
 ```
 mongo
 ```
