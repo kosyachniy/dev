@@ -93,6 +93,8 @@ BREAKING CHANGE: It's no longer allowed to omit the '-loader' suffix when using 
 ## Запуск
 ```
 npm install
-webpack -w
+webpack
 webpack-dev-server
 ```
+
+``` http://localhost:10000/ ``` (указан в ``` webpack.config.js ```)

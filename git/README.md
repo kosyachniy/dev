@@ -42,26 +42,45 @@ git log
 git config core.filemode false
 ```
 
-8. Создать ветку
+8. Создать ветку и переключаться на неё
 ```
-git branch <>
+git checkout -b <>
+```
+
+9. Переключаться на ветку
+```
 git checkout <>
 ```
 
-9. Насильно обновить локальный репозиторий
+10. Удалить ветку
+Из локального репозитория:
+```
+git branch -d <>
+```
+
+Из глобального репозитория:
+```
+git push origin --delete <>
+```
+
+11. Насильно обновить локальный репозиторий
 ```
 git fetch --all
 git reset --hard origin/master
 git pull origin master
 ```
 
-10. Авторизация
+12. Авторизация
 ```
 git config --global user.name "<логин>"
+git config --global user.email "<почта>"
+```
+
+```
 git config --global user.password "<пароль>"
 ```
 
-11. Дополнить сделанный коммит (не глобальный)
+13. Дополнить сделанный коммит (не глобальный)
 ```
 git commit -a --amend
 ```
