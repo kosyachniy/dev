@@ -29,7 +29,7 @@ for i in db['test'].find({'param 3.la': {'$all': (1, 4)}}):
 
 # Условия для вложенных в массив документов (хотя бы одно совпадение внутри)
 for i in db['test'].find({'list': {'$elemMatch': {'id': {'$gt': 5}, 'lang': 'ru'}}}):
-	print('!!!', i)
+	print(i)
 
 # Выборка полей
 for i in db['test'].find({}, {'id'}):

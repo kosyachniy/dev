@@ -32,3 +32,11 @@ keys['hosts'] = ','.join(i['host'] + (':{}'.format(i['port']) if 'port' in i els
 req = link.format(**keys)
 
 db = MongoClient(req)['uple']
+
+# MLab
+
+from keys import DB
+
+link = 'mongodb://{}:{}@ds018839.mlab.com:18839/user'.format(DB['login'], DB['password'])
+
+db = MongoClient(link)['user']

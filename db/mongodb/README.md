@@ -14,8 +14,9 @@ sudo apt-get install -y mongodb-org
 ```
 brew tap mongodb/brew
 brew install mongodb-community@4.2
-mongod --config /usr/local/etc/mongod.conf
 ```
+
+``` mongod --config /usr/local/etc/mongod.conf ```
 
 ## Настройка аутентификации
 ### Создания пользователей
@@ -33,6 +34,13 @@ db.createUser(
 )
 ```
 
+### Изменение пароля пользователя
+``` mongo admin -u admin -p '<пароль>' ```
+
+``` use admin ```
+
+``` db.changeUserPassword('admin', '<новый пароль>') ```
+
 ### Отключение доступа вне пользователя
 Linux: ``` sudo nano /etc/mongod.conf ```
 
@@ -43,7 +51,7 @@ security:
   authorization: "enabled"
 ```
 
-``` sudo service mongod restart ```
+``` sudo service mongod restart ``` / ``` brew services restart mongodb-community@4.2 ```
 
 ## Настройка удалённого подключения
 ``` sudo nano /etc/mongod.conf ```
@@ -54,7 +62,7 @@ net:
   bindIp: 0.0.0.0
 ```
 
-``` sudo service mongod restart ```
+``` sudo service mongod restart ``` / ``` brew services restart mongodb-community@4.2 ```
 
 ## Запуск сервера
 ### Linux
