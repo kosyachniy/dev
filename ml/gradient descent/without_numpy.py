@@ -2,12 +2,13 @@ import csv
 import matplotlib.pyplot as plt
 
 
-FAULT = 0.001 # 0.01
-# ITERATIONS = 100
+DATASET = 1
+FAULT = 0.001
+ITERATIONS = 1000
 
 
 def read(name, sign=','):
-	with open('data/{}.csv'.format(name), 'r') as file:
+	with open('../data/{}/{}.csv'.format(DATASET, name), 'r') as file:
 		data = list(csv.reader(file, delimiter=sign, quotechar=' '))[1:]
 		return list(map(lambda x: list(map(int, x)), data))
 
@@ -65,7 +66,7 @@ def fit(x, y):
 	iteration = 0
 	history = []
 
-	while True: # for iteration in range(1, ITERATIONS):
+	while True:
 		iteration += 1
 		error_max = 0
 
@@ -81,9 +82,12 @@ def fit(x, y):
 				# print('Δw{} = {}'.format(j, delta))
 
 		history.append(error_max)
-		# print('№{}: {}'.format(iteration, error_max))
+		print('№{}: {}'.format(iteration, error_max))
 
 		if error_max < FAULT:
+			break
+
+		if iteration > ITERATIONS:
 			break
 
 	return w, history
@@ -140,7 +144,6 @@ if __name__ == '__main__':
 	print('RMSE Test: {}'.format(rmse(test_y_unnorm)))
 
 	# График прогноза
-	# fig = plt.figure()
 	axis_y = [i[0] for i in train_y_unnorm] + [i[0] for i in test_y_unnorm]
 	axis_y_train_predict = [i[1] for i in train_y_unnorm]
 	axis_y_test_predict = [i[1] for i in test_y_unnorm]
