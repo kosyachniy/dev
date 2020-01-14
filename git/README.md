@@ -1,5 +1,5 @@
 # Git
-1. Инициализировать репозиторий 
+1. Инициализировать репозиторий
 ```
 echo "# <>" >> README.md
 git init
@@ -83,4 +83,13 @@ git config --global user.password "<пароль>"
 13. Дополнить сделанный коммит (не глобальный)
 ```
 git commit -a --amend
+```
+
+14. Зеркальная копия репозитория без форка
+```
+git clone --bare https://github.com/exampleuser/old-repository.git
+cd old-repository.git
+git push --mirror https://github.com/exampleuser/new-repository.git
+cd ..
+rm -rf old-repository.git
 ```
