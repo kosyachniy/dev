@@ -26,109 +26,10 @@ y
 tmux new -s <>
 ```
 
-## Клонируем код
-```
-git clone <>
-```
-
-Если приватный:
-```
-login
-pass
-```
-
-```
-cd <>/api
-```
-
-## Виртуальное окружение
-```
-sudo apt install python3-venv
-y
-
-python3 -m venv env
-env/bin/pip install -r requirements.txt
-```
-
-## Настраиваем (если требуется для бэка)
-```
-nano keys.py
-```
-
-## Запускаем бэк
-```
-env/bin/python run.py
-```
-
-## Ещё сессия
-```
-ctrl+b c
-```
-
-## Виртуальное окружение
-```
-cd <>/web
-
-sudo apt install npm
-y
-npm install
-```
-
-## Настраиваем (если требуется для фронта)
-```
-nano src/keys.js
-```
-
-## Запускаем фронт
-```
-npm start
-```
-
-## Ещё сессия
-```
-ctrl+b c
-```
-
-## Настраиваем NGINX
-```
-cd /etc/nginx/
-```
-
-Если будет загрузка больших файлов:
-```
-sudo nano nginx.conf
-```
-
-```
-	types_hash_max_size 20480;
-	client_max_body_size 30m;
-```
-
-## Конфигурация проекта
-```
-cd /etc/nginx/sites-available
-```
-
-```
-sudo nano <>
-```
-Вставляем конфигурацию из репозитория
-
-```
-sudo ln -s /etc/nginx/sites-available/<> /etc/nginx/sites-enabled
-
-sudo systemctl restart nginx
-```
-
-## Ещё сессия
-```
-ctrl+b c
-```
-
 ## База данных
 ```
-sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
-echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.6.list
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75D9DCB49F368818C72E52529D4
+echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.0.list
 sudo apt-get update
 sudo apt-get install -y mongodb-org
 ```
@@ -178,6 +79,122 @@ ctrl+x
 
 ```
 sudo service mongod restart
+```
+
+## Ещё сессия
+```
+ctrl+b c
+```
+
+## Клонируем код
+```
+git clone <>
+```
+
+Если приватный:
+```
+login
+pass
+```
+
+```
+cd <>/api
+```
+
+## Виртуальное окружение
+```
+sudo apt install python3-venv
+y
+
+python3 -m venv env
+env/bin/pip install -r requirements.txt
+# env/bin/pip install eventlet gunicorn
+```
+
+## Настраиваем (если требуется для бэка)
+```
+nano keys.py
+```
+
+Меняем IP и адреса:
+```
+nano sets.py
+```
+
+## Запускаем бэк
+```
+env/bin/gunicorn app:app -c gun.py
+```
+
+## Ещё сессия
+```
+ctrl+b c
+```
+
+## Виртуальное окружение
+```
+cd <>/web
+
+sudo apt install npm
+y
+npm install
+```
+
+## Настраиваем (если требуется для фронта)
+```
+nano src/keys.js
+```
+
+Меняем IP и адреса:
+```
+nano src/sets.js
+```
+
+## Запускаем фронт
+```
+npm start
+```
+
+Если продакшн-версии:
+```
+serve -s build -p 3000
+```
+
+## Ещё сессия
+```
+ctrl+b c
+```
+
+## Настраиваем NGINX
+```
+sudo nano /etc/nginx/nginx.conf
+```
+
+Если нет доступа к статике:
+```
+	user root;
+```
+
+Если будет загрузка больших файлов:
+```
+	types_hash_max_size 20480;
+	client_max_body_size 30m;
+```
+
+## Конфигурация проекта
+```
+cd /etc/nginx/sites-available
+```
+
+```
+sudo nano <>
+```
+Вставляем конфигурацию из репозитория
+
+```
+sudo ln -s /etc/nginx/sites-available/<> /etc/nginx/sites-enabled
+
+sudo systemctl restart nginx
 ```
 
 ## Ещё сессия

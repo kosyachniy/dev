@@ -93,3 +93,13 @@ git push --mirror https://github.com/exampleuser/new-repository.git
 cd ..
 rm -rf old-repository.git
 ```
+
+15. Отменить локальный коммит без изменения файлов
+```
+git reset --soft HEAD^
+```
+
+16. Переименовать коммит
+```
+git commit --amend -m '<>'
+```

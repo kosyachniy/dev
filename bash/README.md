@@ -56,6 +56,15 @@ MacOS: ``` sudo chown -R `whoami`:admin /<путь> ```
 14. Список ip-адресов посредников
 ``` traceroute yandex.ru ```
 
+15. Сменить пароль
+``` passwd ```
+
+16. Закрыть процесс на порту
+```
+lsof -i tcp:<порт>
+kill -9 <PID>
+```
+
 
 ## Команды Tmux
 [Шпаргалка](https://habr.com/ru/post/126996/)
