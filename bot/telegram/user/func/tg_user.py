@@ -1,14 +1,9 @@
-from telethon import TelegramClient
-
 import json
+
+from telethon import TelegramClient
 
 
 with open('keys.json', 'r') as file:
-	x = json.loads(file.read())
+	x = json.loads(file.read())['tg']
 
-client = TelegramClient(x['name'], x['id'], x['hash'], update_workers=4)
-client.connect()
-
-if not client.is_user_authorized():
-	client.send_code_request(x['phone'])
-	client.sign_in(x['phone'], input('Код: '))
+client = TelegramClient('main', x['id'], x['hash'], update_workers=4).start()
