@@ -10,14 +10,17 @@ db = MongoClient()['uple']
 import json
 
 with open('keys.json', 'r') as file:
-	keys = json.loads(file.read())['mongo']
+	keys = json.loads(file.read()) # ['mongo']
+
+with open('sets.json', 'r') as file:
+	sets = json.loads(file.read()) # ['mongo']
 
 db = MongoClient(
 	username=keys['user'],
 	password=keys['password'],
 	authSource='admin',
 	authMechanism='SCRAM-SHA-1'
-)['uple']
+)[sets['name']]
 
 # Глобальный сервер
 
