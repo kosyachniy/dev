@@ -13,7 +13,7 @@ except ImportError:
 
 import json
 with open('keys.json', 'r') as file:
-	s = json.loads(file.read())
+	s = json.loads(file.read())['smsc']
 
 # Константы для настройки библиотеки
 SMSC_LOGIN = s['login']			# логин клиента
@@ -45,7 +45,7 @@ class SMSC(object):
 	# обязательные параметры:
 	#
 	# phones - список телефонов через запятую или точку с запятой
-	# message - отправляемое сообщение 
+	# message - отправляемое сообщение
 	#
 	# необязательные параметры:
 	#
@@ -88,7 +88,7 @@ class SMSC(object):
 			server.set_debuglevel(1)
 
 		if SMTP_LOGIN:
-			server.login(SMTP_LOGIN, SMTP_PASSWORD) 
+			server.login(SMTP_LOGIN, SMTP_PASSWORD)
 
 		server.sendmail(SMTP_FROM, "send@send.smsc.ru", "Content-Type: text/plain; charset=" + SMSC_CHARSET + "\n\n" + \
 							SMSC_LOGIN + ":" + SMSC_PASSWORD + ":" + str(id) + ":" + time + ":" + str(translit) + "," + \
@@ -101,7 +101,7 @@ class SMSC(object):
 	# обязательные параметры:
 	#
 	# phones - список телефонов через запятую или точку с запятой
-	# message - отправляемое сообщение 
+	# message - отправляемое сообщение
 	#
 	# необязательные параметры:
 	#

@@ -5,4 +5,5 @@ sms = SMSC()
 
 
 if __name__ == '__main__':
-	sms.send_sms('79811635578', 'Привет')
+	res = sms.send_sms('79811635578', 'Привет')
+	print(int(res[-1]) > 0)
