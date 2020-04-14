@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<!-- Запретить приближение и отдаление -->
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+		>
+		<script>
+			// отключение zoom через скролл (в том числе трекападами в macOS)
+			document.addEventListener('mousewheel', function(e){
+				if(!e.ctrlKey && !e.metaKey) return;
+
+				e.preventDefault();
+				e.stopImmediatePropagation();
+			}, {passive:false});
+
+			// отключение zoom прикосновениями (в том числе трекападами и т.п.) в Safari и iOS
+			document.addEventListener('gesturestart', function(e){
+				e.preventDefault();
+				e.stopImmediatePropagation();
+			}, {passive:false});
+
+			// отключение zoom через клавиатуру (ctrl + "+", ctrl + "-")
+			// кнопки браузера для управления zoom отключены не будут
+			document.addEventListener('keydown', function(e){
+				if(!e.ctrlKey && !e.metaKey) return;
+				if(e.keyCode != 189 && e.keyCode != 187) return;
+
+				e.preventDefault();
+				e.stopImmediatePropagation();
+			}, {passive:false});
+		</script>
+	</head>
+	<body>
+		Не активны жесты приближения и отдаления
+	</body>
+</html>
