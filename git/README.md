@@ -29,6 +29,10 @@ git reset <>
 5. Откатить коммиты
 ```
 git reset --hard a3775a5485af0af20375cedf46112db5f813322a
+```
+
+!!! И залить !!!
+```
 git push --force
 ```
 
@@ -102,4 +106,20 @@ git reset --soft HEAD^
 16. Переименовать коммит
 ```
 git commit --amend -m '<>'
+```
+
+17. Изменить ссылку на репозиторий (git remote url)
+```
+git remote set-url origin <новая ссылка>
+```
+
+18. Не отслеживать изменения файла
+
+! Нужно указывать полный путь до файла
+```
+git update-index --assume-unchanged /Users/kosyachniy/Re/projects/web/data/example.txt
+```
+Отмена:
+```
+git update-index --no-assume-unchanged /Users/kosyachniy/Re/projects/web/data/example.txt
 ```

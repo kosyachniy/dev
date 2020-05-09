@@ -17,7 +17,7 @@
 ``` request.json['name'] ``` | POST параметры
 ``` request.args.get('name') ``` | GET параметры
 ``` request.values.get('name') ``` | Пара ключ/значение в виде параметра POST-запроса
-``` request.get_data() ``` | 
+``` request.get_data() ``` |
 
 ## Список команд
 ### Терминал
@@ -25,3 +25,5 @@
 ---|---
 ``` pip freeze > requirements.txt ``` | Получить requerements.txt
 ``` jupyter notebook ``` | Запустить блокнот
+``` pip3 install --upgrade pip ``` | Обновить менеджер пакетов PIP
+``` pip list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1  | xargs -n1 pip install -U ``` | Обновить все пакеты Python

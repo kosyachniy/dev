@@ -20,6 +20,11 @@ create-react-app имя
 
 [Жизненный цикл компонент](https://habr.com/ru/post/358090/)
 
+### Build
+Установка: ``` npm install -g serve ```
+
+Запуск: ``` serve -s build -p 3000 ```
+
 ## Ошибки
 1. Нехватает модулей, которых нет в проекте
 

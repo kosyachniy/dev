@@ -6,6 +6,7 @@
 ## Структура репозитория
 Расположение | Описание
 ---|---
+[``` docker ```](docker) | Docker контейнеры
 [``` bot ```](bot) | Боты в сетях: Instagram, Telegram, Twitter, ВКонтакте, ...
 [``` chatbot ```](chatbot) | Чатботы
 [``` file ```](file) | Работа с файлами: текстовые, CSV, JSON, XML, ...
@@ -140,5 +141,26 @@ sudo service mongod start
 ```
 
 ```
-brew services start mongodb
+brew services start mongodb-community@4.2
+```
+
+## Установка модулей в Jupyter Notebook
+```
+import sys
+!{sys.executable} -m pip install pandas
+```
+
+## Запуск Back-end
+```
+env/bin/gunicorn app:app -c run.py
+```
+
+## Запуск Front-end
+```
+serve -s build -p 3000
+```
+
+## Запуск Docker Compose
+```
+docker-compose -f docker-compose.yml up --build
 ```

@@ -92,6 +92,8 @@ net:
 ### На своём сервере
 ``` mongo <ip> --port 27017 -u "admin" --authenticationDatabase "admin" ```
 
+``` mongo <db> -u <login> -p <password> --authenticationDatabase admin ```
+
 ### В базе Mongo
 ``` mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database.collection][?options]] ```
 
