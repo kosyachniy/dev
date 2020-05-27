@@ -40,6 +40,17 @@ def get_balance():
 	print(balance_get)
 	print()
 
+def get_price_by_ticker(name):
+	ticker = client.market.market_search_by_ticker_get(name).payload.instruments
+
+	if len(ticker) != 1:
+		raise Exception('not found')
+
+	figi = ticker[0].figi
+
+	prices = client.market.market_orderbook_get(figi, 2).payload
+
+	return prices.asks[0], prices.bids[0]
 
 def print_24hr_operations():
     now = datetime.now(tz=timezone('Europe/Moscow'))
@@ -81,6 +92,7 @@ def cancel_order(order_id):
 # print_orders()
 # order_response = make_order()
 # print_orders()
-get_balance()
+# get_balance()
 # cancel_order(order_response.payload.order_id)
 # print_orders()
+print(get_price_by_ticker('WMT'))
