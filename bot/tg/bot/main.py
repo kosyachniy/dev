@@ -1,13 +1,59 @@
-from func.tg_bot import *
-import urllib, time
+import time
+import urllib
+import requests
 
-@bot.message_handler(commands=['start', 'help', 'info'])
+from func.tg_bot import bot, keyboard
+
+
+LANGUAGES = ('en', 'ru')
+
+LOCALES = {
+	'en': {
+		'intro': 'Hi!',
+	},
+	'ru': {
+		'intro': 'Хай!',
+	},
+}
+
+
+languages = dict()
+
+
+def auth(user_social_id):
+	if user_social_id not in languages:
+		languages[user_social_id] = 0
+
+def send(user_social_id, text='', buttons=[], image=None): # users=[], forward=None
+	if not image:
+		return bot.send_message(
+			user_social_id,
+			text,
+			reply_markup=keyboard(buttons) if len(buttons) else None
+		)
+
+	else:
+		return bot.send_photo(
+			user_social_id,
+			open(image, 'rb'),
+			text,
+			reply_markup=keyboard(buttons) if len(buttons) else None
+		)
+
+	# return bot.forward_message(user_social_id, forward, text)
+
+def get_replica(user_social_id, key):
+	return LOCALES[LANGUAGES[languages[user_social_id]]][key]
+
+
+@bot.message_handler(commands=['start', 'help', 'info', 'about', 'menu'])
 def handle_start(message):
-	bot.send_message(message.chat.id, 'Хай!')
+	auth(message.chat.id)
+	send(message.chat.id, get_replica(message.chat.id, 'intro'))
 
-@bot.message_handler(content_types=['document', 'audio', 'photo'])
-def handle_attachments(message):
-	bot.send_message(message.chat.id, 'Медиа')
+# @bot.message_handler(content_types=['document', 'audio', 'photo'])
+# def handle_attachments(message):
+# 	bot.send_message(message.chat.id, 'Медиа')
 
 @bot.message_handler(content_types=['voice'])
 def handle_attachments(message):
@@ -30,38 +76,20 @@ def handle_message(message):
 	with open('re.png', 'rb') as file:
 		bot.send_photo(message.chat.id, file, 'Подпись к фото')
 
-	x = bot.send_message(message.chat.id, message.text, reply_markup=keyboard([['Вариант 1', 'Вариант 2'], ['Назад']]))
+@bot.message_handler(content_types=['text'])
+def handle_message(message):
+	auth(message.chat.id)
+
+	x = send(message.chat.id, message.text, [['Вариант 1', 'Вариант 2'], ['Назад']])
 	bot.register_next_step_handler(x, next_message)
 
 def next_message(message):
 	bot.send_message(message.chat.id, 'Текст')
 
-# def send(message='', to=admin, image='', forward=0):
-# 	if not message: return 0
-# 	if type(to) != list:
-# 		to = [to]
-# 	for i in to:
-# 		if not forward:
-# 			if image:
-# 				bot.send_photo(i, open(image, 'rb'), message)
-# 			else:
-# 				if str(i)[0] == '-':
-# 					bot.send_message(i, message)
-# 				else:
-# 					bot.send_message(i, message, reply_markup=keyboard(exch, ['PUMP', 'Информация']))
-# 		else:
-# 			try:
-# 				bot.forward_message(i, forward, message)
-# 			except:
-# 				bot.send_message(i, db['messages'].find_one({'chat': forward, 'message': message})['text'])
 
 if __name__ == '__main__':
-	bot.polling(none_stop=True)
-
-# if __name__ == '__main__':
-# 	while True:
-# 		try:
-# 			bot.polling(none_stop=True)
-# 		except Exception as e:
-# 			print(e)
-# 			time.sleep(5)
+	while True:
+		try:
+			bot.polling(none_stop=True)
+		except requests.exceptions.ReadTimeout:
+			time.sleep(5)
