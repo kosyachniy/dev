@@ -2,7 +2,7 @@ import time
 import urllib
 import requests
 
-from func.tg_bot import bot, keyboard
+from func.tg_bot import bot, send
 
 
 LANGUAGES = ('en', 'ru')
@@ -10,9 +10,11 @@ LANGUAGES = ('en', 'ru')
 LOCALES = {
 	'en': {
 		'intro': 'Hi!',
+		'about': 'Author: Alexey Poloz\npolozhev@mail.ru',
 	},
 	'ru': {
 		'intro': 'Хай!',
+		'about': 'Автор: Алексей Полоз\npolozhev@mail.ru',
 	},
 }
 
@@ -21,35 +23,27 @@ languages = dict()
 
 
 def auth(user_social_id):
+	new = False
+
 	if user_social_id not in languages:
+		new = True
 		languages[user_social_id] = 0
 
-def send(user_social_id, text='', buttons=[], image=None): # users=[], forward=None
-	if not image:
-		return bot.send_message(
-			user_social_id,
-			text,
-			reply_markup=keyboard(buttons) if len(buttons) else None
-		)
-
-	else:
-		return bot.send_photo(
-			user_social_id,
-			open(image, 'rb'),
-			text,
-			reply_markup=keyboard(buttons) if len(buttons) else None
-		)
-
-	# return bot.forward_message(user_social_id, forward, text)
+	return new
 
 def get_replica(user_social_id, key):
 	return LOCALES[LANGUAGES[languages[user_social_id]]][key]
 
 
-@bot.message_handler(commands=['start', 'help', 'info', 'about', 'menu'])
+@bot.message_handler(commands=['start', 'help', 'info', 'menu'])
 def handle_start(message):
 	auth(message.chat.id)
-	send(message.chat.id, get_replica(message.chat.id, 'intro'))
+	send(message.chat.id, get_replica(message.chat.id, 'intro'), [['Вариант 1', 'Вариант 2'], ['Назад']])
+
+@bot.message_handler(commands=['about', 'author'])
+def about(message):
+	auth(message.chat.id)
+	send(message.chat.id, get_replica(message.chat.id, 'about'))
 
 # @bot.message_handler(content_types=['document', 'audio', 'photo'])
 # def handle_attachments(message):
@@ -65,20 +59,15 @@ def handle_attachments(message):
 # def handle_reg(message):
 # 	pass
 
-@bot.message_handler(commands=['about', 'author'])
-def about(message):
-	bot.send_message(message.chat.id, 'Author: Poloz Alexey\npolozhev@mail.ru')
-
 #@bot.message_handler(func=lambda message: message.document.mime_type == 'text/plain', content_types=['document'])
 
 @bot.message_handler(content_types=["text"])
 def handle_message(message):
-	with open('re.png', 'rb') as file:
-		bot.send_photo(message.chat.id, file, 'Подпись к фото')
+	# with open('re.png', 'rb') as file:
+	# 	bot.send_photo(message.chat.id, file, 'Подпись к фото')
 
-@bot.message_handler(content_types=['text'])
-def handle_message(message):
-	auth(message.chat.id)
+	if auth(message.chat.id):
+		send(message.chat.id, get_replica(message.chat.id, 'intro'), [['Вариант 1', 'Вариант 2'], ['Назад']])
 
 	x = send(message.chat.id, message.text, [['Вариант 1', 'Вариант 2'], ['Назад']])
 	bot.register_next_step_handler(x, next_message)
