@@ -117,9 +117,19 @@ git remote set-url origin <новая ссылка>
 
 ! Нужно указывать полный путь до файла
 ```
+git add -f example.txt
 git update-index --assume-unchanged /Users/kosyachniy/Re/projects/web/data/example.txt
 ```
 Отмена:
 ```
 git update-index --no-assume-unchanged /Users/kosyachniy/Re/projects/web/data/example.txt
 ```
+
+19. Слить ветки
+```
+git checkout master
+git merge dev
+git push
+```
+
+! Сделать ветку master основной (если это не так)

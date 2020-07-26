@@ -47,6 +47,10 @@ docker build -t test1 .
 ```
 docker run -p 5000:5000 test1
 ```
+OR
+```
+docker run -p 5000:5000 --network host test1
+```
 
 ## Debug & testing
 ```
@@ -87,12 +91,45 @@ docker push kosyachniy/test1:0.1
 docker pull kosyachniy/test1
 ```
 
+## Connect
+```
+docker exec -it mongodb bash
+```
+
+## Docker Compose
+```
+apt install docker-compose
+```
+
+```
+docker-compose build
+```
+
+```
+docker-compose up
+```
+
+## Clear
+Удалить неиспользуемые данные
+```
+docker system prune -a
+```
+
+Очистить всё
+```
+docker kill $(docker ps -q)
+docker_clean_ps
+docker rmi $(docker images -a -q)
+```
+
 ## Источники
 [Статья 1](https://tproger.ru/translations/how-to-start-using-docker/)
 
 [Статья 2](https://habr.com/ru/post/448094/)
 
 [Документация](https://docs.docker.com/engine/install/ubuntu/)
+
+[Справочник](https://dker.ru/docs/docker-engine/engine-reference/dockerfile-reference/)
 
 [Flask пример](https://github.com/testdrivenio/flask-on-docker/blob/master/services/web/Dockerfile), [Статья к примеру](https://testdriven.io/blog/dockerizing-flask-with-postgres-gunicorn-and-nginx/)
 

@@ -65,6 +65,16 @@ lsof -i tcp:<порт>
 kill -9 <PID>
 ```
 
+17. Разархивировать GZIP
+```
+gunzip example.gz
+```
+
+18. Свободное место ЖД
+```
+df -h
+```
+
 
 ## Команды Tmux
 [Шпаргалка](https://habr.com/ru/post/126996/)

@@ -152,7 +152,7 @@ import sys
 
 ## Запуск Back-end
 ```
-env/bin/gunicorn app:app -c run.py
+env/bin/gunicorn app:app -k eventlet -w 1 -b :5000 --reload
 ```
 
 ## Запуск Front-end
@@ -163,4 +163,9 @@ serve -s build -p 3000
 ## Запуск Docker Compose
 ```
 docker-compose -f docker-compose.yml up --build
+```
+
+## Включение Debug сокетов в консоли браузера
+```
+localStorage.setItem('debug', 'socket.io-client:socket')
 ```
