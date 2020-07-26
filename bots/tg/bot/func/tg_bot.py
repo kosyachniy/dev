@@ -10,6 +10,12 @@ bot = telebot.TeleBot(token)
 
 
 def keyboard(rows):
+	if rows == []:
+		return telebot.types.ReplyKeyboardRemove()
+
+	if rows in (None, [], [[]]):
+		return rows
+
 	buttons = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
 
 	for cols in rows:
@@ -17,12 +23,14 @@ def keyboard(rows):
 
 	return buttons
 
-def send(user, text='', buttons=[], image=None): # users=[], forward=None, next_message=None
+def send(user, text='', buttons=None, image=None): # users=[], forward=None, next_message=func
+	# ! Если пустой buttons - убирать кнопки (но не None)
+
 	if not image:
 		return bot.send_message(
 			user,
 			text,
-			reply_markup=keyboard(buttons) if len(buttons) else None
+			reply_markup=keyboard(buttons),
 		)
 
 	else:
@@ -30,7 +38,7 @@ def send(user, text='', buttons=[], image=None): # users=[], forward=None, next_
 			user,
 			open(image, 'rb'),
 			text,
-			reply_markup=keyboard(buttons) if len(buttons) else None
+			reply_markup=keyboard(buttons),
 		)
 
 	# return bot.forward_message(user, forward, text)
