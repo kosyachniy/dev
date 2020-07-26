@@ -1,3 +1,4 @@
+import os
 from random import randint
 import json
 import time
@@ -12,10 +13,7 @@ with open('keys.json', 'r') as file:
 	VK_API_ACCESS_TOKEN = json.loads(file.read())['vk']['token']
 
 with open('sets.json', 'r') as file:
-	sets = json.loads(file.read())
-	GROUP_ID = sets['vk']['group']
-	SERVER_LINK = sets['server']['link']
-	CLIENT_LINK = sets['client']['link']
+	GROUP_ID = json.loads(file.read())['vk']['group']
 
 VK_API_VERSION = '5.95'
 
@@ -26,6 +24,42 @@ api = vk.API(session, v=VK_API_VERSION)
 # Первый запрос к LongPoll: получаем server и key
 longPoll = api.groups.getLongPollServer(group_id=GROUP_ID)
 server, key, ts = longPoll['server'], longPoll['key'], longPoll['ts']
+
+
+def process(update):
+	# print(update)
+	print('→', update['from_id'], update['text'])
+
+	# Помечаем сообщение как прочитанное
+	api.messages.markAsRead(peer_id=update['from_id'])
+
+	# Определяем пользователя
+
+	user = api.users.get(
+		user_ids=update['from_id'],
+		fields='first_name, last_name, photo_id, screen_name',
+	)[0]
+
+	user_new = dict()
+	param_map = {
+		'first_name': 'name',
+		'last_name': 'surname',
+		'screen_name': 'login',
+		'photo_id': 'avatar',
+	}
+
+	for param in param_map:
+		if param in user:
+			user_new[param_map[param]] = user[param]
+
+	print(user_new)
+
+	# Отправляем сообщение
+	api.messages.send(
+		user_id=update['from_id'],
+		random_id=randint(-2147483648, 2147483647),
+		message='Чё надо',
+	)
 
 
 while True:
@@ -44,18 +78,8 @@ while True:
 
 	if 'updates' in longPoll and len(longPoll['updates']):
 		for update in longPoll['updates']:
-			print(update['object'])
-
-			# Приём сообщений
-			# if update['object']['from_id'] < 0: # and update['object']['peer_id'] != update['object']['from_id']:
-			# 	continue
-
 			if update['type'] == 'message_new':
-				api.messages.send(
-					peer_id=update['object']['peer_id'],
-					random_id=randint(-2147483648, 2147483647),
-					message='идентификатор #{}/{}'.format(update['object']['from_id'], update['object']['peer_id']),
-				)
+				process(update['object'])
 
 	# Меняем ts для следующего запроса
 	try:
@@ -78,7 +102,7 @@ while True:
 
 			except:
 				print('Error 3')
-				time.sleep(5 * period)
+				time.sleep(period)
 
 			else:
 				break
