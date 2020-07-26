@@ -1,6 +1,7 @@
-# Примеры использования
+# Боты в сетях
+## Telegram ([``` tg/ ```](tg))
 
-## ВКонтакте
+## ВКонтакте ([``` vk/ ```](vk))
 
 [Категайзер текстов](https://github.com/kosyachniy/categories)
 
@@ -8,7 +9,12 @@
 
 [FaceMash с бинарными рейтенгированием](https://github.com/kosyachniy/faceslasher)
 
-## Twitter
+## Facebook ([``` fb/ ```](fb))
+
+## Twitter ([``` twi/ ```](twi))
 
 [Ведение аккаунта](https://github.com/kosyachniy/SocialBot)
 
+## Instagram ([``` ig/ ```](ig))
+
+## Steam ([``` steam/ ```](steam))

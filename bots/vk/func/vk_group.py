@@ -38,54 +38,60 @@ def max_size(lis, name='photo'):
 
 # Отправить сообщение
 def send(user, cont, img=[], keyboard=None):
-	# Изображения
-	for i in range(len(img)):
-		if img[i][0:5] != 'photo':
-			# Загружаем изображение на сервер
-			if img[i].count('/') >= 3: # Если файл из интернета
-				with open('re.jpg', 'wb') as file:
-					file.write(requests.get(img[i]).content)
-				img[i] = 're.jpg'
+	try:
+		# Изображения
+		for i in range(len(img)):
+			if img[i][0:5] != 'photo':
+				# Загружаем изображение на сервер
+				if img[i].count('/') >= 3: # Если файл из интернета
+					with open('re.jpg', 'wb') as file:
+						file.write(requests.get(img[i]).content)
+					img[i] = 're.jpg'
 
-			# Загружаем изображение в ВК
-			url = vk.method('photos.getMessagesUploadServer')['upload_url']
+				# Загружаем изображение в ВК
+				url = vk.method('photos.getMessagesUploadServer')['upload_url']
 
-			response = requests.post(url, files={'photo': open(img[i], 'rb')})
-			result = json.loads(response.text)
+				response = requests.post(url, files={'photo': open(img[i], 'rb')})
+				result = json.loads(response.text)
 
-			photo = vk.method('photos.saveMessagesPhoto', {'server': result['server'], 'photo': result['photo'], 'hash': result['hash']})
+				photo = vk.method('photos.saveMessagesPhoto', {'server': result['server'], 'photo': result['photo'], 'hash': result['hash']})
 
-			img[i] = 'photo{}_{}'.format(photo[0]['owner_id'], photo[0]['id'])
+				img[i] = 'photo{}_{}'.format(photo[0]['owner_id'], photo[0]['id'])
 
-	req = {
-		'random_id': int(time.time() * 1000000),
-		'user_id': user,
-		'message': cont,
-		'attachment': ','.join(img),
-	}
+		req = {
+			'random_id': int(time.time() * 1000000),
+			'peer_id': user,
+			'message': cont,
+			'attachment': ','.join(img),
+		}
 
-	# Клавиатура
-	if keyboard:
-		buttons = []
-		for j in keyboard:
-			line = []
-			for i in j:
-				line.append({
-					'action': {
-						'type': 'text',
-						'payload': '{\"button\": \"1\"}',
-						'label': i,
-					},
-					'color': 'default',
-				})
-			buttons.append(line)
+		# Клавиатура
+		if keyboard:
+			buttons = []
+			for j in keyboard:
+				line = []
+				for i in j:
+					line.append({
+						'action': {
+							'type': 'text',
+							'payload': '{\"button\": \"1\"}',
+							'label': i,
+						},
+						'color': 'positive',
+					})
+				buttons.append(line)
 
-		req['keyboard'] = json.dumps({
-			'one_time': False,
-			'buttons': buttons,
-		}, ensure_ascii=False)
+			req['keyboard'] = json.dumps({
+				'one_time': False,
+				'buttons': buttons,
+			}, ensure_ascii=False)
 
-	return vk.method('messages.send', req)
+		res = vk.method('messages.send', req)
+
+	except:
+		res = 0
+
+	return res
 
 # Последние непрочитанные сообщения
 def read():
