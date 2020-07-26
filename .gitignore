@@ -34,16 +34,16 @@ vk_config.v2.json
 .expo/
 .expo-shared/
 
-## 
+##
 
 *.session
 *.session-journal
 
 # Ключи и настройки
 
-keys.py
-keys.json
-keys.js
+keys.*py
+keys.*json
+keys.*js
 
 # Данные
 

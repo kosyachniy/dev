@@ -1,0 +1,11 @@
+{
+	"vk": {
+		"group": "151313066"
+	},
+	"server": {
+		"link": "https://dev.tensy.org/api/"
+	},
+	"client": {
+		"link": "https://dev.tensy.org/"
+	}
+}
