@@ -39,7 +39,8 @@ bm.start()
 
 # Historical kline data / Candlestick (История)
 
-klines = client.get_historical_klines("ETHBTC", Client.KLINE_INTERVAL_30MINUTE, "1 Dec, 2017", "1 Jan, 2018")
+klines = client.get_historical_klines("ETHBTC", Client.KLINE_INTERVAL_1MINUTE, 1590345715000)
+# Client.KLINE_INTERVAL_30MINUTE, "1 Dec, 2017", "1 Jan, 2018")
 # Client.KLINE_INTERVAL_1MINUTE, "1 day ago UTC"
 # Client.KLINE_INTERVAL_1WEEK, "1 Jan, 2017"
 

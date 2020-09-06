@@ -1,4 +1,5 @@
 import json
+import time
 
 from openapi_client import openapi
 from datetime import datetime, timedelta
@@ -10,89 +11,103 @@ with open('keys.json', 'r') as file:
 
 
 client = openapi.sandbox_api_client(token)
-client.sandbox.sandbox_register_post()
-client.sandbox.sandbox_clear_post()
-client.sandbox.sandbox_currencies_balance_post(sandbox_set_currency_balance_request={"currency": "USD", "balance": 1000})
 
 
-def set_balance():
-    balance_set = client.sandbox.sandbox_currencies_balance_post({"currency": "USD", "balance": 10000})
-    print("balance")
-    print(balance_set)
-    print()
+# Get stocks
 
-def get_balance():
-	# balance_get = client.sandbox.sandbox_register_post()
-	# balance_get = client.user.user_accounts_get()
-	# balance_get = client.sandbox.sandbox_currencies_balance_post_with_http_info("USD") # {"currency": "USD"})
-	# balance_get = client.sandbox.sandbox_currencies_balance_post({"currency": "USD", "balance": 10000})
-	# sandbox_currencies_balance_post("USD") # {"currency": "USD"})
-	# balance_get = client.market.market_currencies_get()
-	# balance_get = client.market.market_orderbook_get("BBG000BLNNH6", 5)
-	# balance_get = client.portfolio.portfolio_currencies_get()
-	# balance_get = client.market.market_candles_get("BBG000BLNNH6")
-	# balance_get = client.market.market_stocks_get()
-	# balance_get = client.market.market_search_by_ticker_get("USD000UTSTOM")
-	balance_get = client.market.market_search_by_ticker_get("WMT")
-	# balance_get = client.market.market_candles_get("BBG0013HGFT4", 1588681858, 1589113837, "hour") # "2020-05-01T00:00:00.131642+03:00", "2020-05-10T00:00:00.131642+03:00", "hour") # 1min, 2min, 3min, 5min, 10min, 15min, 30min, hour, day, week, month
-	# balance_get = client.market.market_candles_get("BBG0013HGFT4", "2020-05-01T00:00:00.131642+03:00", "2020-05-10T00:00:00.131642+03:00", "day") # "2020-05-01T00:00:00", "2020-05-10T00:00:00", "hour") # 1min, 2min, 3min, 5min, 10min, 15min, 30min, hour, day, week, month
-	print("balance get")
-	print(balance_get)
-	print()
+def get_stocks(currency='USD'):
+	stocks = client.market.market_stocks_get().payload.instruments
 
-def get_price_by_ticker(name):
+	stocks_processed = [{
+		'name': i.name,
+		'figi': i.figi,
+		'ticker': i.ticker,
+	} for i in stocks if i.currency == currency]
+
+	return stocks_processed
+
+# Get FIGI by ticker
+
+def get_figi_by_ticker(name):
 	ticker = client.market.market_search_by_ticker_get(name).payload.instruments
 
 	if len(ticker) != 1:
 		raise Exception('not found')
 
-	figi = ticker[0].figi
+	return ticker[0].figi
 
+# Get price by ticker
+
+def get_price_by_ticker(name):
+	figi = get_figi_by_ticker(name)
 	prices = client.market.market_orderbook_get(figi, 2).payload
-
 	return prices.asks[0], prices.bids[0]
 
-def print_24hr_operations():
-    now = datetime.now(tz=timezone('Europe/Moscow'))
-    yesterday = now - timedelta(days=1)
-    ops = client.operations.operations_get(_from=yesterday.isoformat(), to=now.isoformat())
-    print("operations")
-    print(ops)
-    print()
+# Get graph by ticker
 
+def get_graph_by_ticker(name, start):
+	figi = get_figi_by_ticker(name)
+	# finish = datetime.now(tz=timezone('Europe/Moscow'))
+	# start = finish - timedelta(days=1)
+	# start1 = start - timedelta(days=1)
+	# start2 = start1 - timedelta(days=1)
+	start = datetime.fromtimestamp(start, tz=timezone('Europe/Moscow'))
+	start1 = start + timedelta(days=1)
+	start2 = start1 + timedelta(days=1)
+	finish = start2 + timedelta(days=1)
 
-def print_orders():
-    orders = client.orders.orders_get()
-    print("active orders")
-    print(orders)
-    print()
+	candles = client.market.market_candles_get(figi, start.isoformat(), start1.isoformat(), '1min').payload.candles
+	candles += client.market.market_candles_get(figi, start1.isoformat(), start2.isoformat(), '1min').payload.candles
+	candles += client.market.market_candles_get(figi, start2.isoformat(), finish.isoformat(), '1min').payload.candles
 
+	return [candle.c for candle in candles]
 
-def make_order():
-    order_response = client.orders.orders_limit_order_post(figi='BBG009S39JX6',
-                                                           limit_order_request={"lots": 1,
-                                                                                "operation": "Buy",
-                                                                                "price": 0.01})
-    print("make order")
-    print(order_response)
-    print()
-    return order_response
+# Get graph by FIGI
 
+def get_graph_by_figi(figi, start=1577826000):
+	start = datetime.fromtimestamp(start, tz=timezone('Europe/Moscow'))
+	candles = []
+	time_now = datetime.now(tz=timezone('Europe/Moscow'))
 
-# won't work in sandbox - orders are being instantly executed
-def cancel_order(order_id):
-    cancellation_result = client.orders.orders_cancel_post(order_id=order_id)
-    print("cancel order")
-    print(cancellation_result)
-    print()
+	while True:
+		finish = start + timedelta(weeks=1)
 
+		candles_period = client.market.market_candles_get(figi, start.isoformat(), finish.isoformat(), 'hour').payload.candles
+		candles += [{
+			'price': candle.c,
+			'time': candle.time.timestamp(), # datetime.fromisoformat(candle.time).timestamp(),
+		} for candle in candles_period]
 
-# set_balance()
-# print_24hr_operations()
-# print_orders()
-# order_response = make_order()
-# print_orders()
-# get_balance()
-# cancel_order(order_response.payload.order_id)
-# print_orders()
-print(get_price_by_ticker('WMT'))
+		if finish >= time_now:
+			break
+
+		start, finish = finish, 0
+
+	return candles
+
+def get_graph_by_ticker2(name, start, time_finish=None):
+	figi = get_figi_by_ticker(name)
+
+	start = datetime.fromtimestamp(start, tz=timezone('Europe/Moscow'))
+	candles = []
+
+	if time_finish:
+		time_finish = datetime.fromtimestamp(time_finish, tz=timezone('Europe/Moscow'))
+	else:
+		time_finish = datetime.now(tz=timezone('Europe/Moscow'))
+
+	while True:
+		finish = start + timedelta(weeks=1)
+
+		candles_period = client.market.market_candles_get(figi, start.isoformat(), finish.isoformat(), 'hour').payload.candles # 15min
+		candles += [{
+			'price': candle.o,
+			'time': candle.time.timestamp(), # datetime.fromisoformat(candle.time).timestamp(),
+		} for candle in candles_period]
+
+		if finish >= time_finish:
+			break
+
+		start, finish = finish, 0
+
+	return candles
