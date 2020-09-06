@@ -12,5 +12,8 @@ def check_phone(cont):
 
 	return int(cont)
 
+def remove_tags(cont):
+	return re.sub('<[^>]*>', '', cont)
+
 
 print(check_phone('8 (981) 163-55-78'))

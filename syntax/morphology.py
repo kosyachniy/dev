@@ -3,11 +3,7 @@ m = MorphAnalyzer()
 
 
 word = input() # 'полицейскую'
-
 lemma = m.parse(word)[0]
-
-# lemma.lexeme
-# lemma.inflect
 
 pos = {
 	None: '-',
@@ -122,12 +118,13 @@ OUTPUT = f'''
 Переходность: {transitivity[lemma.tag.transitivity]}
 Залог: {voice[lemma.tag.voice]}
 '''
-
 # Форма: (личная, ...)
 # Разряд: (Личные, Возвратные, Притяжательные, Определительные, Указательные, Вопросительные, Относительные, Неопределенные, Отрицательные)
 
 print(OUTPUT)
 
+# lemma.lexeme
+# lemma.inflect
 # print(dir(lemma.tag))
 # lemma.tag.KNOWN_GRAMMEMES
 # lemma.tag.cyr_repr

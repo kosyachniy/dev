@@ -16,7 +16,7 @@ for i in db['test'].find({'id': {'$gt': 5}}):
 # Все коллекции, у которых параметр входит в список
 for i in db['test'].find({'id': {'$in': (5, 8)}}):
 	print(i)
-# $in $nin 
+# $in $nin
 
 # Условие для вложенного документа
 for i in db['test'].find({'param 3.re': False}):
