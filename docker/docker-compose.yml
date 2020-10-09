@@ -1,0 +1,11 @@
+version: "3"
+services:
+  server:
+    image: "nginx"
+    container_name: "server"
+    volumes:
+      - "./nginx.conf:/etc/nginx/nginx.conf"
+      - "./:/var/www/html"
+      # - "../data/load:/load"
+    ports:
+      - "80:80"

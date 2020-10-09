@@ -122,6 +122,14 @@ docker_clean_ps
 docker rmi $(docker images -a -q)
 ```
 
+## Ошибки
+```
+docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', ConnectionRefusedError(61, 'Connection refused'))
+[22012] Failed to execute script docker-compose
+```
+
+Решение: Запустить сам Docker
+
 ## Источники
 [Статья 1](https://tproger.ru/translations/how-to-start-using-docker/)
 
