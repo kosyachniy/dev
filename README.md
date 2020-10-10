@@ -32,7 +32,7 @@
 [``` php ```](php) | PHP разработка
 [``` sms ```](sms) | Отправка SMS-сообщений на телефон
 [``` blockchain ```](blockchain) | Реализация блокчейн
-[``` smartcontract ```](smartcontract) | Смартконтракты
+[``` smartcontracts ```](smartcontracts) | Смартконтракты
 [``` image ```](image) | Обработка изображений
 [``` upload ```](upload) | Загрузка файлов на сервер с компьютера
 [``` bash ```](bash) | Терминал, BASH команды

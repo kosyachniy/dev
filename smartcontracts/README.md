@@ -4,7 +4,7 @@
 ## Ресурсы
 [Компилятор](https://remix.ethereum.org/)
 
-[Управление кошельками](chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#)
+Управление кошельками: [chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#](chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#)
 
 [Начисление токенов](https://faucet.ropsten.be/), [Начисление токенов](https://faucet.metamask.io/)
 
