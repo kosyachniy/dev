@@ -7,8 +7,10 @@
 Расположение | Описание
 ---|---
 [``` docker ```](docker) | Docker контейнеры
+[``` vk-miniapps ```](vk-miniapps) | VK Mini Apps
 [``` bots ```](bots) | Боты в сетях: Instagram, Telegram, Twitter, ВКонтакте, Facebook, ...
 [``` chatbot ```](chatbot) | Чатботы
+[``` markup ```](markup) | Разметка, синтаксис: MarkDown, TeX, LaTeX
 [``` file ```](file) | Работа с файлами: текстовые, CSV, JSON, XML, ...
 [``` db ```](db) | Работа с базами данных: SQLite, MongoDB
 [``` ml ```](ml) | Анализ данных, машинное обучение, нейронные сети, ...
@@ -18,19 +20,23 @@
 [``` server ```](server) | Реализация сервера: POST / GET запросы, Flask, ...
 [``` serverless ```](serverless) | Реализация бессерверных технологий: Zeit Now, Flask, ...
 [``` tls ```](tls) | Найстрока HTTPS шифрования на сервере
-[``` markup ```](markup) | Разметка, синтаксис
 [``` regular ```](regular) | Регулярные выражения
-[``` web ```](web) | WEB-приложение
+[``` web ```](web) | Комплексная разработка Web-приложения
+[``` template ```](template) | Шаблоны
 [``` p2p ```](p2p) | P2P связь: видео, текст, скрин экрана, аудио
+[``` map ```](map) | Работа с картами
+[``` pay ```](pay) | Платежи, переводы
+[``` gui ```](gui) | Пользовательский интерфейс
 [``` interface ```](interface) | Разработка интерфейсов и пользовательских взаимодействий
-[``` style ```](style) | Стили, дизайн
+[``` style ```](style) | UX/UI, стили
 [``` media ```](media) | Медиафайлы: шрифты, иконки, значки, звуки
 [``` emoji ```](emoji) | Emoji
-[``` program ```](program) | Разработка приложений
+[``` program ```](program) | Базовые реализации "Hello, world!" на разных языках программирования
 [``` js ```](js) | JavaScript разработка
 [``` python ```](python) | Python разработка
 [``` php ```](php) | PHP разработка
-[``` sms ```](sms) | Отправка SMS-сообщений на телефон
+[``` sms ```](sms) | Отправка SMS-сообщений
+[``` mail ```](mail) | Подписи для почты
 [``` blockchain ```](blockchain) | Реализация блокчейн
 [``` smartcontracts ```](smartcontracts) | Смартконтракты
 [``` image ```](image) | Обработка изображений
@@ -38,17 +44,12 @@
 [``` bash ```](bash) | Терминал, BASH команды
 [``` git ```](git) | Git команды
 [``` algorithm ```](algorithm) | Алгоритмы
-[``` editor ```](editor) | WYSIWYG-редакторы
-[``` gui ```](gui) | Пользовательский интерфейс
-[``` map ```](map) | Работа с картами
-[``` math ```](math) | Математика
-[``` microcontroller ```](microcontroller) | Программирование микроконтроллеров
-[``` template ```](template) | Шаблоны
-[``` thread ```](thread) | Многопоточность
-[``` time ```](time) | Работа со временем, датами
 [``` competition ```](competition) | Хакатоны, бизнес-кейсы и соревнования
-[``` pay ```](pay) | Платежи, переводы
-[``` mail ```](mail) | Подписи для почты
+[``` editor ```](editor) | WYSIWYG-редакторы
+[``` math ```](math) | Математические вычисления и визуализация
+[``` time ```](time) | Работа со временем, датами
+[``` microcontroller ```](microcontroller) | Программирование микроконтроллеров
+[``` thread ```](thread) | Многопоточность
 
 ### В разработке
 Расположение | Описание
@@ -61,6 +62,7 @@
 [``` audio ```](audio) | Обработка аудио
 [``` testing ```](testing) | Тестирование
 [``` corpus ```](corpus) | Корпус слов, словари
+[``` encode ```](encode) | Кодировки
 
 <br>
 
