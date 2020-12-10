@@ -195,6 +195,10 @@ def wall(group, post=0):
 
 	return res[::-1]
 
+def post(group, text='Руки на стол, мемы прибыли'):
+	res = vk.method('wall.post', {'owner_id': group, 'message': text, 'attachment': 'photo-151313066_457239275'})
+	return res
+
 # Группы
 def groups():
 	res = vk.method('groups.get')['items']

@@ -75,6 +75,11 @@ gunzip example.gz
 df -h
 ```
 
+19. История подключений SSH
+```
+sudo tail -f /var/log/auth.log
+```
+
 
 ## Команды Tmux
 [Шпаргалка](https://habr.com/ru/post/126996/)
