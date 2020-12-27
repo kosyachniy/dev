@@ -25,7 +25,7 @@ sudo apt-get install -y mongodb-org
 ### MacOS
 ```
 brew tap mongodb/brew
-brew install mongodb-community@4.2
+brew install mongodb-community@4.4
 ```
 
 ``` mongod --config /usr/local/etc/mongod.conf ```
@@ -63,7 +63,7 @@ security:
   authorization: "enabled"
 ```
 
-``` sudo service mongod restart ``` / ``` brew services restart mongodb-community@4.2 ```
+``` sudo service mongod restart ``` / ``` brew services restart mongodb-community@4.4 ```
 
 ## Настройка удалённого подключения
 ``` sudo nano /etc/mongod.conf ```
@@ -74,7 +74,7 @@ net:
   bindIp: 0.0.0.0
 ```
 
-``` sudo service mongod restart ``` / ``` brew services restart mongodb-community@4.2 ```
+``` sudo service mongod restart ``` / ``` brew services restart mongodb-community@4.4 ```
 
 ## Запуск сервера
 ### Linux
@@ -83,7 +83,7 @@ net:
 ### MacOS
 ``` brew services start mongodb ```
 
-``` brew services start mongodb-community@4.2 ```
+``` brew services start mongodb-community@4.4 ```
 
 ## Подключение к серверу
 ### Локально
