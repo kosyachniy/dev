@@ -145,7 +145,7 @@ sudo service mongod start
 ```
 
 ```
-brew services start mongodb-community@4.2
+brew services start mongodb-community@4.4
 ```
 
 ## Установка модулей в Jupyter Notebook

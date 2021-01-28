@@ -16,7 +16,7 @@ with open('sets.json', 'r') as file:
 	sets = json.loads(file.read()) # ['mongo']
 
 db = MongoClient(
-	username=keys['user'],
+	username=keys['login'],
 	password=keys['password'],
 	authSource='admin',
 	authMechanism='SCRAM-SHA-1'

@@ -42,7 +42,7 @@ vk_config.v2.json
 # Ключи и настройки
 
 keys.*py
-keys.*json
+keys*.*json
 keys.*js
 
 # Данные

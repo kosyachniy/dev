@@ -9,7 +9,7 @@ with open('keys.json', 'r') as file:
 
 
 db_all = MongoClient(
-	username=keys['user'],
+	username=keys['login'],
 	password=keys['password'],
 	authSource='admin',
 	authMechanism='SCRAM-SHA-1'
