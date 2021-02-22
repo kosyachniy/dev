@@ -37,6 +37,7 @@
 [``` php ```](php) | PHP разработка
 [``` sms ```](sms) | Отправка SMS-сообщений
 [``` mail ```](mail) | Подписи для почты
+[``` crypto ```](crypto) | Работа с криптовалютой, выпуск токенов
 [``` blockchain ```](blockchain) | Реализация блокчейн
 [``` smartcontracts ```](smartcontracts) | Смартконтракты
 [``` image ```](image) | Обработка изображений

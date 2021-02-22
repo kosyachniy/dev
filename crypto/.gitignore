@@ -1,0 +1,19 @@
+# Кэш
+##  MacOS
+.DS_Store
+
+## JS
+package-lock.json
+dist/
+build/
+
+## Редакторы
+.idea/
+.vscode/
+
+# Ключи и настройки
+keys*
+.env*
+
+# Виртуальное окружение
+node_modules/
