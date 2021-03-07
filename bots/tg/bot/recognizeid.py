@@ -7,7 +7,7 @@ def text(message):
 		bot.send_message(message.chat.id, message.forward_from_chat.id)
 		print(message.chat.id, message.forward_from_chat)
 	except:
-		
+
 # Сообщение чата
 		try:
 			bot.send_message(message.chat.id, '%d %d' % (message.forward_from_chat.id, message.forward_from_message_id))
@@ -17,7 +17,7 @@ def text(message):
 		except:
 			bot.send_message(message.chat.id, '%d %d' % (message.chat.id, message.message_id))
 			print(message.chat.id, message.chat.id)
-	
+
 	print('-------------')
 	print(message)
 

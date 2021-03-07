@@ -40,10 +40,8 @@ vk_config.v2.json
 *.session-journal
 
 # Ключи и настройки
-
-keys.*py
-keys*.*json
-keys.*js
+keys*
+.env*
 
 # Данные
 
@@ -56,10 +54,6 @@ node_modules/
 
 /.pnp
 .pnp.js
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # Логирование
 
