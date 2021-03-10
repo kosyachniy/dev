@@ -1,69 +1,49 @@
-# Кэш
-
-##  MacOS
-
+# Cache
+## MacOS
 .DS_Store
 
 ## Python
-
 __pycache__/
 *.pyc
 
 ## JS
-
 package-lock.json
 dist/
 build/
 
-## ВКонтакте
-
+## VKontakte
 vk_config.json
 vk_config.v2.json
 
 ## Jupyter Notebook
-
 .ipynb_checkpoints/
 
-## Редакторы
-
+## Editors
 .idea/
 .vscode/
 
-## Мобильная разработка
-
+## Mobile dev
 .expo/
 .expo-shared/
 
-##
-
-*.session
-*.session-journal
-
-# Ключи и настройки
+# Keys & sets
 keys*
 .env*
 
-# Данные
+# Data
 
-# Библиотеки
+# Libraries
 
-# Виртуальное окружение
-
+# Environments
 env/
 node_modules/
 
-/.pnp
-.pnp.js
-
-# Логирование
-
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Авторские права
-
-## Шрифты
-
+# Copyright notice
+## Fonts
 *.otf
 *.ttf
