@@ -1,21 +1,26 @@
-import axios from 'axios';
-import { server } from '../sets';
+import axios from 'axios'
+import { server } from '../sets'
 
-function serverRequest(method, json = {}) {
-    return axios.post(server.link + method + '/', json);
+function serverRequest(json={}) {
+	console.log(server.link, json)
+	return axios.post(server.link, json)
 }
 
-function handlerResult(that, res, handlerSuccess, handlerError) {
-    if (res.error) {
-        console.log('error: ', res)
-        handlerError(that, res);
-    } else {
-        console.log('success: ', res)
-        handlerSuccess(that, res);
-    }
+function handlerResult(res, handlerSuccess, handlerError) {
+	if (res['error']) {
+		console.log(res)
+		handlerError(res)
+	} else {
+		console.log(res)
+		handlerSuccess(res['result'])
+	}
 }
 
-export default function api(that, method, params = {}, handlerSuccess = () => {},
-    handlerError = () => {}) {
-    serverRequest(method, params).then((res) => handlerResult(that, res.data, handlerSuccess, handlerError));
+export default function api(method, params={}, handlerSuccess=()=>{}, handlerError=()=>{}) {
+	let json = {
+		'method': method,
+		'params': params,
+	}
+
+	serverRequest(json).then((res) => handlerResult(res.data, handlerSuccess, handlerError))
 }

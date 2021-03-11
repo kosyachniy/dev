@@ -1,10 +1,7 @@
-# Кэш
-
+# Cache
 ##  MacOS
-
 .DS_Store
 
-## Редакторы
-
+## Editors
 .idea/
 .vscode/

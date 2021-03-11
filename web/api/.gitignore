@@ -1,18 +1,11 @@
-# Кэш
-
+# Cache
 ## Python
-
 __pycache__/
 
-# Ключи и настройки
-
-keys.py
+# Keys & sets
 keys.json
 
-# Данные
+# Data
 
-app/static/
-
-# Виртуальное окружение
-
+# Environments
 env/
