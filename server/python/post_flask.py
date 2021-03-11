@@ -6,4 +6,5 @@ app = Flask(__name__)
 def index():
     return jsonify({'error': 0})
 
-app.run()
+if __name__=='__main__':
+	app.run()

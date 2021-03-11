@@ -11,5 +11,6 @@ cont = {
 	'language': 'ru',
 }
 
-cont = requests.post(link, json=cont) #, files = files)
-print(cont.text)
+if __name__=='__main__':
+	cont = requests.post(link, json=cont) #, files = files)
+	print(cont.text)
