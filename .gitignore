@@ -2,29 +2,32 @@
 ## MacOS
 .DS_Store
 
+## Editors
+.idea/
+.vscode/
+
 ## Python
 __pycache__/
 *.pyc
+
+## Jupyter Notebook
+.ipynb_checkpoints/
 
 ## JS
 package-lock.json
 dist/
 build/
 
-## VKontakte
-vk_config.json
-vk_config.v2.json
-
-## Jupyter Notebook
-.ipynb_checkpoints/
-
-## Editors
-.idea/
-.vscode/
-
 ## Mobile dev
 .expo/
 .expo-shared/
+
+## Telegram
+*.session
+
+## VKontakte
+vk_config.json
+vk_config.v2.json
 
 # Keys & sets
 keys*
@@ -43,7 +46,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Copyright notice
+# Copyright
 ## Fonts
 *.otf
 *.ttf
