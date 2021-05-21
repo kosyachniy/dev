@@ -6,6 +6,7 @@
 ## Структура репозитория
 Расположение | Описание
 ---|---
+[``` api ```](api) | Работа с API сервисов (Google, Facebook, Yandex)
 [``` docker ```](docker) | Docker контейнеры
 [``` vk-miniapps ```](vk-miniapps) | VK Mini Apps
 [``` bots ```](bots) | Боты в сетях: Instagram, Telegram, Twitter, ВКонтакте, Facebook, ...
@@ -32,6 +33,7 @@
 [``` media ```](media) | Медиафайлы: шрифты, иконки, значки, звуки
 [``` emoji ```](emoji) | Emoji
 [``` program ```](program) | Базовые реализации "Hello, world!" на разных языках программирования
+[``` oop ```](oop) | Объектно-ориентированное программирование
 [``` js ```](js) | JavaScript разработка
 [``` python ```](python) | Python разработка
 [``` php ```](php) | PHP разработка
@@ -168,6 +170,16 @@ serve -s build -p 3000
 ## Запуск Docker Compose
 ```
 docker-compose -f docker-compose.yml up --build
+```
+
+## Очистка Docker
+```
+docker system prune -a
+```
+
+## Подключение к Docker контейнеру
+```
+docker exec -it <> bash
 ```
 
 ## Включение Debug сокетов в консоли браузера
