@@ -2,7 +2,7 @@ asn1crypto==1.0.1
 certifi==2019.9.11
 cffi==1.12.3
 chardet==3.0.4
-cryptography==2.7
+cryptography==3.2
 gevent==1.4.0
 gevent-eventemitter==2.1
 greenlet==0.4.15
