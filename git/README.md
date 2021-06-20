@@ -117,7 +117,6 @@ git remote set-url origin <новая ссылка>
 
 ! Нужно указывать полный путь до файла
 ```
-git add -f example.txt
 git update-index --assume-unchanged /Users/kosyachniy/Re/projects/web/data/example.txt
 ```
 Отмена:
@@ -135,13 +134,12 @@ git push
 ! Сделать ветку master основной (если это не так)
 
 20. Переименовать ветку
+
+На GitHub переименовать ветку, потом:
+
 ```
 git branch -m <старая ветка> <новая ветка>
-```
-
-! Если старая ветка - основная, то в настройках сделать новую ветку основной
-
-```
-git push origin :<старая ветка>
-git push --set-upstream origin <новая ветка>
+git fetch origin
+git branch -u origin/<новая ветка> <новая ветка>
+git remote set-head origin -a
 ```

@@ -81,8 +81,6 @@ net:
 ``` sudo service mongod start ```
 
 ### MacOS
-``` brew services start mongodb ```
-
 ``` brew services start mongodb-community@4.4 ```
 
 ## Подключение к серверу
@@ -98,6 +96,13 @@ net:
 ``` mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database.collection][?options]] ```
 
 Добавление IP адреса в белый список: ``` Clusters -> Security -> IP Whitelist ```
+
+## Скрипты
+### Переименовать коллекцию
+```
+use <db name>
+db.<collection name>.renameCollection("<new collection name>")
+```
 
 ## Справочники
 [METANIT.COM](https://metanit.com/nosql/mongodb/2.8.php)

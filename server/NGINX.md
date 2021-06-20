@@ -204,16 +204,10 @@ ctrl+b c
 
 ## Шифрование
 ```
-sudo apt-get install software-properties-common
-sudo add-apt-repository universe
-sudo add-apt-repository ppa:certbot/certbot
-<enter>
-```
-
-```
-sudo apt-get update
-sudo apt-get install certbot python-certbot-nginx
-y
+sudo snap install core; sudo snap refresh core
+sudo apt-get remove certbot
+sudo snap install --classic certbot
+sudo ln -s /snap/bin/certbot /usr/bin/certbot
 ```
 
 ```
