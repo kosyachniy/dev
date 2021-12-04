@@ -7,7 +7,7 @@ def is_mail(cont):
 	return template.match(cont) != None
 
 def check_mail(cont):
-	return re.match('.+@.+\..+', cont) != None
+	return re.match(r'.+@.+\..+', cont) != None
 
 
 if __name__ == '__main__':

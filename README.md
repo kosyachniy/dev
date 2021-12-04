@@ -107,6 +107,12 @@ sudo git reset --hard origin/master
 sudo git pull origin master
 ```
 
+## Не отслеживать изменения файла в Git
+```
+git update-index --assume-unchanged /<>
+git update-index --no-assume-unchanged /<>
+```
+
 ## Python
 ```
 env/bin/pip freeze > requirements.txt

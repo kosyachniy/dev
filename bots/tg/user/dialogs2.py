@@ -21,7 +21,7 @@ async def main():
 				dialog.name, " " * (40 - len(dialog.name)),
 				"\t", dialog.entity.__class__.__name__, " " * (10 - len(dialog.entity.__class__.__name__)),
 				"\t", dialog.entity.id,
-				f"({-dialog.entity.id})" if dialog.entity.__class__.__name__ in ('Chat',) else "",
+				f"(-{dialog.entity.id})" if dialog.entity.__class__.__name__ in ('Chat',) else f"(-100{dialog.entity.id})" if dialog.entity.__class__.__name__ in ('Channel',) else "",
 				"\t", dialog.entity.migrated_to.channel_id if hasattr(dialog.entity, 'migrated_to') and dialog.entity.migrated_to else "",
 				f"(-100{dialog.entity.migrated_to.channel_id})" if hasattr(dialog.entity, 'migrated_to') and dialog.entity.migrated_to else "",
 			)

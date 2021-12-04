@@ -15,7 +15,7 @@
 
 Python 2: ``` python -m SimpleHTTPServer 8000 ```
 
-Python 3: ``` python3 -m http.server ```
+Python 3: ``` python3 -m http.server --cgi 8000```
 
 
 # Полезное

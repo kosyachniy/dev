@@ -70,8 +70,8 @@ git push origin --delete <>
 11. Насильно обновить локальный репозиторий
 ```
 git fetch --all
-git reset --hard origin/master
-git pull origin master
+git reset --hard origin/main
+git pull origin main
 ```
 
 12. Авторизация
@@ -102,6 +102,8 @@ rm -rf old-repository.git
 ```
 git reset --soft HEAD^
 ```
+
+[Все возможные варианты](https://ru.stackoverflow.com/questions/431520/Как-вернуться-откатиться-к-более-раннему-коммиту)
 
 16. Переименовать коммит
 ```

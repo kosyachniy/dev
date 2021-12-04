@@ -33,6 +33,10 @@ rm ~/.ssh/known_hosts
 7. Назначить команду
 ```
 alias python=python3
+alias pip3='/usr/local/bin/pip3.7'
+```
+```
+unalias python
 ```
 
 8. Запустить файл
@@ -51,7 +55,7 @@ alias python=python3
 ``` cat ./* | md5 ```
 
 13. Изменить права
-MacOS: ``` sudo chown -R `whoami`:admin /<путь> ```
+``` sudo chown -R `whoami`:admin /<путь> ```
 
 14. Список ip-адресов посредников
 ``` traceroute yandex.ru ```
