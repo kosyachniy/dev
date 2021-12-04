@@ -1,0 +1,54 @@
+footer {
+    padding-top: 62px;
+}
+
+footer .badge {
+    cursor: pointer;
+}
+
+.context-dark, .bg-gray-dark, .bg-primary, .bg-dark .social-inner, .footer-classic.bg-dark a, .footer-classic.bg-dark a:hover, .footer-classic.bg-dark a:focus, .footer-classic.bg-dark a:active  {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.context-light, .bg-light .social-inner, .footer-classic.bg-light a, .footer-classic.bg-light a:hover, .footer-classic.bg-light a:focus, .footer-classic.bg-light a:active  {
+    color: #212529;
+}
+
+.nav-list li {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.nav-list li a:hover:before {
+    margin-left: 0;
+    opacity: 1;
+    visibility: visible;
+}
+
+footer ul, footer ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.social-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    padding: 23px;
+    font: 900 13px/1 "Lato", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    text-transform: uppercase;
+}
+
+.social-container .col {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.brand img {
+    max-width: 100%;
+}
+
+.social span {
+    font-size: 110%;
+}
