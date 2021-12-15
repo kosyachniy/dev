@@ -1,5 +1,4 @@
 # Amazon AWS
-
 ## Начало работы
 [Описание](https://aws.amazon.com/ru/serverless/)
 
@@ -20,11 +19,31 @@
 8. Click **Create Access Key**
 9. Click **Show User Security Credentials**
 
-``` ~/.aws ```
+## Доступ для загрузки и чтения
+1. Permissions / Block public access -> Off
+2. Permissions / Bucket policy copy from [` bucket-policy.json `](bucket-policy.json)
+
+``` ~/.aws ``` / ``` ~/.aws/credentials ``` / ``` ~/.aws/config ```
 
 ```
 [default]
 aws_access_key_id = <keyskeyskeys>
 aws_secret_access_key = <keyskeyskeys>
 region=us-east-1
+```
+
+- OR -
+
+``` ./sets.json ```
+
+```
+{
+    "amazon": {
+        "key": "<ACCESS KEY ID>",
+        "secret": "<ACCESS SECRET KEY>",
+        "bucket": "<BUCKET>",
+        "directory": "<DIRECTORY>",
+        "region": "eu-central-1"
+    }
+}
 ```

@@ -31,6 +31,7 @@ vk_config.v2.json
 
 # Keys & sets
 keys*
+sets*
 .env*
 
 # Data
