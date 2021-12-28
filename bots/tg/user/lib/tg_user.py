@@ -2,13 +2,19 @@
 Functionality for working with users on Telegram
 """
 
-from telethon import TelegramClient
+from telethon import TelegramClient, events
 from telethon.sessions import StringSession
 from telethon.tl.types import (
     MessageEntityTextUrl, MessageEntityHashtag, MessageEntityCashtag,
     MessageEntityMention,
 )
 from libdev.cfg import cfg
+
+
+def _clear_tags(tag):
+    if tag[0] in {'#', '$'}:
+        tag = tag[1:]
+    return tag.strip()
 
 
 class Telegram:
@@ -64,12 +70,12 @@ class Telegram:
                     if type(mention) == MessageEntityMention
                 ],
                 'hashtags': [
-                    message.message[tag.offset+1:tag.offset+tag.length].strip()
+                    _clear_tags(message.message[tag.offset:tag.offset+tag.length])
                     for tag in message.entities or []
                     if type(tag) == MessageEntityHashtag
                 ],
                 'cashtags': [
-                    message.message[tag.offset+1:tag.offset+tag.length].strip()
+                    _clear_tags(message.message[tag.offset:tag.offset+tag.length])
                     for tag in message.entities or []
                     if type(tag) == MessageEntityCashtag
                 ],
@@ -95,3 +101,9 @@ class Telegram:
     async def send(self, name, cont):
         entity = await self.client.get_entity(name)
         await self.client.send_message(entity, cont)
+
+
+__all__ = (
+    'Telegram',
+    'events',
+)
