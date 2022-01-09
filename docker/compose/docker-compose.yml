@@ -5,3 +5,8 @@ services:
     build:
       dockerfile: Dockerfile
     env_file: .env
+    volumes:
+      # NOTE: To provide files
+      - type: bind
+        source: test.json
+        target: /test.json
