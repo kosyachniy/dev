@@ -1,0 +1,2 @@
+FROM alpine:3.15
+CMD echo $PROJECT_NAME $TEST

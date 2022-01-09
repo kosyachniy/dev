@@ -1,0 +1,7 @@
+version: "3.9"
+services:
+  test_name:
+    image: ${PROJECT_NAME}/test_service
+    build:
+      dockerfile: Dockerfile
+    env_file: .env
