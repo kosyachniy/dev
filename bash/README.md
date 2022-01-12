@@ -84,6 +84,11 @@ df -h
 sudo tail -f /var/log/auth.log
 ```
 
+20. Версия системы
+```
+lsb_release -a
+```
+
 
 ## Команды Tmux
 [Шпаргалка](https://habr.com/ru/post/126996/)
