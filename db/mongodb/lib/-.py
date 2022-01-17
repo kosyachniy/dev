@@ -1,27 +1,6 @@
 from pymongo import MongoClient
 
 
-# Локальный сервер
-
-db = MongoClient()['uple']
-
-# Удалённый сервер
-
-import json
-
-with open('keys.json', 'r') as file:
-	keys = json.loads(file.read()) # ['mongo']
-
-with open('sets.json', 'r') as file:
-	sets = json.loads(file.read()) # ['mongo']
-
-db = MongoClient(
-	username=keys['login'],
-	password=keys['password'],
-	authSource='admin',
-	authMechanism='SCRAM-SHA-1'
-)[sets['name']]
-
 # Глобальный сервер
 
 import json

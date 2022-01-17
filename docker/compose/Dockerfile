@@ -8,8 +8,10 @@ RUN echo '{ \n\
     "name": "'$PROJECT_NAME'", \n\
     "test": "'$TEST'" \n\
 } \n\
-' >> /test_inner.json
+' >> test_inner.json
+
+# NOTE: By default, there are no launch rights
+RUN chmod +x /entrypoint.sh
 
 # NOTE: Only one CMD
-RUN chmod +x /entrypoint.sh
 CMD /entrypoint.sh

@@ -89,6 +89,22 @@ sudo tail -f /var/log/auth.log
 lsb_release -a
 ```
 
+21. История команд
+[Больше →](https://losst.ru/istoriya-komand-linux)
+```
+history
+```
+
+22. История подключений
+```
+last
+```
+
+Неудачные попытки
+```
+lastb
+```
+
 
 ## Команды Tmux
 [Шпаргалка](https://habr.com/ru/post/126996/)
