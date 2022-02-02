@@ -1,7 +1,8 @@
 {
 	"vk": {
 		"group": "151412216",
-		"album": "247265476"
+		"album": "247265476",
+        "token": "<token>"
 	},
 	"server": {
 		"link": "https://dev.tensy.org/api/"
