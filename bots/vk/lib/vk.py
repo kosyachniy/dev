@@ -1,4 +1,5 @@
 import time
+import json
 
 from libdev.cfg import cfg
 import vk_api
@@ -184,10 +185,18 @@ def stats():
 
     return stat
 
-def wall(group, last=0):
+def wall(group, last=0, count=100, filter='all'):
     """ Get posts """
 
-    posts = vk.method('wall.get', {'owner_id': group})['items']
+    res = vk.method('wall.get', {
+        'owner_id': group,
+        'offset': 1,
+        'count': count,
+        'filter': filter,
+        'extended': 1,
+    })
+    posts = res['items']
+    profiles = res.get('profiles', [])
 
     res = [{
         'id': post['id'],
@@ -204,7 +213,13 @@ def wall(group, last=0):
             'comments': post.get('comments', {}).get('count'),
             'likes': post.get('likes', {}).get('count'),
         },
-    } for post in posts if post['id'] > last]
+        'author': {
+            'id': profiles[i]['id'],
+            'name': profiles[i]['first_name'],
+            'surname': profiles[i]['last_name'],
+            'avatar': max_size(profiles[i]),
+        } if len(profiles) > i else {},
+    } for i, post in enumerate(posts) if post['id'] > last]
 
     return res[::-1]
 
