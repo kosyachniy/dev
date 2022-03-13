@@ -1,0 +1,13 @@
+# Cache
+## JS
+dist/
+build/
+
+# Environments
+node_modules/
+package-lock.json
+
+# Copyright
+## Fonts
+*.otf
+*.ttf
