@@ -10,30 +10,25 @@ sudo apt update
 sudo apt upgrade
 ```
 
-2. Install packages to allow ` apt ` to use a repository over HTTPS
+3. Install packages to allow ` apt ` to use a repository over HTTPS
 ```
 sudo apt install apt-transport-https ca-certificates curl gnupg lsb-release
 ```
 
-3. Add Docker’s official GPG key
+4. Add Docker’s official GPG key
 ```
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 ```
 
-4. Set up the stable repository
+5. Set up the stable repository
 ```
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 ```
 
-5. Update the ` apt ` package index, and install the latest version of Docker Engine and containerd
+6. Update the ` apt ` package index, and install the latest version of Docker Engine and containerd
 ```
 sudo apt update
 sudo apt install docker-ce docker-ce-cli containerd.io
-```
-
-6. Verify that Docker Engine is installed correctly by running the ` hello-world ` image
-```
-sudo docker run hello-world
 ```
 
 ## Installing Docker Compose [link →](https://docs.docker.com/compose/install/)
@@ -86,7 +81,7 @@ client_max_body_size 30m;
 sudo systemctl restart nginx
 ```
 
-## Set up encryption [link →](https://certbot.eff.org/lets-encrypt/ubuntufocal-nginx)
+## Set up encryption [link →](https://certbot.eff.org/instructions?ws=nginx&os=ubuntufocal)
 15. Ensure that your version of snapd is up to date
 ```
 sudo snap install core; sudo snap refresh core

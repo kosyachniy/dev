@@ -1,8 +1,8 @@
-from func.db_mongo import *
+from func.db_mongo import db
 
-# Удалить всё
-db['test'].remove()
+# Delete all
+db.test.remove()
 
-# Удалить некоторые
-for i in db['test'].find({'param': True}):
-	db['test'].remove(i['_id'])
+# Delete some
+for i in db.test.find({'param': True}):
+    db.test.remove(i['_id'])

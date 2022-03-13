@@ -8,20 +8,24 @@ TOKEN_STORAGE = 'memcached'
 MEMCACHED_HOST = '127.0.0.1:11211'
 SPApiProxy = PySendPulse(REST_API_ID, REST_API_SECRET, TOKEN_STORAGE, memcached_host=MEMCACHED_HOST)
 
-# Get balance
-print(SPApiProxy.get_balance('RUR'))
+# # Get balance
+# print(SPApiProxy.get_balance('RUR'))
 
-# Create new email campaign
-res = SPApiProxy.add_campaign(
-    from_email='info@tensy.io',
-    from_name='Tensy',
-    subject='Test campaign from REST API',
-    body=b"<h1>Hello, John!</h1><p>This is the test task from https://sendpulse.com/api REST API!</p>",
-    addressbook_id=161621,
-    campaign_name='AutoCheck',
-    # attachments={'attach1.txt': '12345\n', 'attach2.txt': '54321\n'},
-)
-print(res)
+# Get Mailing Lists list example
+res = SPApiProxy.get_list_of_addressbooks()
+print(*[f"#{book['id']}    | {book['name']}" for book in res], sep='\n')
+
+# # Create new email campaign
+# res = SPApiProxy.add_campaign(
+#     from_email='info@tensy.io',
+#     from_name='Tensy',
+#     subject='Test campaign from REST API',
+#     body=b"<h1>Hello, John!</h1><p>This is the test task from https://sendpulse.com/api REST API!</p>",
+#     addressbook_id=161621,
+#     campaign_name='AutoCheck',
+#     # attachments={'attach1.txt': '12345\n', 'attach2.txt': '54321\n'},
+# )
+# print(res)
 
 # # Send mail using SMTP
 # res = SPApiProxy.smtp_send_mail({

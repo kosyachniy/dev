@@ -121,6 +121,11 @@ docker_clean_ps
 docker rmi $(docker images -a -q)
 ```
 
+## Verify that Docker Engine is installed correctly by running the ` hello-world ` image
+```
+sudo docker run hello-world
+```
+
 ## Ошибки
 ```
 docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', ConnectionRefusedError(61, 'Connection refused'))
