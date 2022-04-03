@@ -6,14 +6,50 @@ REST_API_ID = cfg('sendpulse.id')
 REST_API_SECRET = cfg('sendpulse.secret')
 TOKEN_STORAGE = 'memcached'
 MEMCACHED_HOST = '127.0.0.1:11211'
+
+ADDRESSBOOK = 152713
+MAIL = 'polozhev@mail.ru'
+
+
 SPApiProxy = PySendPulse(REST_API_ID, REST_API_SECRET, TOKEN_STORAGE, memcached_host=MEMCACHED_HOST)
+
+
+# # All methods
+# print(*dir(SPApiProxy), sep="\n")
 
 # # Get balance
 # print(SPApiProxy.get_balance('RUR'))
 
 # Get Mailing Lists list example
 res = SPApiProxy.get_list_of_addressbooks()
-print(*[f"#{book['id']}    | {book['name']}" for book in res], sep='\n')
+print(*[f"{book['id']}\t | {book['name']}" for book in res], sep="\n")
+
+res = SPApiProxy.get_email_info_from_all_addressbooks(MAIL)
+process_variables = lambda variables: ", ".join([
+    f"{variable['name']}={variable['value']}"
+    for variable in variables
+])
+print('-' * 100)
+print(*[(
+    f"{address['book_id']}"
+    f"\t | {address['status_explain']}"
+    f"\t | {process_variables(address['variables'])}"
+) for address in res], sep="\n")
+
+# # Add emails with variables to addressbook
+# res = SPApiProxy.add_emails_to_addressbook(ADDRESSBOOK, [{
+#     'email': 'polozhev@mail.ru',
+#     'variables': {
+#         'name': 'Test 1',
+#     },
+# }, {
+#     'email': 'alexey@tensy.io',
+#     'variables': {
+#         'name': 'Test 2',
+#         'id': 0,
+#     },
+# }])
+# print(res['result'])
 
 # # Create new email campaign
 # res = SPApiProxy.add_campaign(
