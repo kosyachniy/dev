@@ -3,8 +3,8 @@ import asyncpg
 
 
 async def main():
-    # con = await asyncpg.connect('postgresql://postgres:password@localhost/main')
-    con = await asyncpg.connect(
+    # conn = await asyncpg.connect('postgresql://postgres:password@localhost/main')
+    conn = await asyncpg.connect(
         host='localhost',
         port=5432,
         user='postgres',
@@ -12,7 +12,7 @@ async def main():
         database='main',
     )
 
-    await con.fetch('''
+    await conn.fetch('''
         CREATE TABLE "users" (
             "id" SERIAL NOT NULL PRIMARY KEY,
             "status" SMALLINT NOT NULL DEFAULT 3,
@@ -31,15 +31,15 @@ async def main():
     ''')
     # CONSTRAINT users_pkey PRIMARY KEY ("id")
 
-    await con.fetch('''
+    await conn.fetch('''
         INSERT INTO users (login, name, surname)
             VALUES ('kosyachniy', 'Alexey', 'Poloz')
     ''')
 
-    users = await con.fetch('SELECT * FROM "users"')
+    users = await conn.fetch('SELECT * FROM "users"')
     print(users)
 
-    await con.fetch('DROP TABLE "users"')
+    await conn.fetch('DROP TABLE "users"')
 
 
 asyncio.get_event_loop().run_until_complete(main())
