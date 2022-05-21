@@ -1,0 +1,8 @@
+SELECT * FROM "{{ table.name |i }}" WHERE TRUE
+    {%- include "where.sqlt" %}
+{% if sort -%}
+    ORDER BY {% for row in sort %}"{{ row |i }}" ASC{%- if not loop.last %},{% endif %}{% endfor %}
+{%- endif %}
+{% if cursor.limit is not none -%}
+    LIMIT {{ cursor.limit |i}}
+{%- endif %}

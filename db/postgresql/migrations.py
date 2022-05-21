@@ -11,19 +11,14 @@ async def main():
         database='main',
     )
 
-    with open('migrations/up.sql', 'r') as file:
-        data = file.read()
-    await conn.fetch(data)
-
-    await conn.fetch('''
-        INSERT INTO users (login, name, surname)
-            VALUES ('kosyachniy', 'Alexey', 'Poloz')
-    ''')
-
-    users = await conn.fetch('SELECT * FROM "users"')
-    print(users)
-
     with open('migrations/down.sql', 'r') as file:
+        data = file.read()
+    try:
+        await conn.fetch(data)
+    except Exception as e:
+        print(e)
+
+    with open('migrations/up.sql', 'r') as file:
         data = file.read()
     await conn.fetch(data)
 

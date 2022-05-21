@@ -1,0 +1,78 @@
+WITH "saved" AS (
+    INSERT INTO "{{ table.name |i }}" (
+        {% for name, value in this.items('new') -%}
+            "{{ name |i }}"{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ) VALUES (
+        {% for name, value in this.items('new') -%}
+            {%- if value is none -%}
+                {%- if 'db_default' in this.meta.fields[name].tags -%}
+                    DEFAULT
+                {%- else -%}
+                    NULL
+                {%- endif -%}
+            {%- elif 'db_json' in this.meta.fields[name].tags -%}
+                {{ value |j }}::JSONB
+            {%- elif 'db_extra' in this.meta.fields[name].tags -%}
+                {{ value.result_dict |j }}::JSONB
+            {%- else -%}
+                {{ value }}
+            {%- endif %}
+            {%- if not loop.last %},{% endif %} /* {{ name |i }} */
+        {% endfor %}
+    ) ON CONFLICT (
+        {% if table.conflict_key -%}
+            {%- for subkey in table.conflict_key -%}
+                "{{ subkey |i }}"{% if not loop.last %}, {% endif %}
+            {%- endfor %}
+        {%- else -%}
+            {%- for subkey in table.pkey -%}
+                "{{ subkey |i }}"{% if not loop.last %}, {% endif %}
+            {%- endfor -%}
+        {%- endif %}
+    ) DO UPDATE SET
+        {% set updated = {} %}
+
+        {% for name, value in this.items('rehashed') %}
+            {% set _ = updated.update({name: value}) %}
+        {% endfor %}
+
+        {%- if 'updated' in this.meta.fields %}
+            {%- if not do_not_update_updated %}
+                {% set _ = updated.update({'updated': 'NOW()'}) %}
+            {%- endif -%}
+        {%- endif -%}
+        {%- if 'revision' in this.meta.fields %}
+            {% set _ = updated.update({'revision': '"' ~ table.name ~ '"."revision" + 1'}) %}
+        {%- endif -%}
+        {%- if 'lsn' in this.meta.fields %}
+            {%- if not do_not_update_lsn %}
+                {% set _ = updated.update({'lsn': 'DEFAULT'}) %}
+            {%- endif -%}
+        {%- endif -%}
+
+        {% if updated %}
+            {% for name, value in updated.items() %}
+                {% if 'db_extra' in this.meta.fields[name].tags %}
+                    "{{ name |i }}" = "extra_update"(
+                            "{{ table.name |i }}"."{{ name |i }}",
+                            {{ value.updated_dict |j }}::JSONB,
+                            ARRAY[{{ value.deleted_keys |vlist }}]::TEXT[])
+                {% else %}
+                    {% if name in ('updated', 'lsn') %}
+                        "{{ name |i }}" = {{ value |i }}
+                    {% else %}
+                        "{{ name |i }}" = EXCLUDED."{{ name |i }}"
+                    {% endif %}
+                {% endif %}
+                {% if not loop.last %}, {% endif %}
+            {% endfor %}
+        {% else %}
+            "{{ table.primary_key |i }}" = EXCLUDED."{{ table.primary_key |i }}"
+        {% endif %}
+    WHERE TRUE
+        {%- include "where.sqlt" %}
+    RETURNING *
+)
+
+SELECT * FROM "saved"

@@ -1,0 +1,4 @@
+SELECT * FROM "{{ table.name |i }}" WHERE
+    {% for subkey in key_def -%}
+        {%- if not loop.first %}AND {% endif -%} "{{ subkey |i }}" = {{ key_tuple[loop.index0] }}
+    {% endfor %}

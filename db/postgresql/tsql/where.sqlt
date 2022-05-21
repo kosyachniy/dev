@@ -1,0 +1,68 @@
+{%- macro _condition_dict(condition) -%}
+    {%- if condition.operator -%}
+        "{{ table.name |i }}"."{{ condition.name |i}}" {{ condition.operator |i}}
+            {%- if condition.operator|upper == 'IN' or condition.operator|upper == 'NOT IN' %}
+                ({{ condition.value |vlist}})
+            {%- elif condition.value is none %}
+                NULL
+            {%- else %}
+                {{ condition.value }}
+            {%- endif %}
+    {%- else -%}
+        {% if condition.value is none -%}
+            "{{ table.name |i }}"."{{ condition.name |i}}" IS NULL
+        {% elif condition.value is iterable and condition.value is not string -%}
+            "{{ table.name |i }}"."{{ condition.name |i}}" IN ({{ condition.value |vlist}})
+        {% else -%}
+            "{{ table.name |i }}"."{{ condition.name |i}}" = {{ condition.value }}
+        {%- endif %}
+    {%- endif %}
+{%- endmacro %}
+
+{%- macro _condition_tuple(condition) -%}
+    {%- if condition|length > 3 -%}
+        {{ 'Unknown condition format' / 0 }}
+    {%- elif condition|length == 3 -%}
+        {%- set condition = {'name': condition[0], 'operator': condition[1], 'value': condition[2]} -%}
+        {{ _condition_dict(condition) |i}}
+    {%- elif condition|length == 2 -%}
+        {%- set condition = {'name': condition[0], 'value': condition[1]} -%}
+        {{ _condition_dict(condition) |i}}
+    {%- else %}
+        {{ 'Conditions cannot be a simple value' / 0 }}
+    {%- endif -%}
+{%- endmacro %}
+
+{%- if conditions -%}
+    {%- if conditions is mapping -%}
+        AND {{ _condition_dict(conditions) |i}}
+    {%- elif conditions is iterable and conditions is not string-%}
+        {%- if conditions[0] is string -%}
+            AND {{ _condition_tuple(conditions) |i}}
+        {%- else -%}
+            {%- for condition in conditions -%}
+                {%- if condition is mapping -%}
+                    AND {{ _condition_dict(condition) |i}}
+                {%- else -%}
+                    {%- if condition[0] is string -%}
+                        {# #}
+                        AND {{ _condition_tuple(condition) |i}}
+                    {% else %}
+                        AND (
+                            FALSE
+                            {%- for clause in condition %}
+                                {% if clause[0] is string -%}
+                                    OR {{ _condition_tuple(clause) |i}}
+                                {%- else -%}
+                                    OR {{ _condition_dict(clause) |i}}
+                                {%- endif -%}
+                            {%- endfor %}
+                        )
+                    {%- endif -%}
+                {%- endif -%}
+            {%- endfor -%}
+        {%- endif -%}
+    {% else %}
+        {{ 'Conditions cannot be a simple value' / 0 }}
+    {%- endif -%}
+{%- endif %}

@@ -1,1 +1,2 @@
 asyncpg==0.25.0
+consql==0.7
