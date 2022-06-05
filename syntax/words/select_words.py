@@ -90,6 +90,10 @@ if __name__ == '__main__':
     words = select_words(notify=False)
     print(f"All: {len(words)}")
 
+    with open(f'{LANG}/nouns.txt', 'w') as file:
+        for word in words:
+            print(word, file=file)
+
     words = select_words(
         count_letters=5,
         replace={'ё': 'е'},

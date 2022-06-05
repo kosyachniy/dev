@@ -1,3 +1,5 @@
+# https://github.com/Harrix/Russian-Nouns/blob/main/dist/russian_nouns.txt
+
 абажур
 абажурчик
 абаз
