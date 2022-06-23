@@ -12,7 +12,7 @@
 1. Go to: http://aws.amazon.com/
 2. Sign Up & create a new account (they'll give you the option for 1 year trial or similar)
 3. Open the [AWS Console](https://console.aws.amazon.com/)
-4. Click on your username near the top right and select **My Security Credentials**
+4. Click on your username near the top right and select **Security Credentials**
 5. Click on **Users** in the sidebar
 6. Click on your username
 7. Click on the **Security Credentials** tab

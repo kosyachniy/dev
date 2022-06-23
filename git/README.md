@@ -145,3 +145,16 @@ git fetch origin
 git branch -u origin/<новая ветка> <новая ветка>
 git remote set-head origin -a
 ```
+
+21. Откатить локальные изменения файла к коммиту
+```
+git checkout -- <название файла>
+```
+
+22. Сохранить ключи
+```
+git config credential.helper store
+```
+```
+git config --global credential.credentialStore cache
+```

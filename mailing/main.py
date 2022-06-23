@@ -2,8 +2,8 @@ from libdev.cfg import cfg
 from pysendpulse.pysendpulse import PySendPulse
 
 
-REST_API_ID = cfg('sendpulse.id')
-REST_API_SECRET = cfg('sendpulse.secret')
+SENDPULSE_ID = cfg('sendpulse.id')
+SENDPULSE_SECRET = cfg('sendpulse.secret')
 TOKEN_STORAGE = 'memcached'
 MEMCACHED_HOST = '127.0.0.1:11211'
 
@@ -11,7 +11,7 @@ ADDRESSBOOK = 152713
 MAIL = 'polozhev@mail.ru'
 
 
-SPApiProxy = PySendPulse(REST_API_ID, REST_API_SECRET, TOKEN_STORAGE, memcached_host=MEMCACHED_HOST)
+SPApiProxy = PySendPulse(SENDPULSE_ID, SENDPULSE_SECRET, TOKEN_STORAGE, memcached_host=MEMCACHED_HOST)
 
 
 # # All methods
