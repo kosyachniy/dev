@@ -120,11 +120,19 @@ ls -l | wc
 ```
 
 27. Сменить права
+```
 chmod 777 -r
+```
 
 28. Сменить владельца
+```
 sudo chown user ./file
+```
 
+29. Реалтайм поиск по ключевому слову & обрезка строки
+```
+cat data/logs/api.log | grep "Unknown brand" | cut -c 74- | sort -u
+```
 
 ## Команды Tmux
 [Шпаргалка](https://habr.com/ru/post/126996/)

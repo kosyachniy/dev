@@ -192,3 +192,8 @@ docker exec -it <> bash
 ```
 localStorage.setItem('debug', 'socket.io-client:socket')
 ```
+
+## Логи NGINX
+```
+/var/log/nginx/
+```
