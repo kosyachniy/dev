@@ -33,7 +33,7 @@ async def main():
 
     await conn.fetch('''
         INSERT INTO users (login, name, surname)
-            VALUES ('kosyachniy', 'Alexey', 'Poloz')
+            VALUES ('kosyachniy', 'Alex', 'Poloz')
     ''')
 
     users = await conn.fetch('SELECT * FROM "users"')

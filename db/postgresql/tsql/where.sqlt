@@ -38,6 +38,7 @@
         AND {{ _condition_dict(conditions) |i}}
     {%- elif conditions is iterable and conditions is not string-%}
         {%- if conditions[0] is string -%}
+            {# #}
             AND {{ _condition_tuple(conditions) |i}}
         {%- else -%}
             {%- for condition in conditions -%}

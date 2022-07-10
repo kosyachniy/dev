@@ -56,7 +56,7 @@ class User(Base, table=Table('users')):
 async def main():
     user = User(
         login='kosyachniy',
-        name='Alexey',
+        name='Alex',
         surname='Poloz',
     )
     await user.save()
