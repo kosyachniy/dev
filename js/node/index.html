@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web</title>
+    <meta charset="utf-8" />
+</head>
+<body>
+    <script>
+        generate = (length=32) => {
+            let symbols = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'.split('');
+            let token_raw = [];
+            for (let i=0; i<length; i++) {
+                let j = (Math.random() * (symbols.length-1)).toFixed(0);
+                token_raw[i] = symbols[j];
+            }
+            return token_raw.join('');
+        }
+
+        get = async () => {
+            fetch('/', {
+                method: 'POST',
+                body: JSON.stringify({token: generate()}),
+                headers: {'Content-Type': 'application/json'},
+            }).then(async (data) => {
+                console.log(await data.json());
+            })
+        }
+
+        get();
+    </script>
+    <h1>Main</h1>
+</body>
+<html>
