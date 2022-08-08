@@ -7,27 +7,18 @@
 </head>
 <body>
     <script>
-        generate = (length=32) => {
-            let symbols = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'.split('');
-            let token_raw = [];
-            for (let i=0; i<length; i++) {
-                let j = (Math.random() * (symbols.length-1)).toFixed(0);
-                token_raw[i] = symbols[j];
-            }
-            return token_raw.join('');
-        }
-
         get = () => {
-            // fetch('/', {
-            //     method: 'POST',
-            //     body: JSON.stringify({token: generate()}),
-            //     headers: {'Content-Type': 'application/json'},
-            // }).then(async (data) => {
-            //     console.log(await data.json());
-            // })
-            fetch(`/users/${generate()}`).then(async (data) => {
-                console.log(await data.text());
-            })
+            fetch('/auth', {
+                method: 'POST',
+                body: JSON.stringify({token: null}),
+                headers: {'Content-Type': 'application/json'},
+            }).then(
+                res => res.json()
+            ).then(
+                res => fetch(`/users/${res.token}`).then(async (data) => {
+                    console.log(await data.text());
+                })
+            );
         }
 
         get();

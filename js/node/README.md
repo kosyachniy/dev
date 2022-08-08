@@ -1,5 +1,8 @@
 # Node.js
 ## Run
-1. `npm install nodemon -g`
+2. `npm install -g nodemon`
 2. `npm i`
-3. `nodemon app.js`
+3. `nodemon app.ts`
+
+
+npx tsc --init
