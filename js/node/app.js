@@ -12,6 +12,12 @@ app.use((req, res, next) => {
     next()
 })
 
+const userRouter = express.Router()
+userRouter.use('/:id', (req, res) => {
+    res.send(`User ${req.params.id}`)
+})
+app.use('/users', userRouter)
+
 app.get('/', (req, res) => {
     // fs.createReadStream('index.html').pipe(res)
     // fs.readFile('index.html', 'utf8', (err, data) => {

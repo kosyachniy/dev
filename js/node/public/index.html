@@ -3,7 +3,7 @@
 <head>
     <title>Web</title>
     <meta charset="utf-8" />
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <script>
@@ -17,22 +17,21 @@
             return token_raw.join('');
         }
 
-        get = async () => {
-            fetch('/', {
-                method: 'POST',
-                body: JSON.stringify({token: generate()}),
-                headers: {'Content-Type': 'application/json'},
-            }).then(async (data) => {
-                console.log(await data.json());
+        get = () => {
+            // fetch('/', {
+            //     method: 'POST',
+            //     body: JSON.stringify({token: generate()}),
+            //     headers: {'Content-Type': 'application/json'},
+            // }).then(async (data) => {
+            //     console.log(await data.json());
+            // })
+            fetch(`/users/${generate()}`).then(async (data) => {
+                console.log(await data.text());
             })
         }
 
         get();
     </script>
     <h1>Main</h1>
-    <form method="post">
-        <input type="text" name="name" /><br><br>
-        <input type="submit" value="Send" />
-    </form>
 </body>
 <html>
