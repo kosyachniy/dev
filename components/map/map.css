@@ -1,0 +1,10 @@
+#map {
+    height: 80vh;
+}
+
+#map > div {
+    position: absolute;
+    width: 100vw;
+    height: 85vh;
+    left: 0;
+}
