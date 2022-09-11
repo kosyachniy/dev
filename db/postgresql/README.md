@@ -8,6 +8,7 @@ docker run --name mypsql -e POSTGRES_PASSWORD=password -e POSTGRES_DB=main -d -p
 ## Commands
 ```
 docker exec -it mypsql psql -h localhost -p 5432 -U postgres
+\c main
 ```
 * ` \? ` - Help
 * ` \h <command> ` - Help with SQL command

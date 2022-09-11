@@ -1,2 +1,2 @@
-asyncpg==0.25.0
-consql==0.7
+asyncpg==0.26.0
+consql==0.11

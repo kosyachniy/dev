@@ -1,0 +1,191 @@
+version: "3.9"
+services:
+  prometheus:
+    image: prom/prometheus
+    deploy:
+      mode: global
+    volumes:
+      - type: bind
+        source: ../docker/prometheus/prometheus.yml
+        target: /prometheus.yml
+    command:
+      - --config.file=/prometheus.yml
+      - --web.external-url=https://web.kosyachniy.com/prometheus/
+      - --web.route-prefix=/
+
+  grafana:
+    image: grafana/grafana
+    deploy:
+      mode: global
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=pass
+      - GF_SERVER_ROOT_URL=https://web.kosyachniy.com/grafana/
+    depends_on:
+      - prometheus
+
+  cadvisor:
+    image: google/cadvisor
+    deploy:
+      mode: global
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    depends_on:
+      - api
+      - prometheus
+      - grafana
+
+  node-exporter:
+    image: prom/node-exporter
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.0
+    restart: on-failure
+    volumes:
+      - ../data/redis:/data
+    ports:
+      - 6379:6379
+    env_file:
+      - .env
+    command: ["redis-server", "--requirepass", "${REDIS_PASS}"]
+
+  db:
+    image: mongo:5.0.6
+    # ports:
+    #   - "27017:27017"
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MONGO_INITDB_DATABASE: admin
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS}
+    volumes:
+      - ../data/db:/data/db
+      - ../data/logs:/data/logs
+      # NOTE: To provide files
+    #   - type: bind
+    #     source: ../docker/db/mongod.conf
+    #     target: /etc/mongod.conf
+    # command: --config /etc/mongod.conf
+
+  api:
+    image: web/api
+    build:
+      dockerfile: ../docker/api/Dockerfile
+      context: ../api
+      args:
+        - PROTOCOL=${PROTOCOL}
+        - HOST=${EXTERNAL_HOST}
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ../data/load:/data/load
+      - ../data/backup:/backup
+      - ../scripts:/scripts
+      # NOTE: To provide files
+      - type: bind
+        source: ../data/logs/api.err
+        target: /app.err
+      - type: bind
+        source: ../data/logs/api.log
+        target: /app.log
+    deploy:
+      mode: replicated
+      replicas: 2
+    #  placement:
+    #    max_replicas_per_node: 1
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 500M
+        reservations:
+          cpus: "0.15"
+          memory: 200M
+    command: uvicorn app:app --host 0.0.0.0 --port 5000 --proxy-headers
+
+  jobs:
+    image: web/jobs
+    build:
+      dockerfile: ../docker/api/Dockerfile
+      context: ../api
+      args:
+        - PROTOCOL=${PROTOCOL}
+        - HOST=${EXTERNAL_HOST}
+    depends_on:
+      - db
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ../data/sitemaps:/data/sitemaps
+      # NOTE: To provide files
+      - type: bind
+        source: ../data/logs/jobs.err
+        target: /app.err
+      - type: bind
+        source: ../data/logs/jobs.log
+        target: /app.log
+      - type: bind
+        source: ../data/sitemap.xml
+        target: /data/sitemap.xml
+    # NOTE: Only if we are running FastAPI
+    command: uvicorn jobs:app --host 0.0.0.0 --port 5000 --proxy-headers
+
+  tg:
+    image: web/tg
+    build:
+      dockerfile: ../docker/tg/Dockerfile
+      context: ../tg
+      args:
+        - PROTOCOL=${PROTOCOL}
+        - HOST=${EXTERNAL_HOST}
+    env_file: .env
+    volumes:
+      - type: bind
+        source: ../data/logs/tg.err
+        target: /app.err
+      - type: bind
+        source: ../data/logs/tg.log
+        target: /app.log
+    depends_on:
+      - api
+      - redis
+    restart: unless-stopped
+
+  web:
+    image: web/web
+    build:
+      dockerfile: ../docker/web/Dockerfile.prod
+      context: ../web
+      args:
+        - PROTOCOL=${PROTOCOL}
+        - HOST=${EXTERNAL_HOST}
+    env_file: .env
+    volumes:
+      - ../data/build:/build/
+
+  server:
+    image: "nginx:1.21.6"
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ../docker/server/nginx.metrics.conf:/etc/nginx/nginx.conf.template
+      - ../data/build:/build/
+      - ../data/load:/load
+      - ../data/logs:/data/logs
+    depends_on:
+      - api
+      - jobs
+      - web
+      - tg
+      - prometheus
+      - grafana
+      - cadvisor
+    ports:
+      - "8010:80"
+    command: /bin/sh -c "envsubst '$${EXTERNAL_HOST}'< /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g \"daemon off;\""

@@ -158,3 +158,20 @@ git config credential.helper store
 ```
 git config --global credential.credentialStore cache
 ```
+
+23. Сохранять ключ GitHub
+```
+git config credential.helper store
+```
+```
+git config --global credential.credentialStore cache
+```
+
+
+
+---
+
+1. Make pull-request from an issue
+```
+hub pull-request -i 7
+```

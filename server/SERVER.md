@@ -105,3 +105,7 @@ sudo ln -s /snap/bin/certbot /usr/bin/certbot
 ```
 sudo certbot --nginx
 ```
+
+
+# TODO: права для проксирования файлов в nginx
+# TODO: git формат файла

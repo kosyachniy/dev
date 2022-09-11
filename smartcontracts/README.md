@@ -6,7 +6,7 @@
 
 Управление кошельками: [chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#](chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#)
 
-[Начисление токенов](https://faucet.ropsten.be/), [Начисление токенов](https://faucet.metamask.io/)
+[Начисление токенов](https://faucet.metamask.io/), [Rinkeby](https://faucets.chain.link/rinkeby)
 
 [Проверка кошелька](https://ropsten.etherscan.io/address/0xa561c73b64a43cb3aeb7dfbbfd1d6a4c9fe8ddc5)
 
