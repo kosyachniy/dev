@@ -1,0 +1,8 @@
+import os
+
+
+BINANCE_ID = os.getenv('BINANCE_ID')
+BINANCE_SECRET = os.getenv('BINANCE_SECRET')
+
+
+print(BINANCE_ID, BINANCE_SECRET)
