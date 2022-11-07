@@ -5,4 +5,9 @@ services:
     env_file: .env
     volumes:
       - ./app:/app
-    command: bash -c "cd app && python main.py"
+    command: >
+      bash -c "
+        cd app
+        pip install -r requirements.txt
+        python main.py
+      "
