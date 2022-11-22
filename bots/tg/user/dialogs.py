@@ -1,4 +1,4 @@
-from func.tg_user import client
+from lib.tg_user import client
 
 
 dialogs = client.get_dialogs()
