@@ -197,8 +197,3 @@ localStorage.setItem('debug', 'socket.io-client:socket')
 ```
 /var/log/nginx/
 ```
-
-## Сохранять ключ GitHub
-```
-git config credential.helper store
-```

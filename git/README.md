@@ -159,14 +159,13 @@ git config credential.helper store
 git config --global credential.credentialStore cache
 ```
 
-23. Сохранять ключ GitHub
-```
-git config credential.helper store
-```
-```
-git config --global credential.credentialStore cache
-```
+23. Обновление репозитория с GitHub
+* Сгенерировать при настройке сервера SSH ключ, сохранить на GitHub https://github.com/settings/keys
+ssh-keygen
+cat ~/.ssh/id_rsa.pub
 
+2. Клонировать репозитории на сервер в таком формате:
+` git clone git@github.com:USER/REPO.git `
 
 
 ---

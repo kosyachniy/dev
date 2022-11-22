@@ -8,6 +8,7 @@ sudo arp-scan --localnet
 2. Открытые порты
 ```
 sudo netstat -ntulp
+sudo lsof -nP -i | grep LISTEN
 ```
 
 3. Содержимое папки
@@ -132,6 +133,24 @@ sudo chown user ./file
 29. Реалтайм поиск по ключевому слову & обрезка строки
 ```
 cat data/logs/api.log | grep "Unknown brand" | cut -c 74- | sort -u
+```
+
+30. Сгенерировать SSH ключи
+```
+ssh-keygen
+pbcopy < ~/.ssh/id_rsa.pub
+```
+
+```
+ssh-keygen -t rsa -b 4096 -f deploy
+cat ~/deploy.pub >> ~/.ssh/authorized_keys
+service sshd reload
+pbcopy < ~/deploy
+```
+
+31. Копирование файлов между серверами
+```
+scp /<path_to_file> root@<ip>:/<new_path>
 ```
 
 ## Команды Tmux
