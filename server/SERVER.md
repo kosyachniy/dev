@@ -2,28 +2,28 @@
 ## Base
 1. Update the ` apt ` package index
 ```
-apt update
+sudo apt update
 ```
 
 2. Update packages
 ```
-apt upgrade
+sudo apt upgrade
 ```
 
 3. Install main packages
 ```
-apt install tmux make nginx git htop
+sudo apt install tmux make nginx git htop
 ```
 
 ## Install Docker [link →](https://docs.docker.com/engine/install/ubuntu/)
 5. Install packages to allow ` apt ` to use a repository over HTTPS
 ```
-apt install ca-certificates curl gnupg lsb-release
+sudo apt install ca-certificates curl gnupg lsb-release
 ```
 
 6. Add Docker’s official GPG key
 ```
-mkdir -p /etc/apt/keyrings
+sudo mkdir -p /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 ```
 
@@ -34,8 +34,8 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.
 
 8. Install the latest version of Docker Engine, containerd, and Docker Compose
 ```
-apt update
-apt install docker-ce docker-ce-cli containerd.io docker-compose-plugin
+sudo apt update
+sudo apt install docker-ce docker-ce-cli containerd.io docker-compose-plugin
 ```
 
 ## Set up server
@@ -49,29 +49,29 @@ client_max_body_size 30m;
 
 10. Restart NGINX
 ```
-systemctl restart nginx
+sudo systemctl restart nginx
 ```
 
 ## Set up encryption [link →](https://certbot.eff.org/instructions?ws=nginx&os=ubuntufocal)
 11. Install Snap
 ```
-apt install snapd
+sudo apt install snapd
 ```
 
 12. Ensure that your version of snapd is up to date
 ```
-snap install core
-snap refresh core
+sudo snap install core
+sudo snap refresh core
 ```
 
 13. Install Let's Encrypt
 ```
-snap install --classic certbot
+sudo snap install --classic certbot
 ```
 
 14. Prepare the Certbot command
 ```
-ln -s /snap/bin/certbot /usr/bin/certbot
+sudo ln -s /snap/bin/certbot /usr/bin/certbot
 ```
 
 ## Set up GitHub
@@ -96,7 +96,7 @@ git clone git@github.com:USER/REPO.git
 
 18. Give NGINX access to static files
 ```
-chown -R :www-data /root
+chown -R :www-data ~
 ```
 
 19. Set up NGINX config & run certbot

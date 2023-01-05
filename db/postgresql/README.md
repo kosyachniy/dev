@@ -43,3 +43,6 @@ psql -h localhost -p 5432 -U postgres main < backup.db
 
 
 postgres//{user}:{password}@{host}:{port}/{db_name}?sslmode=require
+
+Индексы
+` SELECT * FROM pg_indexes WHERE tablename = 'your_table'; `
