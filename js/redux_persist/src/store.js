@@ -1,33 +1,22 @@
-import { createStore, combineReducers } from "redux";
-import { persistStore, persistReducer } from "redux-persist";
-import storage from "redux-persist/lib/storage";
-import rootReducer from "./reducer/index";
+import { createStore } from "redux"
+import { persistStore, persistReducer } from "redux-persist"
+import storage from "redux-persist/lib/storage"
 
-function configureStore(initialState = {}) {
-    const reducer = combineReducers({
-        auth: () => ({ mock: true }),
-        form: persistReducer({
-            key: "form", // key for localStorage key, will be: "persist:form"
-            storage,
-            debug: true,
-            blacklist: ['foo'],
-        }, rootReducer),
-    });
+import reducer from "./reducer"
 
+
+export default (initialState = {}) => {
     const store = createStore(persistReducer({
-        key: "root",
-        debug: true,
+        key: 'root',
         storage,
-        whitelist: ['auth'],
-    }, reducer), initialState);
+        whitelist: ['text'],
+    }, reducer), initialState)
 
-    console.log("initialState", store.getState());
+    console.log("initialState", store.getState())
 
     const persistor = persistStore(store, null, () => {
-        console.log("restoredState", store.getState());
-    });
+        console.log("restoredState", store.getState())
+    })
 
-    return { store, persistor };
+    return { store, persistor }
 }
-
-export default configureStore;

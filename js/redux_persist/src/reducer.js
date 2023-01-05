@@ -1,14 +1,6 @@
-const defaultState = {
+export default (state={
     text: 'initial',
-    foo: {
-        bar: 'zoo',
-        nested: {
-            veryDeep: true,
-        },
-    },
-};
-
-export default function(state=defaultState, action = {}) {
+}, action) => {
     switch(action.type) {
         case 'UPDATE':
             return {
@@ -18,8 +10,8 @@ export default function(state=defaultState, action = {}) {
                     ...state.foo,
                     bar: action.text,
                 },
-            };
+            }
         default:
-            return state;
+            return state
     }
-};
+}
