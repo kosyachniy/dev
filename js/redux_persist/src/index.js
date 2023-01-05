@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { Provider, useSelector, useDispatch } from 'react-redux'
 import { PersistGate } from "redux-persist/lib/integration/react"
 
-import configureStore from "./store"
+import makeStore from "./store"
 
 
 const App = () => {
@@ -21,7 +21,7 @@ const App = () => {
     )
 }
 
-const { store, persistor } = configureStore()
+const { store, persistor } = makeStore()
 const root = createRoot(document.getElementById('root'))
 
 root.render(

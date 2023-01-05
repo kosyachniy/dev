@@ -1,0 +1,11 @@
+version: "3.9"
+services:
+  web:
+    image: redux_persist
+    build: .
+    volumes:
+      - ./public:/app/public
+      - ./src:/app/src
+    ports:
+      - 3000:3000
+    command: npm start
