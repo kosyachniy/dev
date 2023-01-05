@@ -10,12 +10,7 @@ const App = () => {
     const dispatch = useDispatch()
     const state = useSelector((state) => state)
 
-    const updateText = (text) => {
-        return {
-            type: "UPDATE",
-            text
-        }
-    }
+    const updateText = (text) => ({type: "UPDATE", text})
     const onUpdateText = e => dispatch(updateText(e.nativeEvent.target.value))
 
     return (
