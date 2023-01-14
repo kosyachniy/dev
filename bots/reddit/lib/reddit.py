@@ -10,10 +10,19 @@ import praw
 from praw.models import InlineImage
 
 
-def get_image(url):
-    image = f"data/{url.split('/')[-1]}"
+DATA_PATH = 'data/'
 
-    res = requests.get(url, stream = True)
+
+def get_image(url):
+    image = f"{DATA_PATH}{url.split('/')[-1].split('?')[0]}"
+
+    try:
+        res = requests.get(url, stream=True, timeout=10, headers={
+            'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:79.0) Gecko/20100101 Firefox/79.0',
+            'Accept-Language': 'en-US,en;q=0.5',
+        })
+    except requests.exceptions.ReadTimeout:
+        return None
     if res.status_code != 200:
         return None
 
@@ -38,9 +47,13 @@ def post(channel, title=None, data=None, image=None):
     channel = reddit.subreddit(channel)
 
     if image:
+        image = get_image(image)
+        if image is None:
+            return None
+
         post = channel.submit_image(
             title,
-            image_path=get_image(image),
+            image_path=image,
             # discussion_type='CHAT',
         )
         # channel.submit_gallery(title, [{
