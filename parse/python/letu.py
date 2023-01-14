@@ -1,4 +1,5 @@
-import time
+import re
+import asyncio
 import xml.etree.cElementTree as ET
 
 from bs4 import BeautifulSoup
@@ -11,16 +12,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 FILE = 'letu.xml'
 XMLNS = 'http://www.sitemaps.org/schemas/sitemap/0.9'
-
-
-tree = ET.parse(FILE)
-root = tree.getroot()
-links = []
-
-for child in root.findall(f"{'{' + XMLNS + '}'}url/{'{' + XMLNS + '}'}loc"):
-    links.append(child.text)
-
-print(len(links))
+BATCH_SIZE = 5
 
 
 options = webdriver.ChromeOptions()
@@ -31,45 +23,63 @@ chrome_service = Service(chrome_path)
 driver = Chrome(options=options, service=chrome_service)
 driver.implicitly_wait(5)
 
-links = ['https://www.letu.ru/product/dolce-gabbana-light-blue-italian-love-eau-de-toilette/116500016#productSpecs']
 
-for link in links:
+def get_links():
+    tree = ET.parse(FILE)
+    root = tree.getroot()
+    links = []
+
+    for child in root.findall(f"{'{' + XMLNS + '}'}url/{'{' + XMLNS + '}'}loc"):
+        links.append(child.text)
+
+    return links
+
+async def parse(link, delay=10, code=False, screenshot=False):
     driver.get(link)
-    time.sleep(10)
-
-    # print(driver, dir(driver))
-    # with open('letu.png', 'w') as file:
-    #     print(driver.get_screenshot_as_png(), file=file)
-
-    # elem = driver.find_element_by_xpath("//*")
-    # source_code = driver.get_attribute("outerHTML")
-    # with open('letu.html', 'w') as file:
-    #     file.write(source_code.encode('utf-8'))
+    await asyncio.sleep(delay)
 
     # Code
-    with open('letu.html', 'w') as file:
-        print(driver.page_source, file=file)
-
-    # # Screenshot
-    # s = lambda i: driver.execute_script(
-    #     'return document.body.parentNode.scroll' + i
-    # )
-    # driver.set_window_size(s('Width'), s('Height'))
-    # driver.get_screenshot_as_file('letu.png')
-
-    # # content = driver.find_element(By.TAG_NAME, 'body')
-    # content = driver.find_element(By.CSS_SELECTOR, "p[class='sticky-card__action-price--current']") # "span[itemprop='price'")
-    # print(content.text)
-    # print(content.value_of_css_property('class'))
-
     html = driver.page_source
+    if code:
+        with open('letu.html', 'w') as file:
+            print(html, file=file)
+
+    # Screenshot
+    if screenshot:
+        s = lambda i: driver.execute_script(
+            'return document.body.parentNode.scroll' + i
+        )
+        driver.set_window_size(s('Width'), s('Height'))
+        driver.get_screenshot_as_file('letu.png')
+
     soup = BeautifulSoup(html, 'html.parser') # lxml
+    data = {}
 
     content = soup.find('p', {'class': 'sticky-card__action-price--current'})
-    # print(content)
-    print(content.text.strip())
+    if content is not None:
+        data['price'] = int(re.sub(r'[^0-9]', '', content.text.strip()))
 
+    return data
+
+
+async def main():
+    # Get product links
+    links = get_links()
+    print(len(links))
+
+    # Parse data
+    # TODO: by batch
+    for link in links:
+        print('-' * 20)
+        print(link)
+
+        data = await parse(link, code=True)
+        if data:
+            print(data)
+            break
 
     driver.quit()
 
-    break
+
+if __name__ == '__main__':
+    asyncio.run(main())
