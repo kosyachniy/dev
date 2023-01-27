@@ -43,7 +43,7 @@ reddit = praw.Reddit(
 )
 
 
-def post(channel, title=None, data=None, image=None):
+def post(channel, title=None, data=None, image=None, flair=None):
     channel = reddit.subreddit(channel)
 
     if image:
@@ -55,13 +55,17 @@ def post(channel, title=None, data=None, image=None):
             title,
             image_path=image,
             # discussion_type='CHAT',
+            flair_id=flair,
         )
         # channel.submit_gallery(title, [{
         #     "image_path": image3,
         #     "caption": "Image caption 3",
         #     "outbound_url": "https://example.com/link3",
         # }])
-        post.reply(data)
+
+        if data:
+            post.reply(data)
+
         return post
 
     return channel.submit(
@@ -71,6 +75,7 @@ def post(channel, title=None, data=None, image=None):
         # },
         selftext=data,
         # discussion_type='CHAT',
+        flair_id=flair,
     )
 
 
