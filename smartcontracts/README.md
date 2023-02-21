@@ -1,34 +1,34 @@
-# Смартконтракты
-На Ethereum
+# Smartcontracts
+Ethereum, Solidity
 
-## Ресурсы
-[Компилятор](https://remix.ethereum.org/)
+## Sources
+### Dev
+* [IDE](https://remix.ethereum.org/)
+* [Wallet](chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#)
+* [Solidity Docs](https://docs.soliditylang.org/en/v0.8.18/contracts.html)
 
-Управление кошельками: [chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#](chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#)
+### Faucets
+* [Goerli](https://goerlifaucet.com/)
+* [Sepolia](https://sepolia-faucet.com/)
 
-[Начисление токенов](https://faucet.metamask.io/), [Rinkeby](https://faucets.chain.link/rinkeby)
+### Check in the network
+* [Account](https://ropsten.etherscan.io/address/0xa561c73b64a43cb3aeb7dfbbfd1d6a4c9fe8ddc5)
+* [Transaction](https://ropsten.etherscan.io/tx/0x6f2d71f0cfefada5bafa5d49052b20cfdff13a4fbf917864e5067c79c54bdbc2)
 
-[Проверка кошелька](https://ropsten.etherscan.io/address/0xa561c73b64a43cb3aeb7dfbbfd1d6a4c9fe8ddc5)
+## Writing a contract
 
-[Проверка транзакций](https://ropsten.etherscan.io/tx/0x6f2d71f0cfefada5bafa5d49052b20cfdff13a4fbf917864e5067c79c54bdbc2)
+## Contract Launch
+1. Set up [MetaMask](https://metamask.io/) extension for your browser
+2. Turn on test network Goerli or Sepolia
+3. Get tokens from Faucet
+4. Open https://remix.ethereum.org/
+5. Create a new file with smartcontract code
+9. Switch to the "DEPLOY & RUN TRANSACTIONS" tab
+10. Choose "Injected Web3" in "Environment"
+11. Specify the starting parameters of the contract and click "Deploy"
+12. In the MetaMask window confirm the operation
+13. Check in MetaMask that the contract deployment process is started
+14. When the deployment is completed, the contract will appear in the "Deployed Contracts" section
+15. All the functions of the contract are displayed here, you can use and test
 
-## Написание контракта
-
-## Запуск контракта
-1. Настроить MetaMask расширение для Chrome
-2. Переключиться на тестовую сеть Ropsten
-3. Получить токены из Faucet
-4. Открыть https://remix.ethereum.org/
-5. Создать файл со своим кодом
-6. Активировать расширения "SOLIDITY COMPILER" & "DEPLOY & RUN TRANSACTIONS"
-7. Переключиться на вкладку компиляции
-8. Нажать "Compile"
-9. Переключиться на вкладку развёртки
-10. Выбрать "Injected Web3" в "Environment"
-11. Указать стартовые параметры контракта и нажать "Deploy"
-12. В открывшемся окне MetaMask подтвердить операцию
-13. Проверить в MetaMask, что идёт процесс развёртывания контракта
-14. Когда развёртка завершится, контракт появится в разделе "Deployed Contracts"
-15. Здесь отображаются все функции контракта, можно использовать и тестировать
-
-## Внедрение в JS приложение
+## Implementation in a JS app
