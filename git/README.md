@@ -116,8 +116,6 @@ git remote set-url origin <новая ссылка>
 ```
 
 18. Не отслеживать изменения файла
-
-! Нужно указывать полный путь до файла
 ```
 git update-index --assume-unchanged /Users/kosyachniy/Re/projects/web/data/example.txt
 ```
@@ -167,6 +165,14 @@ cat ~/.ssh/id_rsa.pub
 2. Клонировать репозитории на сервер в таком формате:
 ` git clone git@github.com:USER/REPO.git `
 
+24. Объединить 2 репозитория
+```
+cd path/to/project-b
+git remote add project-a /path/to/project-a
+git fetch project-a --tags
+git merge --allow-unrelated-histories project-a/master # or whichever branch you want to merge
+git remote remove project-a
+```
 
 ---
 

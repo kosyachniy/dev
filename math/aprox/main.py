@@ -69,10 +69,10 @@ def graph(x, y, f):
     plt.plot(x, f)
     plt.show()
 
-def main(col=1, volume=30000, period=30):
+def main(col=1, volume=30000, period=30, level=3):
     data = get_data()
     x, y = process_google_search_data(data, col)
-    f = aprox(x, y)
+    f = aprox(x, y, level)
     date, x = predict(f, x, period, volume)
     day = get_date(date)
     print(day)
@@ -82,4 +82,4 @@ def main(col=1, volume=30000, period=30):
 
 if __name__ == '__main__':
     main(1, 30000)
-    main(2, 100000)
+    main(2, 10000000)

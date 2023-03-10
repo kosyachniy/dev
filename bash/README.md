@@ -153,6 +153,11 @@ pbcopy < ~/deploy
 scp /<path_to_file> root@<ip>:/<new_path>
 ```
 
+32. Получить публичный ключ по приватному
+```
+ssh-keygen -y -f key.pem > key.pub
+```
+
 ## Команды Tmux
 [Шпаргалка](https://habr.com/ru/post/126996/)
 Команда | Описание

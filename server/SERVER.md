@@ -94,17 +94,12 @@ git clone git@github.com:USER/REPO.git
 
 (exactly this format of the link)
 
-18. Give NGINX access to static files
-```
-chown -R :www-data ~
-```
-
-19. Set up NGINX config & run certbot
+18. Set up NGINX config & run certbot
 ```
 certbot --nginx
 ```
 
-20. Run project
+19. Run project
 ```
 docker compose up --build -d
 ```

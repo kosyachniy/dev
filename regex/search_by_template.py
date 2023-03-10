@@ -437,5 +437,7 @@ TEXT = """
 </select>
 """
 
-for i in re.findall(r'<option value="\W*(\w*)\W*">\W*(\w*)\W*</option>', TEXT):
+for i in re.findall(
+    r'<option[^>"]*value="\s*([^\t\n\r\f\v"]*)\s*"[^>]*>\s*([^\t\n\r\f\v]*)\s*</option>', TEXT
+):
     print(i)

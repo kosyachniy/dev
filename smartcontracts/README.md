@@ -4,8 +4,9 @@ Ethereum, Solidity
 ## Sources
 ### Dev
 * [IDE](https://remix.ethereum.org/)
-* [Wallet](chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#)
+* Wallet: chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#
 * [Solidity Docs](https://docs.soliditylang.org/en/v0.8.18/contracts.html)
+* [MetaMask Docs](https://docs.metamask.io/guide/ethereum-provider.html#events)
 
 ### Faucets
 * [Goerli](https://goerlifaucet.com/)
@@ -23,12 +24,12 @@ Ethereum, Solidity
 3. Get tokens from Faucet
 4. Open https://remix.ethereum.org/
 5. Create a new file with smartcontract code
-9. Switch to the "DEPLOY & RUN TRANSACTIONS" tab
-10. Choose "Injected Web3" in "Environment"
-11. Specify the starting parameters of the contract and click "Deploy"
-12. In the MetaMask window confirm the operation
-13. Check in MetaMask that the contract deployment process is started
-14. When the deployment is completed, the contract will appear in the "Deployed Contracts" section
-15. All the functions of the contract are displayed here, you can use and test
+6. Switch to the "DEPLOY & RUN TRANSACTIONS" tab
+7. Choose "Injected Web3" in "Environment"
+8. Specify the starting parameters of the contract and click "Deploy"
+9. In the MetaMask window confirm the operation
+10. Check in MetaMask that the contract deployment process is started
+11. When the deployment is completed, the contract will appear in the "Deployed Contracts" section
+12. All the functions of the contract are displayed here, you can use and test
 
 ## Implementation in a JS app

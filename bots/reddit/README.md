@@ -1,4 +1,5 @@
 # Reddit
+## Resources
 [Python SDK](https://praw.readthedocs.io/en/stable/)
 
 [Create secrets](https://github.com/reddit-archive/reddit/wiki/OAuth2-Quick-Start-Example)

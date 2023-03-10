@@ -1,12 +1,17 @@
 # Search engines
 * [Google](https://search.google.com/search-console/welcome)
-* Yandex
-* [Bing](https://www.bing.com/webmasters)
+* [Yandex, Rambler](https://webmaster.yandex.com/sites/)
+* [Bing, Yahoo!, DuckDuckGo](https://www.bing.com/webmasters)
+* [Baidu](https://www.baidu.com/search/url_submit.html)
+* Mail.Ru
+* [Meta](https://passport.meta.ua/)
+* [Seznam](https://search.seznam.cz/wt/pridej-stranku?status=200)
+* You.com
+* [LiveInternet](https://www.liveinternet.ru/add)
 
 # Analytics
 * [Google Analytics](https://analytics.google.com/analytics/web/)
-* [Yandex Metrics](https://metrika.yandex.ru/list)
-* [Yandex WebMaster](https://webmaster.yandex.com/sites/)
+* [Yandex Metrica](https://metrika.yandex.ru/list)
 
 # Check
 * [HSTS](https://hstspreload.org/)
