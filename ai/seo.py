@@ -2,12 +2,20 @@ from libdev.cfg import cfg
 import openai
 
 
+# INTRO = """I Want You To Act As A Content Writer Very Proficient SEO Writer Writes Fluently {}. First Create Two Tables. First Table Should be the Outline of the Article and the Second Should be the Article. Bold the Heading of the Second Table using Markdown language. Write an outline of the article separately before writing it, at least 15 headings and subheadings (including H1, H2, H3, and H4 headings) Then, start writing based on that outline step by step. Write a 2000-word 100% Unique, SEO-optimized, Human-Written article in {} with at least 15 headings and subheadings (including H1, H2, H3, and H4 headings) that covers the topic provided in the Prompt. Write The article In Your Own Words Rather Than Copying And Pasting From Other Sources. Consider perplexity and burstiness when creating content, ensuring high levels of both without losing specificity or context. Use formal "we" language with rich, detailed paragraphs that engage the reader. Write In A Conversational Style As Written By A Human (Use An Informal Tone, Utilize Personal Pronouns, Keep It Simple, Engage The Reader, Use The Active Voice, Keep It Brief, Use Rhetorical Questions, and Incorporate Analogies And Metaphors).  End with a conclusion paragraph and 5 unique FAQs After The Conclusion. this is important to Bold the Title and all headings of the article, and use appropriate headings for H tags.
+# Now Write An Article On This Topic \"{}\""""
+# TABLE = """I Want You To Act As A Content Writer Very Proficient SEO Writer Writes Fluently {}. First Create Two Tables. First Table Should be the Outline of the Article \"{}\" in {} and the Second Should be the Article \"{}\" in {}. Bold the Heading of the Second Table using Markdown language. Write an outline of the article separately before writing it, at least 15 headings and subheadings (including H1, H2, H3, and H4 headings)"""
+# ARTICLE = """Now Write An First Block of Article On This Topic, based on that outline. Write a 100% Unique, SEO-optimized, Human-Written article in {} that covers the topic provided in the Prompt. Write The article In Your Own Words Rather Than Copying And Pasting From Other Sources. Consider perplexity and burstiness when creating content, ensuring high levels of both without losing specificity or context. Use formal "we" language with rich, detailed paragraphs that engage the reader. Write In A Conversational Style As Written By A Human (Use An Informal Tone, Utilize Personal Pronouns, Keep It Simple, Engage The Reader, Use The Active Voice, Keep It Brief, Use Rhetorical Questions, and Incorporate Analogies And Metaphors)."""
 INTRO = """I Want You To Act As A Content Writer Very Proficient SEO Writer Writes Fluently {}. First Create Two Tables. First Table Should be the Outline of the Article and the Second Should be the Article. Bold the Heading of the Second Table using Markdown language. Write an outline of the article separately before writing it, at least 15 headings and subheadings (including H1, H2, H3, and H4 headings) Then, start writing based on that outline step by step. Write a 2000-word 100% Unique, SEO-optimized, Human-Written article in {} with at least 15 headings and subheadings (including H1, H2, H3, and H4 headings) that covers the topic provided in the Prompt. Write The article In Your Own Words Rather Than Copying And Pasting From Other Sources. Consider perplexity and burstiness when creating content, ensuring high levels of both without losing specificity or context. Use formal "we" language with rich, detailed paragraphs that engage the reader. Write In A Conversational Style As Written By A Human (Use An Informal Tone, Utilize Personal Pronouns, Keep It Simple, Engage The Reader, Use The Active Voice, Keep It Brief, Use Rhetorical Questions, and Incorporate Analogies And Metaphors).  End with a conclusion paragraph and 5 unique FAQs After The Conclusion. this is important to Bold the Title and all headings of the article, and use appropriate headings for H tags.
-Now Write An Article On This Topic \"{}\""""
+Now Write Only Table Of Content of Article On This Topic \"{}\""""
+ARTICLE = """Now Write a Part of the Article by Point of Table Of Content \"{}\" in {} in two paragraphs"""
 
 
 openai.api_key = cfg('openai_token')
 
+
+def _get_table(data):
+    return data.split(":\n")[-1].strip().split("\n\n")[0].strip().split("\n")
 
 def get(data, messages=None):
     if messages is None:
@@ -20,15 +28,31 @@ def get(data, messages=None):
 def main():
     messages = []
     lang = input("Language: ")
+    if not lang:
+        return
     text = input("Title of Article: ")
+    if not text:
+        return
 
     req = INTRO.format(lang, lang, text)
     print(req)
     res = get(req, messages)
+    table = _get_table(res)
     print("-" * 100)
-    print(res)
+    print("\n".join(table))
     messages.append({"role": "user", "content": req})
     messages.append({"role": "assistant", "content": res})
+
+    print(f"# {text}")
+
+    for part in table:
+        # part = part[part.index('.') + 1:]
+        req = ARTICLE.format(part, lang)
+        res = get(req, messages)
+        print(f"##{part}")
+        print(res)
+        # messages.append({"role": "user", "content": req})
+        # messages.append({"role": "assistant", "content": res})
 
     req = "Continue writing please"
     res = get(req, messages)
@@ -53,5 +77,4 @@ def main():
 
 
 if __name__ == '__main__':
-    # print(get(input("Request: ")))
     main()
