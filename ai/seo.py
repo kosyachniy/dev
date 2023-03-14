@@ -20,6 +20,8 @@ openai.api_key = cfg('openai_token')
 
 
 def _get_table(data):
+    if ':\n' not in data:
+        return data.split("\n\n")[-1].strip().split("\n")
     return data.split(":\n")[-1].strip().split("\n\n")[0].strip().split("\n")
 
 def get(data, messages=None):
@@ -87,8 +89,6 @@ def main():
     print("-" * 100)
 
     for lang in LANGS:
-        # if lang['code'] == 'en':
-        #     continue
         article_by_lang(titles[lang['code']], lang['name'])
 
 
