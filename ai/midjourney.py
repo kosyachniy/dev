@@ -54,7 +54,7 @@ def send_command(data):
                     "required": True,
                 }],
             },
-            "attachments":[],
+            "attachments": [],
         },
     }
     return requests.post(
@@ -83,8 +83,6 @@ def press_button(message_id, data):
         json=payload,
     ).text
 
-
-
 def send_json_request(ws, request):
     ws.send(json.dumps(request))
 
@@ -102,7 +100,10 @@ def heartbeat(interval, ws):
         }
         send_json_request(ws, heartbeatJSON)
 
-def background():
+def main():
+    req = input("Request: ")
+    send_command(req)
+
     ws = websocket.WebSocket()
     ws.connect('wss://gateway.discord.gg/?v=6&encording=json')
 
@@ -139,6 +140,8 @@ def background():
                 continue
 
             title = re.sub(r'.*\*\*([^*]*)\*\*.*', r'\1', event['d']['content'])
+            if title != req:
+                continue
 
             if "Upscaled" not in event['d']['content']:
                 # NOTE: Upscale all 4 image
@@ -151,8 +154,10 @@ def background():
             url = event['d']['attachments'][0]['url']
             print(f"{title}: {url}")  # Paste your code here
 
+            break
+
         except:
             pass
 
 
-asyncio.run(background())
+asyncio.run(main())
