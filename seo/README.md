@@ -33,3 +33,6 @@
 * [Images](https://yandex.ru/support/images/schema-org.html)
 * [Headers](https://habr.com/ru/company/hosting-cafe/blog/315802/)
 * [SEO criteria](https://habr.com/ru/post/713666/)
+
+# Articles
+* [Check SEO](https://surferseo.com/)
