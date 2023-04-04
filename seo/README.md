@@ -25,6 +25,8 @@
 * [Speed](https://pagespeed.web.dev/)
 * [Loading](https://gtmetrix.com/)
 * check gzip
+* https://developers.google.com/search/docs/appearance/structured-data?hl=ru
+* https://www.topicalrelevance.com/
 
 # Auxiliary tools
 * [Micro Markup](https://webcode.tools/generators/structured-data/breadcrumb)

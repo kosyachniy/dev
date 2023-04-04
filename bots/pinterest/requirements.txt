@@ -1,2 +1,2 @@
-py3-pinterest==1.3.0
+pinterest-api==0.0.8
 libdev==0.45
