@@ -1,4 +1,4 @@
-certifi==2019.9.11
+certifi==2022.12.7
 cloudinary==1.18.2
 mock==3.0.5
 six==1.12.0

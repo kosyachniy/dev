@@ -1,11 +1,11 @@
 attrs==19.3.0
 autobahn==20.4.3
 Automat==20.2.0
-certifi==2020.4.5.1
+certifi==2022.12.7
 cffi==1.14.0
 chardet==3.0.4
 constantly==15.1.0
-cryptography==2.9.2
+cryptography==39.0.1
 dateparser==0.7.4
 hyperlink==19.0.0
 idna==2.9
@@ -22,8 +22,8 @@ regex==2020.5.14
 requests==2.23.0
 service-identity==18.1.0
 six==1.15.0
-Twisted==20.3.0
+Twisted==22.10.0
 txaio==20.4.1
 tzlocal==2.1
-urllib3==1.25.9
+urllib3==1.26.5
 zope.interface==5.1.0

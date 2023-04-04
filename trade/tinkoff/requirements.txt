@@ -1,7 +1,7 @@
-certifi==2020.4.5.1
+certifi==2022.12.7
 python-dateutil==2.8.1
 pytz==2019.3
 six==1.15.0
 tinkoff-invest-openapi-client==0.0.7
-urllib3==1.25.9
+urllib3==1.26.5
 websocket-client==0.56.0
