@@ -1,5 +1,5 @@
 asn1crypto==1.0.1
-certifi==2019.9.11
+certifi==2022.12.7
 cffi==1.12.3
 chardet==3.0.4
 cryptography==39.0.1
