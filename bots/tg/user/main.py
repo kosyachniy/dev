@@ -1,9 +1,11 @@
 import asyncio
 
-from lib.tg_user import Telegram, events
+from lib.tg_user import Telegram, events, get_stat
 
 
 async def main():
+    print(await get_stat('hnklny'))
+
     async with Telegram() as tg:
         await tg.send('kosyachniy', 'ola')
 

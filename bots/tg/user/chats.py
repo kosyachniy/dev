@@ -1,11 +1,8 @@
-import json
 import asyncio
 
 from telethon import TelegramClient
 
-
-with open('keys.json', 'r') as file:
-    x = json.loads(file.read())['tg']
+from libdev.cfg import cfg
 
 
 async def chats(client, limit=None):
@@ -35,7 +32,7 @@ async def chats(client, limit=None):
 
 
 async def main():
-    async with TelegramClient('main{}'.format(x['id']), x['id'], x['hash']) as client:
+    async with TelegramClient(f"main{cfg('tg.id')}", cfg('tg.id'), cfg('tg.hash')) as client:
         print(await chats(client))
 
 

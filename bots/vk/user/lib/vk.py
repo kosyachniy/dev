@@ -1,13 +1,84 @@
-import time
 import json
+import time
+import datetime
 
 from libdev.cfg import cfg
-import vk_api
 import requests
+import vk_api
 
 
 vk = vk_api.VkApi(token=cfg('vk.token'))
 
+
+def _format_user(user):
+    return {
+        'id': user['id'],
+        'login': user['screen_name'] or None,
+        'url': "https://vk.com/" + (user['screen_name'] or f"id{user['id']}"),
+        'name': user['first_name'],
+        'surname': user['last_name'],
+        'followers': user['followers_count'],
+    }
+
+def _format_post(post):
+    return {
+        'id': post['id'],
+        'views': post['views']['count'],
+        'likes': post['likes']['count'],
+        'comments': post['comments']['count'],
+        'reposts': post['reposts']['count'],
+        'engagement': (
+            post['likes']['count']
+            + post['comments']['count']
+            + post['reposts']['count']
+        ),
+    }
+
+def get_user(user):
+    url = f"https://api.vk.com/method/users.get?v=5.131&access_token={cfg('vk.token')}&user_id={user}&fields=screen_name,followers_count"
+    response = requests.get(url).json()
+
+    return _format_user(response["response"][0])
+
+def get_posts(entity_id, date):
+    url = f"https://api.vk.com/method/wall.get?v=5.131&access_token={cfg('vk.token')}&owner_id={entity_id}&count=100"
+    response = requests.get(url).json()
+
+    if 'response' not in response:
+        print("VK get", {
+            'group_id': entity_id,
+            'response': response,
+        })
+        return []
+
+    return [
+        _format_post(post)
+        for post in response["response"]["items"]
+        if datetime.datetime.fromtimestamp(post["date"]).date() == date
+    ]
+
+def get_stat(entity_id, date=datetime.datetime.now().date()):
+    data = get_user(entity_id)
+    data['posts'] = 0
+    data['views'] = 0
+    data['likes'] = 0
+    data['comments'] = 0
+    data['engagement'] = 0
+    data['best_post'] = None
+    current_engagement = 0
+
+    for post in get_posts(entity_id, date):
+        data['posts'] += 1
+        data['views'] += post["views"]
+        data['likes'] += post["likes"]
+        data['comments'] += post["comments"]
+        data['engagement'] += post["engagement"]
+
+        if data['best_post'] is None or post["engagement"] > current_engagement:
+            data['best_post'] = f"https://vk.com/wall{data['id']}_{post['id']}"
+            current_engagement = post["engagement"]
+
+    return data
 
 def max_size(lis, name='photo'):
     q = set(lis.keys())

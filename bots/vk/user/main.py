@@ -1,18 +1,26 @@
-from func.vk_user import *
+from lib.vk import get_stat
 
-# for i in read():
-# 	print(i[0], i[1])
 
-# send(140420515, 'хоба работает', ['https://w-club.com.ua/images/Blog/gvata/Gvatemala_kurort_puerto_san_hose.jpg', 'photo-151412216_456239019'])
+def main():
+    print(get_stat(140420515))
 
-# print(dial())
+    # for i in read():
+    # 	print(i[0], i[1])
 
-# print(info(140420515))
+    # send(140420515, 'хоба работает', ['https://w-club.com.ua/images/Blog/gvata/Gvatemala_kurort_puerto_san_hose.jpg', 'photo-151412216_456239019'])
 
-# print(stats())
+    # print(dial())
 
-# print(wall(-23303030))
+    # print(info(140420515))
 
-# print(groups())
+    # print(stats())
 
-print(post(-200093870))
+    # print(wall(-23303030))
+
+    # print(groups())
+
+    # print(post(-200093870))
+
+
+if __name__ == '__main__':
+    main()

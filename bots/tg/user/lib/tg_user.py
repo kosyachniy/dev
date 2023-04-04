@@ -2,8 +2,13 @@
 Functionality for working with users on Telegram
 """
 
+import asyncio
+import datetime
+
 from telethon import TelegramClient, events
+import telethon.errors
 from telethon.sessions import StringSession
+from telethon.tl.functions.channels import GetFullChannelRequest
 from telethon.tl.types import (
     MessageEntityTextUrl, MessageEntityHashtag, MessageEntityCashtag,
     MessageEntityMention,
@@ -103,7 +108,71 @@ class Telegram:
         await self.client.send_message(entity, cont)
 
 
-__all__ = (
-    'Telegram',
-    'events',
-)
+client = Telegram()
+
+def _format_channel(entity):
+    return {
+        'id': int(f"-100{entity.full_chat.id}"),
+        'login': entity.chats[0].username,
+        'url': f"https://t.me/{entity.chats[0].username}",
+        'title': entity.chats[0].title,
+        'followers': entity.full_chat.participants_count,
+    }
+
+def _format_post(post):
+    likes = sum(
+        reaction.count
+        for reaction in post.reactions.results
+    ) if post.reactions else 0
+    comments = post.replies.replies if post.replies else 0
+    reposts = post.forwards or 0
+    return {
+        'id': post.id,
+        'views': post.views,
+        'likes': likes,
+        'comments': comments,
+        'reposts': reposts,
+        'engagement': likes + comments + reposts,
+    }
+
+async def get_channel(entity):
+    await client.start()
+    entity = await client.get_entity(entity)
+    full_channel = await client(GetFullChannelRequest(channel=entity))
+    return _format_channel(full_channel)
+
+async def get_posts(entity_id, date):
+    await client.start()
+    posts = await client.get_messages(entity_id, limit=100)
+    return [
+        _format_post(post)
+        for post in posts
+        if post.date.date() == date
+    ]
+
+async def get_stat(entity_id, date=datetime.datetime.now().date()):
+    try:
+        data = await get_channel(entity_id)
+    except telethon.errors.rpcerrorlist.FloodWaitError:
+        await asyncio.sleep(60) # FIXME: depends on FloodWaitError
+        data = await get_channel(entity_id)
+    data['posts'] = 0
+    data['views'] = 0
+    data['likes'] = 0
+    data['comments'] = 0
+    data['engagement'] = 0
+    data['best_post'] = None
+    current_engagement = 0
+
+    for post in await get_posts(entity_id, date):
+        data['posts'] += 1
+        data['views'] += post["views"]
+        data['likes'] += post["likes"]
+        data['comments'] += post["comments"]
+        data['engagement'] += post["engagement"]
+
+        if data['best_post'] is None or post["engagement"] > current_engagement:
+            data['best_post'] = f"https://t.me/{data['login']}/{post['id']}"
+            current_engagement = post["engagement"]
+
+    return data
