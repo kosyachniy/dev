@@ -19,7 +19,7 @@ python-binance==0.7.5
 python-dateutil==2.8.1
 pytz==2020.1
 regex==2020.5.14
-requests==2.23.0
+requests==2.31.0
 service-identity==18.1.0
 six==1.15.0
 Twisted==22.10.0
