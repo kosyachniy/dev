@@ -85,6 +85,13 @@ ssh-keygen
 cat ~/.ssh/id_rsa.pub
 ```
 
+17. `~/.ssh/config`:
+```
+Host github.com
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null
+```
+
 ## Set up project
 17. Clone a project
 ```

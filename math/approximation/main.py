@@ -21,6 +21,17 @@ def process_google_search_data(data, col=1):
 
     return x, y
 
+def process_telegram_data(data, col=1):
+    x = []
+    y = []
+
+    for row in data[::-1]:
+        date = time.strptime(row[0], '%d.%m.%y')
+        x.append(int(time.mktime(date)))
+        y.append(int(row[col]))
+
+    return x, y
+
 def aprox(x, y, level=2):
     # f = interpolate.interp1d(x, y)
     return np.polyfit(x, y, level)
@@ -35,6 +46,7 @@ def predict(f, x, period, volume):
         y = np.poly1d(f)(current)
         frames.append(y)
 
+        print(sum(frames))
         if sum(frames) >= volume:
             break
 
@@ -49,6 +61,7 @@ def predict(f, x, period, volume):
             y = np.poly1d(f)(current)
             frames.append(y)
 
+            print(sum(frames))
             if sum(frames) >= volume:
                 break
 
@@ -69,9 +82,9 @@ def graph(x, y, f):
     plt.plot(x, f)
     plt.show()
 
-def main(col=1, volume=30000, period=30, level=3):
-    data = get_data()
-    x, y = process_google_search_data(data, col)
+def main(name='data.csv', col=1, volume=1000, period=30, level=3):
+    data = get_data(name)
+    x, y = process_telegram_data(data, col)
     f = aprox(x, y, level)
     date, x = predict(f, x, period, volume)
     day = get_date(date)
@@ -81,5 +94,6 @@ def main(col=1, volume=30000, period=30, level=3):
 
 
 if __name__ == '__main__':
-    main(1, 30000)
-    main(2, 10000000)
+    main('data.csv', 1, 30000)
+    # main('data.csv', 2, 10000000)
+    # main('data2.csv', 1, 250, 1)
