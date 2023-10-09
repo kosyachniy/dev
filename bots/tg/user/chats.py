@@ -13,27 +13,73 @@ async def chats(client, limit=None):
         if i == limit:
             break
 
+        # Entity
+        if dialog.entity.__class__.__name__ == "Chat":
+            entity = 'chat'
+        elif dialog.entity.__class__.__name__ == "Channel":
+            entity = 'channel'
+        else:
+            entity = 'user'
+
+        # Login
+        if hasattr(dialog.entity, 'username') and dialog.entity.username:
+            login = dialog.entity.username
+        else:
+            login = None
+
         chats.append({
             'id': dialog.entity.id,
+            'login': login,
             'name': dialog.name,
-            'entity': dialog.entity.__class__.__name__,
+            'entity': entity,
             'last_message': dialog.message.id,
         })
         print(
-            dialog.name, " " * (40 - len(dialog.name)),
-            "\t", dialog.entity.__class__.__name__, " " * (10 - len(dialog.entity.__class__.__name__)),
+            dialog.name,
+            " " * (45 - len(dialog.name)),
+            "\t",
+            login or "",
+            " " * (25 - len(login or "")),
+            "\t",
+            entity,
+            " " * (10 - len(entity)),
             "\t", dialog.entity.id,
-            f"(-{dialog.entity.id})" if dialog.entity.__class__.__name__ in ('Chat',) else f"(-100{dialog.entity.id})" if dialog.entity.__class__.__name__ in ('Channel',) else "",
-            "\t", dialog.entity.migrated_to.channel_id if hasattr(dialog.entity, 'migrated_to') and dialog.entity.migrated_to else "",
-            f"(-100{dialog.entity.migrated_to.channel_id})" if hasattr(dialog.entity, 'migrated_to') and dialog.entity.migrated_to else "",
+            (
+                f"(-{dialog.entity.id})"
+                if entity == 'chat'
+                else (
+                    f"(-100{dialog.entity.id})"
+                    if entity == 'channel'
+                    else ""
+                )
+            ),
+            "\t",
+            (
+                dialog.entity.migrated_to.channel_id
+                if (
+                    hasattr(dialog.entity, 'migrated_to')
+                    and dialog.entity.migrated_to
+                )
+                else ""
+            ),
+            (
+                f"(-100{dialog.entity.migrated_to.channel_id})"
+                if (
+                    hasattr(dialog.entity, 'migrated_to')
+                    and dialog.entity.migrated_to
+                )
+                else ""
+            ),
         )
 
     return chats
 
 
 async def main():
-    async with TelegramClient(f"main{cfg('tg.id')}", cfg('tg.id'), cfg('tg.hash')) as client:
-        print(await chats(client))
+    async with TelegramClient(
+        f"main{cfg('tg.id')}", cfg('tg.id'), cfg('tg.hash'),
+    ) as client:
+        await chats(client)
 
 
 if __name__ == '__main__':
