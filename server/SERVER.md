@@ -16,34 +16,30 @@ sudo apt install tmux make nginx git htop
 ```
 
 ## Install Docker [link →](https://docs.docker.com/engine/install/ubuntu/)
-5. Install packages to allow ` apt ` to use a repository over HTTPS
+5. Add Docker's official GPG key
 ```
-sudo apt install ca-certificates curl gnupg
-```
-
-6. Add Docker’s official GPG key
-```
+sudo apt-get install ca-certificates curl
 sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-sudo chmod a+r /etc/apt/keyrings/docker.gpg
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
 ```
 
-7. Set up the repository
+6. Add the repository to Apt sources
 ```
 echo \
-  "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
 ```
 
-8. Install the latest version of Docker Engine, containerd, and Docker Compose
+7. Install the latest version of Docker Engine, containerd, and Docker Compose
 ```
-sudo apt update
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
 
 ## Set up server
-9. Configure NGINX
+8. Configure NGINX
 
 Change lines in ` /etc/nginx/nginx.conf `:
 ```
@@ -51,45 +47,45 @@ types_hash_max_size 20480;
 client_max_body_size 30m;
 ```
 
-10. Restart NGINX
+9. Restart NGINX
 ```
 sudo systemctl restart nginx
 ```
 
 ## Set up encryption [link →](https://certbot.eff.org/instructions?ws=nginx&os=ubuntufocal)
-11. Install Snap
+10. Install Snap
 ```
 sudo apt install snapd
 ```
 
-12. Ensure that your version of snapd is up to date
+11. Ensure that your version of snapd is up to date
 ```
 sudo snap install core
 sudo snap refresh core
 ```
 
-13. Install Let's Encrypt
+12. Install Let's Encrypt
 ```
 sudo snap install --classic certbot
 ```
 
-14. Prepare the Certbot command
+13. Prepare the Certbot command
 ```
 sudo ln -s /snap/bin/certbot /usr/bin/certbot
 ```
 
 ## Set up GitHub
-15. Create RSA SSH key
+14. Create RSA SSH key
 ```
 ssh-keygen
 ```
 
-16. Copy public key to https://github.com/settings/keys
+15. Copy public key to https://github.com/settings/keys
 ```
 cat ~/.ssh/id_rsa.pub
 ```
 
-17. `~/.ssh/config`:
+16. `~/.ssh/config`:
 ```
 Host github.com
   StrictHostKeyChecking no
