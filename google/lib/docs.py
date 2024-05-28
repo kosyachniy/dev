@@ -19,9 +19,10 @@ gc = pygsheets.authorize(custom_credentials=credentials)
 
 
 class Sheets:
-    def __init__(self, key):
+    def __init__(self, key, sheet=None):
         self.id = key
         self.sheets = self._open(key)
+        self.sheet = self.open_sheet(sheet) if sheet is not None else None
 
     @classmethod
     def create(cls, title, mail=None):
@@ -51,16 +52,22 @@ class Sheets:
         """Get sheets"""
         return self.sheets.worksheets()
 
-    def open_sheet(self, sheet):
+    def open_sheet(self, sheet=None):
         """Open a worksheet"""
+        if sheet is None:
+            return self.sheet
         for ws in self.get_sheets():
             if ws.id == sheet:
                 return ws
         return None
 
-    def replace(self, sheet, data):
+    def replace(self, data, sheet=None):
         """Replace data in a worksheet"""
-        ws = self.open_sheet(sheet)
+        if sheet is not None:
+            ws = self.open_sheet(sheet)
+        else:
+            ws = self.sheet
+
         ws.clear()
 
         if not data:
@@ -79,3 +86,12 @@ class Sheets:
             ws.set_dataframe(pd.DataFrame(data), (1, 1))
         else:
             ws.update_values("A1", [[cell for cell in row] for row in data])
+
+    def freeze(self, rows=1, cols=1, sheet=None):
+        if sheet is not None:
+            ws = self.open_sheet(sheet)
+        else:
+            ws = self.sheet
+
+        ws.frozen_rows = rows
+        ws.frozen_cols = cols

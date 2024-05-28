@@ -12,7 +12,7 @@ SHEET = 0
 # for ws in sh.get_sheets():
 #     print(ws.id, ws.title)
 
-sh = Sheets(SHEETS)
+sh = Sheets(SHEETS, SHEET)
 
 # # Get sheets
 # # sh = open_sheets(SHEETS)
@@ -29,7 +29,7 @@ sh = Sheets(SHEETS)
 # ]
 # # ws = open_sheet(SHEETS, SHEET)
 # # replace(ws, data)
-# sh.replace(SHEET, data)
+# sh.replace(data)
 
 # Print structured data
 data = [
@@ -37,4 +37,7 @@ data = [
     {"Name": "Alice", "Data": 26, "City": "Miami"},
     {"Name": "Bred", "Data": 30, "City": "Tokyo"},
 ]
-sh.replace(SHEET, data)
+sh.replace(data)
+
+# Format
+sh.freeze()
