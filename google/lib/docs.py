@@ -64,12 +64,14 @@ class Sheets:
                 return ws
         return None
 
+    def _get_sheet(self, sheet=None):
+        if sheet is not None:
+            return self.open_sheet(sheet)
+        return self.sheet
+
     def replace(self, data, sheet=None):
         """Replace data in a worksheet"""
-        if sheet is not None:
-            ws = self.open_sheet(sheet)
-        else:
-            ws = self.sheet
+        ws = self._get_sheet(sheet)
 
         ws.clear()
 
@@ -91,19 +93,12 @@ class Sheets:
             ws.update_values("A1", [[cell for cell in row] for row in data])
 
     def freeze(self, rows=1, cols=1, sheet=None):
-        if sheet is not None:
-            ws = self.open_sheet(sheet)
-        else:
-            ws = self.sheet
-
+        ws = self._get_sheet(sheet)
         ws.frozen_rows = rows
         ws.frozen_cols = cols
 
-    def align(self, align="left", cols=None, rows=None, sheet=None):
-        if sheet is not None:
-            ws = self.open_sheet(sheet)
-        else:
-            ws = self.sheet
+    def _get_range(self, cols=None, rows=None, sheet=None):
+        ws = self._get_sheet(sheet)
 
         rngs = []
 
@@ -126,41 +121,24 @@ class Sheets:
             rng = ws.get_values(start, end, returnas="range")
             rngs.append(rng)
 
+        return rngs
+
+    def align(self, align="left", cols=None, rows=None, sheet=None):
+        rngs = self._get_range(cols, rows, sheet)
+
         for rng in rngs:
             model = pygsheets.Cell("A1")
             model.set_horizontal_alignment(getattr(HorizontalAlignment, align.upper()))
             model.set_vertical_alignment(VerticalAlignment.TOP)
-            # model.color = (1.0, 0, 1.0, 1.0)
-            # model.format = (pygsheets.FormatType.PERCENT, "")
 
             rng.apply_format(model)
 
-        # if cols:
-        #     for col in cols or []:
-        #         ws.update_col(
-        #             col,
-        #             [
-        #                 {
-        #                     "horizontalAlignment": align.upper(),
-        #                     "verticalAlignment": "TOP",
-        #                 }
-        #             ],
-        #         )
-        #     return
+    def background(self, color=(1.0, 0, 1.0, 1.0), cols=None, rows=None, sheet=None):
+        rngs = self._get_range(cols, rows, sheet)
 
-        # col_count = ws.cols
-        # last_col = format_addr((1, col_count))  # .split("$")[1]
-        # print(last_col, col_count)
-        # for row in rows or []:
-        #     ws.update_cells(
-        #         f"A{row}:{last_col}{row}",
-        #         [
-        #             [
-        #                 {
-        #                     "horizontalAlignment": align.upper(),
-        #                     "verticalAlignment": "TOP",
-        #                 }
-        #             ]
-        #             * ws.cols
-        #         ],
-        #     )
+        for rng in rngs:
+            model = pygsheets.Cell("A1")
+            model.color = color
+            # model.format = (pygsheets.FormatType.PERCENT, "")
+
+            rng.apply_format(model)
