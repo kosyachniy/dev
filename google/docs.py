@@ -1,21 +1,18 @@
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+import json
+
+from google.oauth2.service_account import Credentials
+from libdev.cfg import cfg
+import pygsheets
+import pandas as pd
 
 
-credentials = ServiceAccountCredentials.from_json_keyfile_name(
-    'credentials.json',
-    [
-        'https://www.googleapis.com/auth/spreadsheets',
-        'https://www.googleapis.com/auth/drive',
-    ],
-)
-client = gspread.authorize(credentials)
+credentials = Credentials.from_service_account_info(cfg('google.credentials'), scopes=[
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/drive',
+])
+gc = pygsheets.authorize(custom_credentials=credentials)
 
+sh = gc.create('Test Sheet')
 
-def create(name, mail):
-    sheet = client.create(name)
-    sheet.share(mail, perm_type='user', role='writer')
-    return sheet.url
-
-
-print(create('Title', 'alexypoloz@gmail.com'))
+print(sh)
+print(dir(sh))
