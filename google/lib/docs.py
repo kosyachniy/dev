@@ -97,31 +97,46 @@ class Sheets:
         ws.frozen_rows = rows
         ws.frozen_cols = cols
 
+    @staticmethod
+    def _get_col_range(col):
+        if ":" in col:
+            start, end = col.split(":")
+        else:
+            start, end = col, col
+        return start, end
+
+    @classmethod
+    def _get_cols_range(cls, cols=None):
+        rngs = []
+        for col in cols or []:
+            rngs.append(cls._get_col_range(col))
+        return rngs
+
+    @staticmethod
+    def _get_row_range(row):
+        row = str(row)
+        if ":" in row:
+            start, end = row.split(":")
+        else:
+            start, end = row, row
+        return start, end
+
+    @classmethod
+    def _get_rows_range(cls, rows=None):
+        rngs = []
+        for row in rows or []:
+            rngs.append(cls._get_row_range(row))
+        return rngs
+
     def _get_range(self, cols=None, rows=None, sheet=None):
         ws = self._get_sheet(sheet)
+        rngs = self._get_cols_range(cols) + self._get_rows_range(rows)
 
-        rngs = []
+        ranges = []
+        for rng in rngs:
+            ranges.append(ws.get_values(rng[0], rng[1], returnas="range"))
 
-        for col in cols or []:
-            if ":" in col:
-                start, end = col.split(":")
-            else:
-                start, end = col, col
-
-            rng = ws.get_values(start, end, returnas="range")
-            rngs.append(rng)
-
-        for row in rows or []:
-            row = str(row)
-            if ":" in row:
-                start, end = row.split(":")
-            else:
-                start, end = row, row
-
-            rng = ws.get_values(start, end, returnas="range")
-            rngs.append(rng)
-
-        return rngs
+        return ranges
 
     def align(self, align="left", cols=None, rows=None, sheet=None):
         rngs = self._get_range(cols, rows, sheet)
@@ -133,7 +148,7 @@ class Sheets:
 
             rng.apply_format(model)
 
-    def background(self, color=(1.0, 0, 1.0, 1.0), cols=None, rows=None, sheet=None):
+    def background(self, color=(1.0, 1.0, 1.0), cols=None, rows=None, sheet=None):
         rngs = self._get_range(cols, rows, sheet)
 
         for rng in rngs:
@@ -142,3 +157,22 @@ class Sheets:
             # model.format = (pygsheets.FormatType.PERCENT, "")
 
             rng.apply_format(model)
+
+    @staticmethod
+    def _get_col_idx(col):
+        """
+        Convert a column letter (e.g., 'A', 'Z', 'AA') to a column index (1-based).
+        """
+        index = 0
+        for char in col.upper():
+            index = index * 26 + (ord(char) - ord("A") + 1)
+        return index
+
+    def width(self, size=None, cols=None, sheet=None):
+        ws = self._get_sheet(sheet)
+        rngs = self._get_cols_range(cols)
+
+        for rng in rngs:
+            ws.adjust_column_width(
+                self._get_col_idx(rng[0]), self._get_col_idx(rng[1]), size
+            )
