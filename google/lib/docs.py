@@ -69,14 +69,13 @@ class Sheets:
             return self.open_sheet(sheet)
         return self.sheet
 
-    def replace(self, data, sheet=None):
-        """Replace data in a worksheet"""
-        ws = self._get_sheet(sheet)
-
-        ws.clear()
+    def insert(self, data, cell="A1", sheet=None):
+        """Insert data in a worksheet"""
 
         if not data:
             return
+
+        ws = self._get_sheet(sheet)
 
         detected_type = "array"
         for row in data:
@@ -88,9 +87,15 @@ class Sheets:
                 break
 
         if detected_type == "object":
-            ws.set_dataframe(pd.DataFrame(data), (1, 1))
+            ws.set_dataframe(pd.DataFrame(data), cell)
         else:
-            ws.update_values("A1", [[cell for cell in row] for row in data])
+            ws.update_values(cell, [[col for col in row] for row in data])
+
+    def replace(self, data, sheet=None):
+        """Replace data in a worksheet"""
+        ws = self._get_sheet(sheet)
+        ws.clear()
+        self.insert(data, sheet=sheet)
 
     def freeze(self, rows=1, cols=1, sheet=None):
         ws = self._get_sheet(sheet)

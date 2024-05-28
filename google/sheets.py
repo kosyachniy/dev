@@ -30,18 +30,25 @@ sh = Sheets(SHEETS, SHEET)
 # # ws = open_sheet(SHEETS, SHEET)
 # # replace(ws, data)
 # sh.replace(data)
+sh.replace(
+    [
+        ("id", "value"),
+    ]
+)
 
-# # Print structured data
-# data = [
-#     {"Name": "Alex", "Data": 24, "City": "Los Angeles"},
-#     {"Name": "Alice", "Data": 26, "City": "Miami"},
-#     {"Name": "Bred", "Data": 30, "City": "Tokyo"},
-# ]
-# sh.replace(data)
+# Print structured data
+data = [
+    {"Name": "Alex", "Data": 24, "City": "Los Angeles"},
+    {"Name": "Alice", "Data": 26, "City": "Miami"},
+    {"Name": "Bred", "Data": 30, "City": "Tokyo"},
+]
+sh.insert(data, cell="A3")
+sh.insert(data, cell=(8, 1))
 
-# # Format
-# sh.freeze()
-# sh.align("left", cols=["A:C"])
-# sh.align("center", cols=["B"], rows=[1, 3])
-# sh.background((0.5, 0.5, 0.5, 0.5), cols=["1:1"])
+# Format
+sh.freeze(2, 1)
+sh.align("left", cols=["A:C"])
+sh.align("center", cols=["B"], rows=[1, 3])
+sh.background((0.5, 0.5, 0.5, 0.9), cols=["1:1"])
 sh.width(cols=["A:C"])
+sh.width(300, ["B"])
