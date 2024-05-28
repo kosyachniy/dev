@@ -1,6 +1,6 @@
 libdev
-pandas
 
 # Google Docs
 google-auth==2.29.0
 pygsheets==2.0.6
+pandas

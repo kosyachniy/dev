@@ -79,36 +79,3 @@ class Sheets:
             ws.set_dataframe(pd.DataFrame(data), (1, 1))
         else:
             ws.update_values("A1", [[cell for cell in row] for row in data])
-
-
-# # sh = create_sheets("Test", "alexypoloz@gmail.com")
-# # print(f"https://docs.google.com/spreadsheets/d/{sh}")
-# sh = Sheets.create("Test", "alexypoloz@gmail.com")
-# for ws in sh.get_sheets():
-#     print(ws.id, ws.title)
-
-sh = Sheets("1lyCWXhWkIEeCINTSgosOMeLEA9EvxEEfIa5pOZIWW1Q")
-
-# # sh = open_sheets("1lyCWXhWkIEeCINTSgosOMeLEA9EvxEEfIa5pOZIWW1Q")
-# # for ws in sh:
-# #     print(ws.id, ws.title)
-# for ws in sh.get_sheets():
-#     print(ws.id, ws.title)
-
-# data = [
-#     ("Name", "Value"),
-#     ("Alex", 123),
-#     ("Alice", 456),
-# ]
-# # ws = open_sheet("1lyCWXhWkIEeCINTSgosOMeLEA9EvxEEfIa5pOZIWW1Q", 0)
-# # replace(ws, data)
-# sh.replace(0, data)
-
-# columns = ["Name", "Data", "City"]
-# df = pd.DataFrame(columns=columns)
-data = [
-    {"Name": "Alex", "Data": 24, "City": "Los Angeles"},
-    {"Name": "Alice", "Data": 26, "City": "Miami"},
-    {"Name": "Bred", "Data": 30, "City": "Tokyo"},
-]
-sh.replace(0, data)
