@@ -5,6 +5,9 @@ Google Documents functionality
 from google.oauth2.service_account import Credentials
 from libdev.cfg import cfg
 import pygsheets
+from pygsheets.custom_types import VerticalAlignment, HorizontalAlignment
+
+# from pygsheets.utils import format_addr
 import pandas as pd
 
 
@@ -95,3 +98,69 @@ class Sheets:
 
         ws.frozen_rows = rows
         ws.frozen_cols = cols
+
+    def align(self, align="left", cols=None, rows=None, sheet=None):
+        if sheet is not None:
+            ws = self.open_sheet(sheet)
+        else:
+            ws = self.sheet
+
+        rngs = []
+
+        for col in cols or []:
+            if ":" in col:
+                start, end = col.split(":")
+            else:
+                start, end = col, col
+
+            rng = ws.get_values(start, end, returnas="range")
+            rngs.append(rng)
+
+        for row in rows or []:
+            row = str(row)
+            if ":" in row:
+                start, end = row.split(":")
+            else:
+                start, end = row, row
+
+            rng = ws.get_values(start, end, returnas="range")
+            rngs.append(rng)
+
+        for rng in rngs:
+            model = pygsheets.Cell("A1")
+            model.set_horizontal_alignment(getattr(HorizontalAlignment, align.upper()))
+            model.set_vertical_alignment(VerticalAlignment.TOP)
+            # model.color = (1.0, 0, 1.0, 1.0)
+            # model.format = (pygsheets.FormatType.PERCENT, "")
+
+            rng.apply_format(model)
+
+        # if cols:
+        #     for col in cols or []:
+        #         ws.update_col(
+        #             col,
+        #             [
+        #                 {
+        #                     "horizontalAlignment": align.upper(),
+        #                     "verticalAlignment": "TOP",
+        #                 }
+        #             ],
+        #         )
+        #     return
+
+        # col_count = ws.cols
+        # last_col = format_addr((1, col_count))  # .split("$")[1]
+        # print(last_col, col_count)
+        # for row in rows or []:
+        #     ws.update_cells(
+        #         f"A{row}:{last_col}{row}",
+        #         [
+        #             [
+        #                 {
+        #                     "horizontalAlignment": align.upper(),
+        #                     "verticalAlignment": "TOP",
+        #                 }
+        #             ]
+        #             * ws.cols
+        #         ],
+        #     )

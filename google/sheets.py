@@ -41,3 +41,5 @@ sh.replace(data)
 
 # Format
 sh.freeze()
+sh.align("left", cols=["A:C"])
+sh.align("center", cols=["B"], rows=[1, 3])
