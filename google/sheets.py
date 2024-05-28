@@ -21,14 +21,14 @@ sh = Sheets(SHEETS, SHEET)
 # for ws in sh.get_sheets():
 #     print(ws.id, ws.title)
 
-# # Print data
+# Print data
 # data = [
 #     ("Name", "Value"),
 #     ("Alex", 123),
 #     ("Alice", 456),
 # ]
-# # ws = open_sheet(SHEETS, SHEET)
-# # replace(ws, data)
+# ws = open_sheet(SHEETS, SHEET)
+# replace(ws, data)
 # sh.replace(data)
 sh.replace(
     [
@@ -52,3 +52,4 @@ sh.align("center", cols=["B"], rows=[1, 3])
 sh.background((0.5, 0.5, 0.5, 0.9), cols=["1:1"])
 sh.width(cols=["A:C"])
 sh.width(300, ["B"])
+sh.merge("B1:C1")

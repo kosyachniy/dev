@@ -65,6 +65,7 @@ class Sheets:
         return None
 
     def _get_sheet(self, sheet=None):
+        """Get the specified sheet, or the default sheet if no sheet is specified"""
         if sheet is not None:
             return self.open_sheet(sheet)
         return self.sheet
@@ -98,12 +99,14 @@ class Sheets:
         self.insert(data, sheet=sheet)
 
     def freeze(self, rows=1, cols=1, sheet=None):
+        """Freeze rows and columns in a worksheet"""
         ws = self._get_sheet(sheet)
         ws.frozen_rows = rows
         ws.frozen_cols = cols
 
     @staticmethod
     def _get_col_range(col):
+        """Get the start and end of a column range"""
         if ":" in col:
             start, end = col.split(":")
         else:
@@ -112,6 +115,7 @@ class Sheets:
 
     @classmethod
     def _get_cols_range(cls, cols=None):
+        """Get the ranges for multiple columns"""
         rngs = []
         for col in cols or []:
             rngs.append(cls._get_col_range(col))
@@ -119,6 +123,7 @@ class Sheets:
 
     @staticmethod
     def _get_row_range(row):
+        """Get the start and end of a row range"""
         row = str(row)
         if ":" in row:
             start, end = row.split(":")
@@ -128,12 +133,15 @@ class Sheets:
 
     @classmethod
     def _get_rows_range(cls, rows=None):
+        """Get the ranges for multiple rows"""
         rngs = []
         for row in rows or []:
             rngs.append(cls._get_row_range(row))
         return rngs
 
     def _get_range(self, cols=None, rows=None, sheet=None):
+        """Get the range of cells for specified columns and rows"""
+
         ws = self._get_sheet(sheet)
         rngs = self._get_cols_range(cols) + self._get_rows_range(rows)
 
@@ -144,6 +152,8 @@ class Sheets:
         return ranges
 
     def align(self, align="left", cols=None, rows=None, sheet=None):
+        """Align the content of specified columns and rows in a worksheet"""
+
         rngs = self._get_range(cols, rows, sheet)
 
         for rng in rngs:
@@ -154,6 +164,8 @@ class Sheets:
             rng.apply_format(model)
 
     def background(self, color=(1.0, 1.0, 1.0), cols=None, rows=None, sheet=None):
+        """Set the background color of specified columns and rows in a worksheet"""
+
         rngs = self._get_range(cols, rows, sheet)
 
         for rng in rngs:
@@ -174,6 +186,8 @@ class Sheets:
         return index
 
     def width(self, size=None, cols=None, sheet=None):
+        """Set the width of specified columns in a worksheet"""
+
         ws = self._get_sheet(sheet)
         rngs = self._get_cols_range(cols)
 
@@ -181,3 +195,15 @@ class Sheets:
             ws.adjust_column_width(
                 self._get_col_idx(rng[0]), self._get_col_idx(rng[1]), size
             )
+
+    def merge(self, cells, sheet=None):
+        """Merge specified cells in a worksheet"""
+
+        if isinstance(cells, str):
+            cells = [cells]
+
+        ws = self._get_sheet(sheet)
+        rngs = self._get_cols_range(cells)
+
+        for rng in rngs:
+            ws.merge_cells(rng[0], rng[1])
