@@ -39,7 +39,7 @@ class Sheets:
     @classmethod
     def create_sheets(cls, title, mail):
         """Create a spreadsheet"""
-        return cls.create(title, mail).id
+        return cls.create(title, mail).sheets.url
 
     @classmethod
     def _open(cls, key):
@@ -175,6 +175,40 @@ class Sheets:
 
             rng.apply_format(model)
 
+    def get_background(self, cell, sheet=None):
+        ws = self._get_sheet(sheet)
+        return ws.cell(cell).color
+
+    def format(self, format, value=True, cols=None, rows=None, sheet=None):
+        rngs = self._get_range(cols, rows, sheet)
+
+        for rng in rngs:
+            model = pygsheets.Cell("A1")
+            model.set_text_format(format, value)
+            rng.apply_format(model)
+
+    def color(self, color=(0, 0, 0), cols=None, rows=None, sheet=None):
+        if len(color) == 3:
+            color = (*color, 1.0)
+        return self.format("foregroundColor", color, cols, rows, sheet)
+
+    def get_color(self, cell, sheet=None):
+        ws = self._get_sheet(sheet)
+        styles = ws.cell(cell).text_format
+
+        style = styles.get("foregroundColorStyle", {}).get("rgbColor", {})
+        if style:
+            color = (
+                style.get("red", 0),
+                style.get("green", 0),
+                style.get("blue", 0),
+                style.get("alpha", 0),
+            )
+        else:
+            color = styles["foregroundColor"]
+
+        return color
+
     @staticmethod
     def _get_col_idx(col):
         """
@@ -207,3 +241,5 @@ class Sheets:
 
         for rng in rngs:
             ws.merge_cells(rng[0], rng[1])
+
+    # TODO: курсив, жирный, рамка, цвет текста, тип данных, вставка ссылки, формула, создать вкладку, переименовать вкладку
