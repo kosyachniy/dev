@@ -2,6 +2,8 @@
 Google Documents functionality
 """
 
+import re
+
 from google.oauth2.service_account import Credentials
 from libdev.cfg import cfg
 import pygsheets
@@ -27,13 +29,42 @@ class Sheets:
         self.sheets = self._open(key)
         self.sheet = self.open_sheet(sheet) if sheet is not None else None
 
+    def add_sheet(self, title):
+        """Add a new worksheet to the spreadsheet"""
+        return self.sheets.add_worksheet(title)
+
+    def rename_sheet(self, title, sheet=None):
+        """Rename an existing worksheet"""
+        ws = self._get_sheet(sheet)
+        ws.title = title
+
+    def get_sheets(self):
+        """Get sheets"""
+        return self.sheets.worksheets()
+
+    def open_sheet(self, sheet=None):
+        """Open a worksheet"""
+        if sheet is None:
+            return self.sheet
+        for ws in self.get_sheets():
+            if ws.id == sheet:
+                return ws
+        return None
+
     @classmethod
-    def create(cls, title, mail=None):
+    def create(cls, title, subtitle=None, mail=None):
         """Create a spreadsheet"""
+
         sh = gc.create(title)
         if mail:
             sh.share(mail, role="writer")
+
         sheets = cls(sh.id)
+
+        if subtitle:
+            ws = sheets.open_sheet(0)
+            ws.title = subtitle
+
         return sheets
 
     @classmethod
@@ -50,19 +81,6 @@ class Sheets:
     def open_sheets(cls, key):
         """Open a spreadsheet"""
         return cls._open(key).worksheets()
-
-    def get_sheets(self):
-        """Get sheets"""
-        return self.sheets.worksheets()
-
-    def open_sheet(self, sheet=None):
-        """Open a worksheet"""
-        if sheet is None:
-            return self.sheet
-        for ws in self.get_sheets():
-            if ws.id == sheet:
-                return ws
-        return None
 
     def _get_sheet(self, sheet=None):
         """Get the specified sheet, or the default sheet if no sheet is specified"""
@@ -165,7 +183,12 @@ class Sheets:
 
     def _get_base(self, cols=None, rows=None, sheet=None):
         ws = self._get_sheet(sheet)
-        return ws.cell(self._get_cell(cols, rows))
+        cell = self._get_cell(cols, rows) + ""
+        if not re.search(r"\d", cell):
+            cell = f"{cell}1"
+        if not re.search(r"\D", cell):
+            cell = f"A{cell}"
+        return ws.cell(cell)
 
     def align(self, align="left", cols=None, rows=None, sheet=None):
         """Align the content of specified columns and rows in a worksheet"""
@@ -258,4 +281,4 @@ class Sheets:
         for rng in rngs:
             ws.merge_cells(rng[0], rng[1])
 
-    # TODO: рамка, тип данных, вставка ссылки, формула, создать вкладку, переименовать вкладку
+    # TODO: рамка, тип данных, вставка ссылки, формула

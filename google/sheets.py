@@ -8,9 +8,12 @@ SHEET = 0
 # # Create a spreadsheet
 # # sh = create_sheets("Test", "alexypoloz@gmail.com")
 # # print(f"https://docs.google.com/spreadsheets/d/{sh}")
-# sh = Sheets.create("Test", "alexypoloz@gmail.com")
+# sh = Sheets.create("Test", "Main", "alexypoloz@gmail.com")
 # for ws in sh.get_sheets():
 #     print(ws.id, ws.title)
+
+# # Add a sheet
+# sh.add_sheet("Details")
 
 sh = Sheets(SHEETS, SHEET)
 
@@ -53,3 +56,5 @@ sh.background((0.5, 0.5, 0.5, 0.9), cols=["1:1"])
 sh.width(cols=["A:C"])
 sh.width(300, ["B"])
 sh.merge("B1:C1")
+sh.format("bold", cols=["C3"])
+sh.color((1, 0, 0), cols=[f"A3:A6"])
