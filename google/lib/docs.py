@@ -151,13 +151,29 @@ class Sheets:
 
         return ranges
 
+    @classmethod
+    def _get_cell(cls, cols=None, rows=None):
+        for col in cols or []:
+            start, _ = cls._get_col_range(col)
+            if start:
+                return start
+        for row in rows or []:
+            start, _ = cls._get_row_range(row)
+            if start:
+                return start
+        return "A1"
+
+    def _get_base(self, cols=None, rows=None, sheet=None):
+        ws = self._get_sheet(sheet)
+        return ws.cell(self._get_cell(cols, rows))
+
     def align(self, align="left", cols=None, rows=None, sheet=None):
         """Align the content of specified columns and rows in a worksheet"""
 
         rngs = self._get_range(cols, rows, sheet)
 
         for rng in rngs:
-            model = pygsheets.Cell("A1")
+            model = self._get_base(cols, rows, sheet)
             model.set_horizontal_alignment(getattr(HorizontalAlignment, align.upper()))
             model.set_vertical_alignment(VerticalAlignment.TOP)
 
@@ -169,7 +185,7 @@ class Sheets:
         rngs = self._get_range(cols, rows, sheet)
 
         for rng in rngs:
-            model = pygsheets.Cell("A1")
+            model = self._get_base(cols, rows, sheet)
             model.color = color
             # model.format = (pygsheets.FormatType.PERCENT, "")
 
@@ -183,7 +199,7 @@ class Sheets:
         rngs = self._get_range(cols, rows, sheet)
 
         for rng in rngs:
-            model = pygsheets.Cell("A1")
+            model = self._get_base(cols, rows, sheet)
             model.set_text_format(format, value)
             rng.apply_format(model)
 
@@ -242,4 +258,4 @@ class Sheets:
         for rng in rngs:
             ws.merge_cells(rng[0], rng[1])
 
-    # TODO: курсив, жирный, рамка, цвет текста, тип данных, вставка ссылки, формула, создать вкладку, переименовать вкладку
+    # TODO: рамка, тип данных, вставка ссылки, формула, создать вкладку, переименовать вкладку
