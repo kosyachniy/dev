@@ -16,7 +16,7 @@ dp = Dispatcher()
 
 @dp.message(Command("start"))
 async def start_handler(msg):
-    log.info(f"command «start» from {msg.chat.id}")
+    log.info(f"command «{msg.text[1:]}» from {msg.chat.id}")
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
             [
