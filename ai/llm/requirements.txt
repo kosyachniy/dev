@@ -1,0 +1,5 @@
+langchain==0.3.24
+langchain-community==0.3.23
+langchain-openai==0.3.14
+openai==1.76.2
+pysqlite3==0.5.4
