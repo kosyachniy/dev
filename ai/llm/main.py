@@ -28,37 +28,51 @@
 
 OPENAI_KEY = ""
 
-import os
 import sqlite3
 import json
 from typing import List, Dict, Any
 
-from langchain_openai import OpenAI
+from langchain_openai import OpenAI, ChatOpenAI
 from langchain.chains import LLMChain
 from langchain_core.prompts import PromptTemplate
 
 
 class TaskManager:
-    def __init__(self, db_path: str = "tasks.db", llm=None):
+    def __init__(
+        self,
+        db_path: str = "tasks.db",
+        llm=None,
+        model="o4-mini",  # "gpt-4o-mini",
+    ):
         # Initialize DB for dev tasks
         self.conn = sqlite3.connect(db_path)
         self._init_db()
+
         # Ensure API key
         api_key = OPENAI_KEY
         if not api_key:
             raise ValueError("Missing OPENAI_API_KEY environment variable")
+
         # LLM setup
-        self.llm = llm or OpenAI(openai_api_key=api_key, temperature=0)
-        # Prompt: include CEO/business text, existing dev tasks, and new task
+        self.llm = llm or ChatOpenAI(  # OpenAI
+            openai_api_key=api_key,
+            model_name=model,
+            # temperature=0,
+        )
+
+        # Prompt: include business priorities, existing dev tasks, and new task
+        # Escape braces in example JSON so they aren't mistaken for variables
         self.prompt = PromptTemplate(
             input_variables=["biz_text", "tasks_json", "new_task"],
             template=(
                 "CEO/business priorities:\n"
                 "{biz_text}\n"
-                "Existing development tasks:\n"
+                "\n"
+                "Existing development tasks (do NOT add others):\n"
                 "{tasks_json}\n"
+                "\n"
                 "A new dev task arrives: '{new_task}'.\n"
-                "Reorder all dev tasks by business priority (1 = highest).\n"
+                "Reorder ONLY these tasks by business importance (1 = highest).\n"
                 "Return strictly valid JSON array of objects sorted by priority. Example:\n"
                 '[{{"description": "task1", "priority": 1}}, {{"description": "task2", "priority": 2}}]'
             ),
@@ -87,19 +101,22 @@ class TaskManager:
         Add a new dev task and reprioritize all tasks based on biz_text.
         Returns {'tasks': [...], 'new_task_priority': int}.
         """
-        # Fetch existing descriptions
+        # Fetch existing task descriptions
         tasks = self.get_tasks()
         descriptions = [t["description"] for t in tasks]
         tasks_json = json.dumps(descriptions, ensure_ascii=False)
-        # Call LLM with new syntax
+
+        # Call LLM
         chain = LLMChain(llm=self.llm, prompt=self.prompt)
         resp = chain.run(biz_text=biz_text, tasks_json=tasks_json, new_task=description)
-        # Parse JSON
+
+        # Parse JSON response
         try:
             ordered = json.loads(resp)
         except json.JSONDecodeError:
             raise ValueError(f"Invalid JSON from LLM: {resp}")
-        # Persist new ordering
+
+        # Persist new ordering in DB
         with self.conn:
             self.conn.execute("DELETE FROM tasks;")
             new_priority = None
@@ -112,6 +129,7 @@ class TaskManager:
                 )
                 if desc == description:
                     new_priority = pr
+
         return {"tasks": ordered, "new_task_priority": new_priority}
 
 
