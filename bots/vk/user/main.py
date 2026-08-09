@@ -1,8 +1,11 @@
-from lib.vk import get_stat
+from lib.vk import VkResponseError, get_stat
 
 
 def main():
-    print(get_stat(140420515))
+    try:
+        print(get_stat(140420515))
+    except VkResponseError as error:
+        raise SystemExit(str(error))
 
     # for i in read():
     # 	print(i[0], i[1])

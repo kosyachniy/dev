@@ -8,6 +8,50 @@ import vk_api
 
 
 vk = vk_api.VkApi(token=cfg('vk.token'))
+VK_API_URL = "https://api.vk.com/method"
+VK_API_VERSION = "5.131"
+
+
+class VkResponseError(RuntimeError):
+    def __init__(self, method, message, *, code=None, payload=None):
+        self.method = method
+        self.code = code
+        self.payload = payload
+        prefix = f"VK API {method} failed"
+        if code is not None:
+            prefix += f" ({code})"
+        super().__init__(f"{prefix}: {message}")
+
+
+def _vk_method(method, **params):
+    response = requests.get(
+        f"{VK_API_URL}/{method}",
+        params={
+            'v': VK_API_VERSION,
+            'access_token': cfg('vk.token'),
+            **params,
+        },
+        timeout=30,
+    )
+    payload = response.json()
+
+    if 'error' in payload:
+        error = payload['error']
+        raise VkResponseError(
+            method,
+            error.get('error_msg', 'Unknown VK API error'),
+            code=error.get('error_code'),
+            payload=payload,
+        )
+
+    if 'response' not in payload:
+        raise VkResponseError(
+            method,
+            'Response does not contain the "response" field',
+            payload=payload,
+        )
+
+    return payload['response']
 
 
 def _format_user(user):
@@ -35,29 +79,41 @@ def _format_post(post):
     }
 
 def get_user(user):
-    url = f"https://api.vk.com/method/users.get?v=5.131&access_token={cfg('vk.token')}&user_id={user}&fields=screen_name,followers_count"
-    response = requests.get(url).json()
+    response = _vk_method(
+        'users.get',
+        user_ids=user,
+        fields='screen_name,followers_count',
+    )
 
-    return _format_user(response["response"][0])
+    if not response:
+        raise VkResponseError('users.get', 'User not found', payload={'response': response})
+
+    return _format_user(response[0])
 
 def get_posts(entity_id, date):
-    url = f"https://api.vk.com/method/wall.get?v=5.131&access_token={cfg('vk.token')}&owner_id={entity_id}&count=100"
-    response = requests.get(url).json()
-
-    if 'response' not in response:
+    try:
+        response = _vk_method(
+            'wall.get',
+            owner_id=entity_id,
+            count=100,
+        )
+    except VkResponseError as error:
         print("VK get", {
             'group_id': entity_id,
-            'response': response,
+            'response': error.payload,
         })
         return []
 
     return [
         _format_post(post)
-        for post in response["response"]["items"]
+        for post in response["items"]
         if datetime.datetime.fromtimestamp(post["date"]).date() == date
     ]
 
-def get_stat(entity_id, date=datetime.datetime.now().date()):
+def get_stat(entity_id, date=None):
+    if date is None:
+        date = datetime.datetime.now().date()
+
     data = get_user(entity_id)
     data['posts'] = 0
     data['views'] = 0
