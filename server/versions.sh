@@ -61,34 +61,22 @@ line
 echo " MAIN SOFTWARE"
 line
 
-check "Git"         git           --version
-check "GitHub CLI"  gh            --version
-check "curl"        curl          --version
-check "wget"        wget          --version
-check "jq"          jq            --version
-check "ripgrep"     rg            --version
-check "SQLite"      sqlite3       --version
-check "GCC"         gcc           --version
-check "Make"        make          --version
-check "rsync"       rsync         --version
-check "SSH"         ssh           -V
-check "nginx"       nginx         -v
-check "tmux"        tmux          -V
-check "mkcert"      mkcert        --version
-check "Docker"      docker        --version
-check "Docker Compose" docker     compose version
-
-echo
-
-line
-echo " UV-MANAGED PYTHONS"
-line
-
-if command -v uv >/dev/null 2>&1; then
-    uv python list 2>/dev/null || true
-else
-    echo "uv NOT INSTALLED"
-fi
+check "Git"             git        --version
+check "GitHub CLI"      gh         --version
+check "curl"            curl       --version
+check "wget"            wget       --version
+check "jq"              jq         --version
+check "ripgrep"         rg         --version
+check "SQLite"          sqlite3    --version
+check "GCC"             gcc        --version
+check "Make"            make       --version
+check "rsync"           rsync      --version
+check "SSH"             ssh        -V
+check "nginx"           nginx      -v
+check "tmux"            tmux       -V
+check "mkcert"          mkcert     --version
+check "Docker"          docker     --version
+check "Docker Compose"  docker     compose version
 
 echo
 
@@ -97,7 +85,13 @@ echo " UV TOOLS"
 line
 
 if command -v uv >/dev/null 2>&1; then
-    uv tool list 2>/dev/null || true
+    tools="$(uv tool list 2>/dev/null || true)"
+
+    if [ -n "$tools" ]; then
+        echo "$tools"
+    else
+        echo "No uv tools installed"
+    fi
 else
     echo "uv NOT INSTALLED"
 fi
@@ -109,8 +103,6 @@ echo " MANUALLY INSTALLED APT PACKAGES"
 line
 
 while read -r pkg; do
-    # Python runtime already shown above.
-    # Hide Python implementation/library packages.
     case "$pkg" in
         python|python-*|python3|python3-*|libpython*)
             continue

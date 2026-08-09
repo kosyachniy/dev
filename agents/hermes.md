@@ -1,4 +1,4 @@
-# Set Up Server
+# Set Up Server (`root` user)
 1. Update
 ```
 sudo apt update
@@ -29,7 +29,7 @@ timedatectl set-timezone Etc/UTC
 sudo reboot
 ```
 
-# Obsidian
+# Obsidian sync (`root` user)
 1. Syncthing
 ```
 mkdir -p /etc/apt/keyrings
@@ -50,7 +50,7 @@ apt update
 apt install -y syncthing
 ```
 
-# Hermes
+# Access (`root` user)
 1. Set up user
 ```
 adduser --disabled-password --gecos "" hermes
@@ -99,12 +99,43 @@ loginctl show-user hermes \
   -p State
 ```
 
-4. Switch user
+4. MacOS:
+```
+cat ~/.ssh/id_ed25519.pub
+```
+
+5. Copy
+
+6. Add to VPS
+```
+nano ~/.ssh/authorized_keys
+```
+
+7. Copy to user
+```
+install -d \
+  -o hermes \
+  -g hermes \
+  -m 0700 \
+  /home/hermes/.ssh
+
+cp \
+  /root/.ssh/authorized_keys \
+  /home/hermes/.ssh/authorized_keys
+
+chown hermes:hermes \
+  /home/hermes/.ssh/authorized_keys
+
+chmod 600 \
+  /home/hermes/.ssh/authorized_keys
+```
+
+8. Switch user
 ```
 sudo -iu hermes
 ```
 
-5. Set up PATH
+9. Set up PATH
 ```
 cat >> ~/.profile <<'EOF'
 
@@ -119,10 +150,36 @@ EOF
 source ~/.profile
 ```
 
-6. Set up syncthing
+# Obsidian sync (`hermes` user)
+1. Set up syncthing
 ```
 systemctl --user enable --now syncthing.service
 ```
+
+2. Get Device ID
+```
+syncthing device-id
+```
+
+3. Save
+
+4. MacOS:
+```
+ssh -N \
+  -L 18384:127.0.0.1:8384 \
+  root@165.227.131.96
+```
+
+5. Open `http://127.0.0.1:18384`
+
+6.
+Дальше в GUI Syncthing на VPS будем добавлять:
+
+Folder Label: Alex Knowledge
+Folder ID: alex-knowledge
+Folder Path: /srv/hermes/data/vault
+Folder Type: Send & Receive
+
 
 # Set Up Obsidian
 
@@ -130,8 +187,7 @@ systemctl --user enable --now syncthing.service
 
 
 
-
-
-
+# Rules
+1.
 use uv, pnpm for scripts
 
