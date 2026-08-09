@@ -8,7 +8,7 @@ from pymongo import MongoClient
 
 
 params = {
-    "host": cfg("mongo.host"),
+    "host": cfg("mongo.host", "db"),
     "port": 27017,
 }
 
@@ -21,7 +21,7 @@ if cfg("mongo.user") and cfg("mongo.pass"):
 db_all = MongoClient(**params)
 
 
-current_folder = f"backup/{get_time(template='%Y%m%d%H%M%S', tz=3)}"
+current_folder = f"/backup/{get_time(template='%Y-%m-%d', tz=3)}"
 os.mkdir(current_folder)
 
 for db_name in db_all.list_database_names():
@@ -37,7 +37,7 @@ for db_name in db_all.list_database_names():
     for collection_name in collections:
         print(collection_name, end=" ")
 
-        with open(f"{current_folder}/{db_name}/{collection_name}.txt", "w") as file:
+        with open(f"{current_folder}/{db_name}/{collection_name}.json", "w") as file:
             for i in db[collection_name].find():
                 del i["_id"]
                 for key in i:

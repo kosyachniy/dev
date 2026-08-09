@@ -117,11 +117,11 @@ git remote set-url origin <новая ссылка>
 
 18. Не отслеживать изменения файла
 ```
-git update-index --assume-unchanged /Users/kosyachniy/Re/projects/web/data/example.txt
+git update-index --assume-unchanged data/logs/*
 ```
 Отмена:
 ```
-git update-index --no-assume-unchanged /Users/kosyachniy/Re/projects/web/data/example.txt
+git update-index --no-assume-unchanged data/logs/*
 ```
 
 19. Слить ветки

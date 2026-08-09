@@ -158,6 +158,38 @@ scp /<path_to_file> root@<ip>:/<new_path>
 ssh-keygen -y -f key.pem > key.pub
 ```
 
+33. Перезагрузить
+```
+sudo reboot now
+```
+
+34. Открыть порты
+```
+sudo ufw allow 27017/tcp
+sudo ufw reload
+```
+
+35. Узнать архитектуру
+```
+uname -a
+```
+
+36.
+```
+sudo usermod -aG docker $USER
+```
+
+37.
+```
+chmod +x /root/base/scripts/ensure_sentry_relay_credentials.sh
+```
+
+38.
+```
+ngrok http 3000
+```
+
+
 ## Команды Tmux
 [Шпаргалка](https://habr.com/ru/post/126996/)
 Команда | Описание

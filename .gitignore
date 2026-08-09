@@ -40,6 +40,8 @@ sets*
 
 # Environments
 env/
+venv/
+env*/
 node_modules/
 
 # Logs

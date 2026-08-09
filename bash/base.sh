@@ -39,10 +39,19 @@ for i in "${array[@]}"; do
   echo $i
 done
 
+count=1
+until [ $count -gt 5 ]; do
+  echo "Число: $count"
+  ((count++))
+done
+
 ls > output.txt
+ls nonexistent_file 2> error.txt
+ls > output.txt 2>&1
 
 
 # chmod +x script.sh
 # ./script.sh
 # ./script.sh &
 
+# touch text.txt

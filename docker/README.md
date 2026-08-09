@@ -95,6 +95,11 @@ docker pull kosyachniy/test1
 docker exec -it mongodb bash
 ```
 
+## Access
+```
+sudo usermod -aG docker $USER
+```
+
 ## Docker Compose
 ```
 apt install docker-compose
