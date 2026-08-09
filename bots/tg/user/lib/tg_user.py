@@ -32,6 +32,8 @@ from libdev.cfg import cfg
 
 
 def _clear_tags(tag):
+    if not tag:
+        return tag
     if tag[0] in {"#", "$"}:
         tag = tag[1:]
     return tag.strip()

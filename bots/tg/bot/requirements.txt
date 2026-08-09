@@ -1,2 +1,3 @@
-tgio==0.8
+aiogram==2.25.1
+tgio==0.9
 libdev==0.38

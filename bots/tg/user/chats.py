@@ -6,15 +6,19 @@ from telethon.sessions import StringSession
 from libdev.cfg import cfg
 
 
-LIMIT = None
+LIMIT = 30  # None
 FILTER = None  # ""
+# USER_SESSION = ""
 
 
 async def chats(client, limit=None):
     dialogs = await client.get_dialogs()
     chats = []
+    text = ""
 
     for i, dialog in enumerate(dialogs):
+        # print("!", i)
+
         if i == limit:
             break
         if FILTER is not None and (
@@ -31,8 +35,12 @@ async def chats(client, limit=None):
             entity = "user"
 
         # Login
+        extra = None
         if hasattr(dialog.entity, "username") and dialog.entity.username:
             login = dialog.entity.username
+            if login.lower()[-3:] == "bot":
+                entity = "bot"
+                extra = await client.get_entity(f"@{login}")
         else:
             login = None
 
@@ -45,46 +53,61 @@ async def chats(client, limit=None):
                 "last_message": dialog.message.id,
             }
         )
-        print(
-            dialog.name,
-            " " * (45 - len(dialog.name)),
-            "\t",
-            login or "",
-            " " * (25 - len(login or "")),
-            "\t",
-            entity,
-            " " * (10 - len(entity)),
-            "\t",
-            dialog.entity.id,
-            (
-                f"(-{dialog.entity.id})"
-                if entity == "chat"
-                else (f"(-100{dialog.entity.id})" if entity == "channel" else "")
-            ),
-            "\t",
-            (
-                dialog.entity.migrated_to.channel_id
-                if (hasattr(dialog.entity, "migrated_to") and dialog.entity.migrated_to)
-                else ""
-            ),
-            (
-                f"(-100{dialog.entity.migrated_to.channel_id})"
-                if (hasattr(dialog.entity, "migrated_to") and dialog.entity.migrated_to)
-                else ""
-            ),
+        text_row = "".join(
+            [
+                str(dialog.name),
+                " " * (45 - len(dialog.name)),
+                "\t",
+                login or "",
+                " " * (25 - len(login or "")),
+                "\t",
+                str(entity),
+                " " * (10 - len(entity)),
+                "\t",
+                str(dialog.entity.id),
+                (
+                    f"(-{dialog.entity.id})"
+                    if entity == "chat"
+                    else (f"(-100{dialog.entity.id})" if entity == "channel" else "")
+                ),
+                "\t",
+                (
+                    str(dialog.entity.migrated_to.channel_id)
+                    if (
+                        hasattr(dialog.entity, "migrated_to")
+                        and dialog.entity.migrated_to
+                    )
+                    else ""
+                ),
+                (
+                    f"(-100{dialog.entity.migrated_to.channel_id})"
+                    if (
+                        hasattr(dialog.entity, "migrated_to")
+                        and dialog.entity.migrated_to
+                    )
+                    else ""
+                ),
+                str(extra),
+                "\n",
+            ]
         )
+        print(text_row, end="")
+        text += text_row
 
-    return chats
+    return chats, text
 
 
 async def main():
     async with TelegramClient(
         # f"main{cfg('tg.id')}",
-        StringSession(cfg("tg.session")),
+        StringSession(cfg("TG_SESSION")),  # USER_SESSION
         cfg("tg.id"),
         cfg("tg.hash"),
     ) as client:
-        await chats(client, LIMIT)
+        _, text = await chats(client, LIMIT)
+        print(text)
+        # with open("chats.txt", "w") as file:
+        #     print(text, file=file)
 
 
 if __name__ == "__main__":
