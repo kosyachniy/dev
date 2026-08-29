@@ -100,7 +100,7 @@ async def chats(client, limit=None):
 async def main():
     async with TelegramClient(
         # f"main{cfg('tg.id')}",
-        StringSession(cfg("TG_SESSION")),  # USER_SESSION
+        StringSession(cfg("tg.session")),  # USER_SESSION
         cfg("tg.id"),
         cfg("tg.hash"),
     ) as client:
