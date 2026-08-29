@@ -20,15 +20,25 @@ Examples:
 
 The result is written to:
 
-    download/<marked-chat-id>/<marked-chat-id>.json
+    download/<marked-chat-id>/<marked-chat-id>.jsonl
+    download/<marked-chat-id>/<marked-chat-id>.metadata.json
     download/<marked-chat-id>/files/{media,forwarded,avatars,stickers,icons,
                                       reactions,preview,effects,stories,
                                       wallpapers,other,legacy}/*
     download/<marked-chat-id>/media-errors.jsonl  # only when media issues occur
 
-The JSON keeps the legacy ``Telegram.mes2json`` keys and adds normalized
-current fields plus the complete raw TL object exposed by the installed
-Telethon/negotiated Telegram layer.
+The JSONL contains one message object per physical line, globally ordered from
+oldest to newest.  The companion metadata JSON contains schema, chat, peer,
+avatar, export-summary, and file-integrity information.  Message objects keep
+the legacy ``Telegram.mes2json`` keys and add normalized current fields plus
+the complete raw TL object exposed by the installed Telethon/Telegram layer.
+
+Re-running the same command against a valid JSONL/metadata pair performs an
+incremental update: it checks each chat/topic history boundary, processes only
+higher-ID messages, and preserves/reuses existing media.  Use ``--overwrite``
+to rebuild all message state, including edits, deletions, and changed reactions.
+A legacy aggregate ``<chat-id>.json`` needs one ``--overwrite`` conversion;
+matching downloaded files are reused while the categorized JSONL export is built.
 
 Only history and media available to the logged-in user can be exported.
 Telegram cannot reconstruct deleted messages, expired/self-destructed media,
@@ -50,6 +60,7 @@ import os
 import random
 import re
 import shutil
+import sqlite3
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -75,7 +86,7 @@ except ImportError:  # Future Telethon versions may move this constant.
 MIN_TELETHON = (1, 44, 0)
 MIN_TELEGRAM_LAYER = 227
 SCHEMA_NAME = "telegram-chat-export"
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 5
 HISTORY_PAGE_SIZE = 100  # Telegram list methods normally accept at most 100.
 CUSTOM_EMOJI_BATCH_SIZE = 100  # Official limit for getCustomEmojiDocuments.
 UNLIMITED_TAKEOUT_FILE_SIZE = (1 << 63) - 1
@@ -1847,72 +1858,1011 @@ class AttachmentCollector:
                     )
 
 
-class JsonExportWriter:
-    def __init__(
-        self, final_path: Path, header: Mapping[str, Any], overwrite: bool
-    ) -> None:
-        self.final_path = final_path
-        self.partial_path = final_path.with_suffix(final_path.suffix + ".part")
-        if final_path.exists() and not overwrite:
-            raise FileExistsError(
-                f"{final_path} already exists; use --overwrite to replace it after a complete export"
-            )
-        self.partial_path.unlink(missing_ok=True)
-        self.file = self.partial_path.open("w", encoding="utf-8")
-        self.first = True
-        self.file.write("{\n")
-        for key, value in header.items():
-            self.file.write(json.dumps(str(key), ensure_ascii=False))
-            self.file.write(": ")
-            self.file.write(
-                json.dumps(json_safe(value), ensure_ascii=False, separators=(",", ":"))
-            )
-            self.file.write(",\n")
-        self.file.write('"messages": [\n')
+CheckpointKey = tuple[int, int]
 
-    def write_message(self, message: Mapping[str, Any]) -> None:
-        if not self.first:
-            self.file.write(",\n")
-        self.file.write(
-            json.dumps(json_safe(message), ensure_ascii=False, separators=(",", ":"))
+
+@dataclass
+class ExistingExportState:
+    metadata: dict[str, Any]
+    message_count: int
+    byte_size: int
+    sha256: str
+    checkpoints: dict[CheckpointKey, int]
+    first_created_epoch: Optional[int]
+    last_created_epoch: Optional[int]
+    has_undated_messages: bool
+    peers: dict[str, Any]
+    peer_avatars: list[dict[str, Any]]
+    media_assets: dict[str, dict[str, Any]]
+
+
+def checkpoint_key_from_message(message: Mapping[str, Any]) -> CheckpointKey:
+    history_source = int(message.get("history_source") or 0)
+    topic = message.get("monoforum_topic")
+    topic_peer_id = (
+        int(topic.get("peer_id") or 0) if isinstance(topic, Mapping) else 0
+    )
+    return history_source, topic_peer_id
+
+
+def checkpoint_key_from_source(source: HistorySource) -> CheckpointKey:
+    return int(source.marked_id), int(source.topic_peer_id or 0)
+
+
+def attachment_asset_key(record: Mapping[str, Any]) -> Optional[str]:
+    explicit = record.get("asset_key")
+    if explicit:
+        return str(explicit)
+    media_id = record.get("id")
+    media_type = str(record.get("type") or "")
+    if media_id is not None:
+        quality = record.get("selected_quality")
+        if media_type in {"image", "video", "animated_photo"} and isinstance(
+            quality, Mapping
+        ):
+            quality_type = quality.get("type")
+            suffix = ":video" if media_type == "animated_photo" else ""
+            return f"photo:{media_id}:{quality_type}{suffix}"
+        if media_type == "premium_sticker_effect":
+            return f"document:{media_id}:effect:f"
+        if media_type not in {"avatar", "story"}:
+            return f"document:{media_id}"
+    digest = record.get("sha256")
+    if digest and media_type == "paid_media_preview":
+        return f"embedded:{digest}"
+    url = record.get("url")
+    if url and media_type == "web_file":
+        url_digest = hashlib.sha256(str(url).encode("utf-8")).hexdigest()[:20]
+        return f"web:{url_digest}"
+    if media_type == "avatar" and media_id is not None:
+        owner_id = record.get("owner_id")
+        if owner_id is not None:
+            return f"avatar:{owner_id}:{media_id}:big"
+    return None
+
+
+def normalize_existing_file_record(
+    record: Mapping[str, Any],
+    output_dir: Path,
+) -> Optional[dict[str, Any]]:
+    """Return a cache record only for a regular file inside ``files/``."""
+
+    relative_value = record.get("file")
+    if not isinstance(relative_value, str) or not relative_value:
+        return None
+    relative_path = Path(relative_value)
+    if relative_path.is_absolute():
+        return None
+    files_dir = output_dir / "files"
+    candidate = output_dir / relative_path
+    try:
+        output_resolved = output_dir.resolve()
+        files_resolved = files_dir.resolve()
+        if files_dir.is_symlink() or not files_dir.is_dir():
+            return None
+        files_resolved.relative_to(output_resolved)
+        candidate_resolved = candidate.resolve(strict=True)
+        candidate_resolved.relative_to(files_resolved)
+        normalized_relative = candidate_resolved.relative_to(output_resolved)
+    except (FileNotFoundError, OSError, ValueError):
+        return None
+    if candidate.is_symlink() or not candidate.is_file():
+        return None
+    normalized = dict(record)
+    normalized["file"] = normalized_relative.as_posix()
+    normalized["downloaded_size"] = candidate.stat().st_size
+    return normalized
+
+
+def observe_existing_message(
+    message: Mapping[str, Any],
+    checkpoints: dict[CheckpointKey, int],
+    media_assets: dict[str, dict[str, Any]],
+    output_dir: Path,
+) -> tuple[Optional[int], bool]:
+    message_id_value = message.get("message")
+    history_source_value = message.get("history_source")
+    if type(message_id_value) is not int or message_id_value <= 0:
+        raise ValueError("message ID must be a positive integer")
+    if type(history_source_value) is not int or history_source_value == 0:
+        raise ValueError("history_source must be a non-zero integer")
+    topic = message.get("monoforum_topic")
+    if topic is not None:
+        if not isinstance(topic, Mapping):
+            raise ValueError("monoforum_topic must be an object or null")
+        topic_peer_id = topic.get("peer_id")
+        if type(topic_peer_id) is not int or topic_peer_id == 0:
+            raise ValueError("monoforum topic peer_id must be a non-zero integer")
+    message_id = message_id_value
+    key = checkpoint_key_from_message(message)
+    if message_id > checkpoints.get(key, 0):
+        checkpoints[key] = message_id
+    attachments = message.get("attachments") or []
+    if not isinstance(attachments, list):
+        raise ValueError("attachments must be a list")
+    for attachment in attachments:
+        if not isinstance(attachment, Mapping) or not attachment.get("file"):
+            continue
+        asset_key = attachment_asset_key(attachment)
+        normalized = normalize_existing_file_record(attachment, output_dir)
+        if asset_key and normalized is not None:
+            media_assets.setdefault(
+                asset_key,
+                {
+                    "file": normalized["file"],
+                    "downloaded_size": normalized["downloaded_size"],
+                    "first_message": message_id,
+                },
+            )
+    created = message.get("created")
+    if created is None:
+        return None, True
+    if type(created) is not int:
+        raise ValueError("created must be an integer timestamp or null")
+    return created, False
+
+
+def parse_checkpoint_metadata(value: Any) -> dict[CheckpointKey, int]:
+    if not isinstance(value, list):
+        raise ValueError("history_checkpoints must be a list")
+    checkpoints: dict[CheckpointKey, int] = {}
+    for item in value:
+        if not isinstance(item, Mapping):
+            raise ValueError("history checkpoint entries must be objects")
+        history_source = item.get("history_source")
+        topic_peer_id_value = item.get("topic_peer_id")
+        max_message_id = item.get("max_message_id")
+        if type(history_source) is not int or history_source == 0:
+            raise ValueError("history checkpoint source must be a non-zero integer")
+        if topic_peer_id_value is not None and (
+            type(topic_peer_id_value) is not int or topic_peer_id_value == 0
+        ):
+            raise ValueError("history checkpoint topic must be null or non-zero integer")
+        if type(max_message_id) is not int or max_message_id <= 0:
+            raise ValueError("history checkpoint message IDs must be positive integers")
+        topic_peer_id = topic_peer_id_value or 0
+        key = (history_source, topic_peer_id)
+        if key in checkpoints:
+            raise ValueError("history checkpoint keys must be unique")
+        checkpoints[key] = max_message_id
+    return checkpoints
+
+
+def load_existing_export(
+    messages_path: Path,
+    metadata_path: Path,
+    legacy_json_path: Path,
+    overwrite: bool,
+    expected_chat_id: int,
+) -> Optional[ExistingExportState]:
+    if overwrite:
+        return None
+    messages_exists = messages_path.exists()
+    metadata_exists = metadata_path.exists()
+    if not messages_exists and not metadata_exists:
+        if legacy_json_path.exists():
+            raise FileExistsError(
+                f"Legacy export {legacy_json_path} exists; use --overwrite once to "
+                "convert it to incremental JSONL (valid downloaded files are reused)"
+            )
+        return None
+    if messages_exists != metadata_exists:
+        raise FileExistsError(
+            "The existing JSONL export pair is incomplete; use --overwrite to "
+            "rebuild it"
         )
-        self.first = False
+    if (
+        messages_path.is_symlink()
+        or metadata_path.is_symlink()
+        or not messages_path.is_file()
+        or not metadata_path.is_file()
+    ):
+        raise RuntimeError(
+            "Existing export files must be regular, non-symbolic-link files"
+        )
+
+    try:
+        metadata_value = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(
+            f"Cannot read existing export metadata {metadata_path}: {error_text(exc)}"
+        ) from exc
+    if not isinstance(metadata_value, dict):
+        raise RuntimeError(f"Existing metadata {metadata_path} is not a JSON object")
+    if metadata_value.get("schema") != SCHEMA_NAME:
+        raise RuntimeError(
+            f"Unsupported existing export schema {metadata_value.get('schema')!r}"
+        )
+    schema_version_value = metadata_value.get("schema_version")
+    if type(schema_version_value) is not int:
+        raise RuntimeError("Existing export schema version is not an integer")
+    schema_version = schema_version_value
+    if schema_version < 4 or schema_version > SCHEMA_VERSION:
+        raise RuntimeError(
+            f"Unsupported existing export schema version {schema_version}"
+        )
+    if metadata_value.get("messages_file") != messages_path.name:
+        raise RuntimeError("Existing metadata points to a different messages file")
+    if metadata_value.get("messages_format") != "jsonl":
+        raise RuntimeError("Existing messages file is not declared as JSONL")
+    if metadata_value.get("messages_order") != "oldest_to_newest_by_created_at":
+        raise RuntimeError("Existing JSONL does not use the required chronological order")
+    chat_value = metadata_value.get("chat")
+    if (
+        not isinstance(chat_value, Mapping)
+        or type(chat_value.get("id")) is not int
+        or chat_value.get("id") != expected_chat_id
+    ):
+        raise RuntimeError("Existing metadata belongs to a different Telegram chat")
+
+    expected_count_value = metadata_value.get("messages_count")
+    expected_bytes_value = metadata_value.get("messages_bytes")
+    expected_sha256 = metadata_value.get("messages_sha256")
+    if type(expected_count_value) is not int or expected_count_value < 0:
+        raise RuntimeError("Existing JSONL message count is invalid")
+    if type(expected_bytes_value) is not int or expected_bytes_value < 0:
+        raise RuntimeError("Existing JSONL byte count is invalid")
+    if not isinstance(expected_sha256, str) or not re.fullmatch(
+        r"[0-9a-f]{64}", expected_sha256
+    ):
+        raise RuntimeError("Existing JSONL SHA-256 is invalid")
+    expected_count = expected_count_value
+    expected_bytes = expected_bytes_value
+    actual_bytes = messages_path.stat().st_size
+    if actual_bytes != expected_bytes:
+        raise RuntimeError(
+            f"Existing JSONL size is {actual_bytes}, expected {expected_bytes}; "
+            "use --overwrite to rebuild it"
+        )
+
+    raw_checkpoints = metadata_value.get("history_checkpoints")
+    try:
+        stored_checkpoints = (
+            parse_checkpoint_metadata(raw_checkpoints)
+            if raw_checkpoints is not None
+            else None
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise RuntimeError(
+            f"Invalid existing history checkpoints: {error_text(exc)}"
+        ) from exc
+
+    for field_name in ("messages_first_created", "messages_last_created"):
+        field_value = metadata_value.get(field_name)
+        if field_name in metadata_value and field_value is not None and type(
+            field_value
+        ) is not int:
+            raise RuntimeError(f"Existing metadata field {field_name} is invalid")
+    if "messages_have_undated" in metadata_value and type(
+        metadata_value["messages_have_undated"]
+    ) is not bool:
+        raise RuntimeError(
+            "Existing metadata field messages_have_undated is invalid"
+        )
+
+    output_dir = messages_path.parent
+    # The JSONL attachment records are checksummed; the duplicated metadata
+    # index is not. Rebuild the cache from authoritative message rows so a
+    # stale index cannot associate an asset key with the wrong same-size file.
+    media_assets: dict[str, dict[str, Any]] = {}
+
+    # Always derive history state from the checksummed JSONL itself. This is
+    # essentially free beside the integrity stream we must read anyway and
+    # prevents stale/tampered metadata checkpoints from silently skipping data.
+    checkpoints: dict[CheckpointKey, int] = {}
+    first_created_epoch: Optional[int] = None
+    last_created_epoch: Optional[int] = None
+    has_undated = False
+    previous_order_key: Optional[tuple[int, int]] = None
+    seen_message_identities: set[tuple[int, int, int]] = set()
+
+    digest = hashlib.sha256()
+    actual_count = 0
+    with messages_path.open("rb") as messages_file:
+        for line_number, line in enumerate(messages_file, start=1):
+            digest.update(line)
+            actual_count += 1
+            if not line.endswith(b"\n"):
+                raise RuntimeError(
+                    f"Existing JSONL line {line_number} has no terminating newline"
+                )
+            try:
+                message = json.loads(line)
+            except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise RuntimeError(
+                    f"Invalid existing JSONL message on line {line_number}: "
+                    f"{error_text(exc)}"
+                ) from exc
+            if not isinstance(message, Mapping):
+                raise RuntimeError(
+                    f"Existing JSONL line {line_number} is not a message object"
+                )
+            try:
+                created, undated = observe_existing_message(
+                    message,
+                    checkpoints,
+                    media_assets,
+                    output_dir,
+                )
+            except (TypeError, ValueError) as exc:
+                raise RuntimeError(
+                    f"Invalid existing JSONL message on line {line_number}: "
+                    f"{error_text(exc)}"
+                ) from exc
+            identity = (
+                *checkpoint_key_from_message(message),
+                int(message["message"]),
+            )
+            if identity in seen_message_identities:
+                raise RuntimeError(
+                    f"Duplicate existing JSONL message identity on line "
+                    f"{line_number}: {identity}"
+                )
+            seen_message_identities.add(identity)
+            order_key = (1, 0) if created is None else (0, created)
+            if previous_order_key is not None and order_key < previous_order_key:
+                raise RuntimeError(
+                    f"Existing JSONL is not chronological at line {line_number}; "
+                    "use --overwrite to rebuild it"
+                )
+            previous_order_key = order_key
+            has_undated = has_undated or undated
+            if created is not None:
+                first_created_epoch = (
+                    created
+                    if first_created_epoch is None
+                    else min(first_created_epoch, created)
+                )
+                last_created_epoch = (
+                    created
+                    if last_created_epoch is None
+                    else max(last_created_epoch, created)
+                )
+
+    actual_sha256 = digest.hexdigest()
+    if actual_count != expected_count or actual_sha256 != expected_sha256:
+        raise RuntimeError(
+            "Existing JSONL count/checksum does not match metadata; use "
+            "--overwrite to rebuild it"
+        )
+
+    if stored_checkpoints is not None and stored_checkpoints != checkpoints:
+        raise RuntimeError(
+            "Existing metadata history checkpoints do not match the JSONL; "
+            "use --overwrite to rebuild it"
+        )
+    for field_name, derived_value in (
+        ("messages_first_created", first_created_epoch),
+        ("messages_last_created", last_created_epoch),
+        ("messages_have_undated", has_undated),
+    ):
+        if (
+            field_name in metadata_value
+            and metadata_value[field_name] != derived_value
+        ):
+            raise RuntimeError(
+                f"Existing metadata field {field_name} does not match the JSONL; "
+                "use --overwrite to rebuild it"
+            )
+
+    peers_value = metadata_value.get("peers")
+    peers = dict(peers_value) if isinstance(peers_value, Mapping) else {}
+    avatar_value = metadata_value.get("peer_avatars")
+    peer_avatars: list[dict[str, Any]] = []
+    for item in avatar_value or []:
+        if not isinstance(item, Mapping):
+            continue
+        if item.get("file"):
+            normalized_avatar = normalize_existing_file_record(item, output_dir)
+            if normalized_avatar is None:
+                continue
+            avatar = normalized_avatar
+        else:
+            avatar = dict(item)
+        peer_avatars.append(avatar)
+        asset_key = attachment_asset_key(avatar)
+        if not avatar.get("file") or not asset_key:
+            continue
+        media_assets.setdefault(
+            asset_key,
+            {
+                "file": avatar["file"],
+                "downloaded_size": avatar["downloaded_size"],
+                "first_message": 0,
+            },
+        )
+    return ExistingExportState(
+        metadata=metadata_value,
+        message_count=actual_count,
+        byte_size=actual_bytes,
+        sha256=actual_sha256,
+        checkpoints=checkpoints,
+        first_created_epoch=first_created_epoch,
+        last_created_epoch=last_created_epoch,
+        has_undated_messages=has_undated,
+        peers=peers,
+        peer_avatars=peer_avatars,
+        media_assets=media_assets,
+    )
+
+
+def recover_pending_export_publication(
+    messages_path: Path,
+    metadata_path: Path,
+) -> bool:
+    """Restore the previous pair before inspecting incremental state."""
+
+    messages_backup_path = messages_path.with_name(
+        f".{messages_path.name}.publish-backup"
+    )
+    metadata_backup_path = metadata_path.with_name(
+        f".{metadata_path.name}.publish-backup"
+    )
+    marker_path = messages_path.with_name(
+        f".{messages_path.stem}.publish-in-progress.json"
+    )
+    marker_partial_path = marker_path.with_suffix(marker_path.suffix + ".part")
+    if not marker_path.exists():
+        return False
+    try:
+        state = json.loads(marker_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(
+            f"Cannot read export publication journal {marker_path}: "
+            f"{error_text(exc)}"
+        ) from exc
+    required_keys = (
+        "messages_had_previous",
+        "metadata_had_previous",
+    )
+    if not isinstance(state, Mapping) or any(
+        key not in state or type(state[key]) is not bool for key in required_keys
+    ):
+        raise RuntimeError(f"Invalid export publication journal {marker_path}")
+    pairs = (
+        (
+            messages_path,
+            messages_backup_path,
+            state["messages_had_previous"],
+        ),
+        (
+            metadata_path,
+            metadata_backup_path,
+            state["metadata_had_previous"],
+        ),
+    )
+    for final_path, backup_path, had_previous in pairs:
+        if had_previous:
+            if backup_path.exists():
+                os.replace(backup_path, final_path)
+            elif not final_path.exists():
+                raise RuntimeError(
+                    f"Cannot restore missing prior export file {final_path}"
+                )
+        else:
+            final_path.unlink(missing_ok=True)
+            backup_path.unlink(missing_ok=True)
+    marker_path.unlink(missing_ok=True)
+    marker_partial_path.unlink(missing_ok=True)
+    try:
+        directory_fd = os.open(messages_path.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    except OSError:
+        pass
+    print(
+        f"Recovered the previous complete export after an interrupted "
+        f"publication in {messages_path.parent}",
+        file=sys.stderr,
+        flush=True,
+    )
+    return True
+
+
+class JsonlExportWriter:
+    """Disk-backed, globally chronological JSONL and metadata writer."""
+
+    COMMIT_EVERY = 500
+
+    def __init__(
+        self,
+        messages_path: Path,
+        metadata_path: Path,
+        header: Mapping[str, Any],
+        overwrite: bool,
+        legacy_paths: Iterable[Path] = (),
+        existing: Optional[ExistingExportState] = None,
+    ) -> None:
+        if overwrite and existing is not None:
+            raise ValueError("Full overwrite cannot also use incremental state")
+        self.messages_path = messages_path
+        self.metadata_path = metadata_path
+        self.messages_partial_path = messages_path.with_suffix(
+            messages_path.suffix + ".part"
+        )
+        self.metadata_partial_path = metadata_path.with_suffix(
+            metadata_path.suffix + ".part"
+        )
+        self.work_path = messages_path.with_suffix(
+            messages_path.suffix + ".work.sqlite3"
+        )
+        self.work_sidecar_paths = tuple(
+            Path(f"{self.work_path}{suffix}")
+            for suffix in ("-journal", "-wal", "-shm")
+        )
+        self.messages_backup_path = messages_path.with_name(
+            f".{messages_path.name}.publish-backup"
+        )
+        self.metadata_backup_path = metadata_path.with_name(
+            f".{metadata_path.name}.publish-backup"
+        )
+        self.publication_marker_path = messages_path.with_name(
+            f".{messages_path.stem}.publish-in-progress.json"
+        )
+        self.publication_marker_partial_path = self.publication_marker_path.with_suffix(
+            self.publication_marker_path.suffix + ".part"
+        )
+        self.header = dict(header)
+        self.legacy_paths = tuple(legacy_paths)
+        self.existing = existing
+        self.sequence = 0
+        self.checkpoints = dict(existing.checkpoints) if existing else {}
+        self.new_first_created_epoch: Optional[int] = None
+        self.new_last_created_epoch: Optional[int] = None
+        self.new_has_undated_messages = False
+        self.closed = False
+        self.published = False
+
+        self.recover_incomplete_publication()
+        for stale_backup in (
+            self.messages_backup_path,
+            self.metadata_backup_path,
+        ):
+            stale_backup.unlink(missing_ok=True)
+
+        completed_paths = [messages_path, metadata_path, *self.legacy_paths]
+        existing_paths = [path for path in completed_paths if path.exists()]
+        if existing_paths and not overwrite and self.existing is None:
+            names = ", ".join(path.name for path in existing_paths)
+            raise FileExistsError(
+                f"Export output already exists ({names}); use --overwrite to "
+                "replace it after a complete export"
+            )
+
+        for path in (
+            self.messages_partial_path,
+            self.metadata_partial_path,
+            self.work_path,
+            *self.work_sidecar_paths,
+            self.publication_marker_partial_path,
+        ):
+            path.unlink(missing_ok=True)
+
+        self.database = sqlite3.connect(self.work_path)
+        self.database.execute("PRAGMA journal_mode=DELETE")
+        self.database.execute("PRAGMA synchronous=NORMAL")
+        self.database.execute("PRAGMA temp_store=FILE")
+        self.database.execute(
+            """
+            CREATE TABLE messages (
+                created_epoch INTEGER,
+                source_index INTEGER NOT NULL,
+                history_source INTEGER NOT NULL,
+                topic_peer_id INTEGER NOT NULL,
+                message_id INTEGER NOT NULL,
+                sequence INTEGER PRIMARY KEY,
+                payload TEXT NOT NULL
+            )
+            """
+        )
+        self.database.commit()
+
+    def fsync_output_directory(self) -> None:
+        try:
+            directory_fd = os.open(self.messages_path.parent, os.O_RDONLY)
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
+        except OSError:
+            # Some platforms/filesystems do not support fsync on directories.
+            pass
+
+    def publication_state(self) -> dict[str, bool]:
+        return {
+            "messages_had_previous": self.messages_path.exists(),
+            "metadata_had_previous": self.metadata_path.exists(),
+        }
+
+    def write_publication_marker(self, state: Mapping[str, bool]) -> None:
+        with self.publication_marker_partial_path.open(
+            "w", encoding="utf-8"
+        ) as output:
+            json.dump(dict(state), output, separators=(",", ":"))
+            output.write("\n")
+            output.flush()
+            os.fsync(output.fileno())
+        os.replace(
+            self.publication_marker_partial_path,
+            self.publication_marker_path,
+        )
+        self.fsync_output_directory()
+
+    def rollback_publication(self, state: Mapping[str, Any]) -> None:
+        pairs = (
+            (
+                self.messages_path,
+                self.messages_backup_path,
+                bool(state.get("messages_had_previous")),
+            ),
+            (
+                self.metadata_path,
+                self.metadata_backup_path,
+                bool(state.get("metadata_had_previous")),
+            ),
+        )
+        for final_path, backup_path, had_previous in pairs:
+            if had_previous:
+                if backup_path.exists():
+                    os.replace(backup_path, final_path)
+                elif not final_path.exists():
+                    raise RuntimeError(
+                        f"Cannot restore missing prior export file {final_path}"
+                    )
+                # No backup plus an existing final means publication stopped
+                # before this prior file was moved; leave it intact.
+            else:
+                final_path.unlink(missing_ok=True)
+                backup_path.unlink(missing_ok=True)
+        self.publication_marker_path.unlink(missing_ok=True)
+        self.publication_marker_partial_path.unlink(missing_ok=True)
+        self.fsync_output_directory()
+
+    def recover_incomplete_publication(self) -> None:
+        recover_pending_export_publication(
+            self.messages_path,
+            self.metadata_path,
+        )
+
+    def publish_pair(self) -> None:
+        state = self.publication_state()
+        self.write_publication_marker(state)
+        try:
+            if state["messages_had_previous"]:
+                os.replace(self.messages_path, self.messages_backup_path)
+            if state["metadata_had_previous"]:
+                os.replace(self.metadata_path, self.metadata_backup_path)
+            os.replace(self.messages_partial_path, self.messages_path)
+            os.replace(self.metadata_partial_path, self.metadata_path)
+            self.fsync_output_directory()
+            self.publication_marker_path.unlink()
+            self.fsync_output_directory()
+            self.published = True
+        except BaseException as publish_exc:
+            try:
+                self.rollback_publication(state)
+            except BaseException as rollback_exc:
+                raise RuntimeError(
+                    f"Export publication failed ({error_text(publish_exc)}) and "
+                    f"rollback also failed ({error_text(rollback_exc)}); inspect "
+                    f"{self.publication_marker_path} before retrying"
+                ) from publish_exc
+            raise
+
+        for backup_path in (
+            self.messages_backup_path,
+            self.metadata_backup_path,
+        ):
+            try:
+                backup_path.unlink(missing_ok=True)
+            except OSError as exc:
+                print(
+                    f"Could not remove publication backup {backup_path}: "
+                    f"{error_text(exc)}",
+                    file=sys.stderr,
+                )
+
+    def write_message(
+        self,
+        message: Mapping[str, Any],
+        source_index: int,
+    ) -> None:
+        payload = json.dumps(
+            json_safe(message),
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        created = message.get("created")
+        created_epoch = int(created) if created is not None else None
+        message_id = int(message.get("message") or 0)
+        history_source = int(message.get("history_source") or 0)
+        topic = message.get("monoforum_topic")
+        topic_peer_id = (
+            int(topic.get("peer_id") or 0) if isinstance(topic, Mapping) else 0
+        )
+        checkpoint_key = (history_source, topic_peer_id)
+        if message_id > self.checkpoints.get(checkpoint_key, 0):
+            self.checkpoints[checkpoint_key] = message_id
+        if created_epoch is None:
+            self.new_has_undated_messages = True
+        else:
+            self.new_first_created_epoch = (
+                created_epoch
+                if self.new_first_created_epoch is None
+                else min(self.new_first_created_epoch, created_epoch)
+            )
+            self.new_last_created_epoch = (
+                created_epoch
+                if self.new_last_created_epoch is None
+                else max(self.new_last_created_epoch, created_epoch)
+            )
+        self.sequence += 1
+        self.database.execute(
+            """
+            INSERT INTO messages (
+                created_epoch,
+                source_index,
+                history_source,
+                topic_peer_id,
+                message_id,
+                sequence,
+                payload
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                created_epoch,
+                int(source_index),
+                history_source,
+                topic_peer_id,
+                message_id,
+                self.sequence,
+                payload,
+            ),
+        )
+        if self.sequence % self.COMMIT_EVERY == 0:
+            self.database.commit()
+
+    def write_messages_partial(self) -> dict[str, Any]:
+        self.database.commit()
+        digest = hashlib.sha256()
+        count = 0
+        byte_size = 0
+
+        def write_line(output: Any, line: bytes) -> None:
+            nonlocal count, byte_size
+            output.write(line)
+            digest.update(line)
+            count += 1
+            byte_size += len(line)
+
+        def new_rows() -> Iterable[tuple[Optional[int], bytes]]:
+            cursor = self.database.execute(
+                """
+                SELECT created_epoch, payload
+                FROM messages
+                ORDER BY
+                    created_epoch IS NULL,
+                    created_epoch,
+                    source_index,
+                    history_source,
+                    topic_peer_id,
+                    message_id,
+                    sequence
+                """
+            )
+            for created_epoch, payload in cursor:
+                yield created_epoch, str(payload).encode("utf-8") + b"\n"
+
+        existing = self.existing
+        append_safe = existing is None or existing.message_count == 0
+        if existing is not None and existing.message_count:
+            if self.sequence == 0:
+                append_safe = True
+            elif existing.has_undated_messages:
+                append_safe = self.new_first_created_epoch is None
+            elif self.new_first_created_epoch is None:
+                append_safe = True
+            else:
+                append_safe = (
+                    existing.last_created_epoch is not None
+                    and self.new_first_created_epoch >= existing.last_created_epoch
+                )
+
+        with self.messages_partial_path.open("wb") as output:
+            if existing is None:
+                for _created_epoch, line in new_rows():
+                    write_line(output, line)
+            elif append_safe:
+                with self.messages_path.open("rb") as previous:
+                    for line in previous:
+                        write_line(output, line)
+                for _created_epoch, line in new_rows():
+                    write_line(output, line)
+            else:
+                with self.messages_path.open("rb") as previous:
+                    old_iterator = iter(previous)
+                    new_iterator = iter(new_rows())
+
+                    def next_old() -> Optional[tuple[Optional[int], bytes]]:
+                        try:
+                            line = next(old_iterator)
+                        except StopIteration:
+                            return None
+                        message = json.loads(line)
+                        created = message.get("created")
+                        return (int(created) if created is not None else None), line
+
+                    def chronological_key(value: Optional[int]) -> tuple[int, int]:
+                        return (1, 0) if value is None else (0, value)
+
+                    old_item = next_old()
+                    new_item = next(new_iterator, None)
+                    while old_item is not None or new_item is not None:
+                        if new_item is None or (
+                            old_item is not None
+                            and chronological_key(old_item[0])
+                            <= chronological_key(new_item[0])
+                        ):
+                            write_line(output, old_item[1])
+                            old_item = next_old()
+                        else:
+                            write_line(output, new_item[1])
+                            new_item = next(new_iterator, None)
+            output.flush()
+            os.fsync(output.fileno())
+
+        first_candidates = [
+            value
+            for value in (
+                existing.first_created_epoch if existing else None,
+                self.new_first_created_epoch,
+            )
+            if value is not None
+        ]
+        last_candidates = [
+            value
+            for value in (
+                existing.last_created_epoch if existing else None,
+                self.new_last_created_epoch,
+            )
+            if value is not None
+        ]
+        return {
+            "file": self.messages_path.name,
+            "format": "jsonl",
+            "order": "oldest_to_newest_by_created_at",
+            "count": count,
+            "bytes": byte_size,
+            "sha256": digest.hexdigest(),
+            "first_created": min(first_candidates) if first_candidates else None,
+            "last_created": max(last_candidates) if last_candidates else None,
+            "have_undated": (
+                (existing.has_undated_messages if existing else False)
+                or self.new_has_undated_messages
+            ),
+            "history_checkpoints": [
+                {
+                    "history_source": history_source,
+                    "topic_peer_id": topic_peer_id or None,
+                    "max_message_id": max_message_id,
+                }
+                for (history_source, topic_peer_id), max_message_id in sorted(
+                    self.checkpoints.items()
+                )
+            ],
+        }
+
+    def write_metadata_partial(
+        self,
+        messages: Mapping[str, Any],
+        peers: Mapping[str, Any],
+        peer_avatars: Iterable[Mapping[str, Any]],
+        media_assets: Mapping[str, Mapping[str, Any]],
+        summary: Mapping[str, Any],
+    ) -> None:
+        metadata = {
+            **self.header,
+            "messages_file": messages["file"],
+            "messages_format": messages["format"],
+            "messages_order": messages["order"],
+            "messages_count": messages["count"],
+            "messages_bytes": messages["bytes"],
+            "messages_sha256": messages["sha256"],
+            "messages_first_created": messages["first_created"],
+            "messages_last_created": messages["last_created"],
+            "messages_have_undated": messages["have_undated"],
+            "history_checkpoints": messages["history_checkpoints"],
+            "peers": json_safe(peers),
+            "peer_avatars": json_safe(list(peer_avatars)),
+            "media_assets": json_safe(media_assets),
+            "summary": json_safe(summary),
+        }
+        with self.metadata_partial_path.open("w", encoding="utf-8") as output:
+            json.dump(
+                json_safe(metadata),
+                output,
+                ensure_ascii=False,
+                indent=2,
+            )
+            output.write("\n")
+            output.flush()
+            os.fsync(output.fileno())
 
     def finish(
         self,
         peers: Mapping[str, Any],
         peer_avatars: Iterable[Mapping[str, Any]],
+        media_assets: Mapping[str, Mapping[str, Any]],
         summary: Mapping[str, Any],
     ) -> None:
-        self.file.write("\n],\n")
-        self.file.write('"peers": ')
-        self.file.write(
-            json.dumps(json_safe(peers), ensure_ascii=False, separators=(",", ":"))
-        )
-        self.file.write(",\n")
-        self.file.write('"peer_avatars": ')
-        self.file.write(
-            json.dumps(
-                json_safe(list(peer_avatars)),
-                ensure_ascii=False,
-                separators=(",", ":"),
+        messages = self.write_messages_partial()
+        expected_count = int(summary.get("messages") or 0)
+        if int(messages["count"]) != expected_count:
+            raise RuntimeError(
+                f"JSONL message count {messages['count']} does not match "
+                f"export summary {expected_count}"
             )
+        self.write_metadata_partial(
+            messages,
+            peers,
+            peer_avatars,
+            media_assets,
+            summary,
         )
-        self.file.write(",\n")
-        self.file.write('"summary": ')
-        self.file.write(
-            json.dumps(json_safe(summary), ensure_ascii=False, separators=(",", ":"))
-        )
-        self.file.write("\n}\n")
-        self.file.flush()
-        os.fsync(self.file.fileno())
-        self.file.close()
-        os.replace(self.partial_path, self.final_path)
+        self.database.close()
+        self.closed = True
+
+        # Journal and roll back the two-file replacement as a unit if either
+        # rename fails. The metadata checksum remains the consumer-side
+        # completion check for an unexpected process or machine stop.
+        self.publish_pair()
+
+        for obsolete_path in (
+            self.work_path,
+            *self.work_sidecar_paths,
+            *self.legacy_paths,
+        ):
+            try:
+                obsolete_path.unlink(missing_ok=True)
+            except OSError as exc:
+                print(
+                    f"Could not remove superseded export file {obsolete_path}: "
+                    f"{error_text(exc)}",
+                    file=sys.stderr,
+                )
 
     def close_incomplete(self) -> None:
-        if not self.file.closed:
-            self.file.flush()
-            self.file.close()
+        if not self.closed:
+            try:
+                self.database.commit()
+            except Exception:
+                # Preserve the original export error (for example disk-full)
+                # instead of replacing it with a cleanup failure.
+                pass
+            try:
+                self.database.close()
+            except Exception:
+                pass
+            finally:
+                self.closed = True
+
+    def incomplete_paths(self) -> list[Path]:
+        return [
+            path
+            for path in (
+                self.messages_partial_path,
+                self.metadata_partial_path,
+                self.work_path,
+                *self.work_sidecar_paths,
+                self.publication_marker_partial_path,
+                self.publication_marker_path,
+                self.messages_backup_path,
+                self.metadata_backup_path,
+            )
+            if path.exists()
+        ]
 
 
 class ChatExporter:
@@ -1966,10 +2916,13 @@ class ChatExporter:
         self.unresolved_stories: set[tuple[Optional[int], int]] = set()
         self.available_effects_loaded = False
         self.message_effects: dict[int, dict[str, Any]] = {}
-        self.seen_message_ids: set[tuple[int, int]] = set()
+        self.seen_message_ids: set[tuple[int, int, int]] = set()
         self.peers: dict[str, Any] = {str(self.chat_id): json_safe(entity)}
         self.peer_entities: dict[int, Any] = {self.chat_id: entity}
         self.peer_avatar_records: list[dict[str, Any]] = []
+        self.existing_export: Optional[ExistingExportState] = None
+        self.incremental = False
+        self.existing_avatar_keys: set[tuple[int, int]] = set()
 
     async def rpc(self, factory: Callable[[], Any], label: str) -> Any:
         attempts = 0
@@ -2003,7 +2956,7 @@ class ChatExporter:
         ]:
             marked_id = peer_id(entity)
             if marked_id is not None:
-                self.peers.setdefault(str(marked_id), json_safe(entity))
+                self.peers[str(marked_id)] = json_safe(entity)
                 if (
                     marked_id not in self.peer_entities
                     or getattr(entity, "photo", None) is not None
@@ -2688,6 +3641,7 @@ class ChatExporter:
         record = copy.deepcopy(target.metadata)
         category = attachment_category(target)
         record["category"] = category
+        record["asset_key"] = target.cache_key
         if target.protected:
             record.update(status="protected", reason="telegram_content_protection")
             return record
@@ -2753,7 +3707,7 @@ class ChatExporter:
             record.update(status="existing", **cache)
             return record
 
-        # Preserve crash consistency with an older completed JSON: clone its
+        # Preserve crash consistency with an older completed export: clone its
         # flat file now and let post-publication pruning remove the old link.
         for legacy_path in (
             self.files_dir / filename,
@@ -3110,6 +4064,8 @@ class ChatExporter:
                 "None",
             }:
                 continue
+            if (int(marked_id), int(photo_id)) in self.existing_avatar_keys:
+                continue
             target = DownloadTarget(
                 obj=entity,
                 kind="profile_photo",
@@ -3313,21 +4269,67 @@ class ChatExporter:
     async def export(self, api: Any, use_takeout_ranges: bool) -> dict[str, Any]:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.files_dir.mkdir(parents=True, exist_ok=True)
-        final_path = self.output_dir / f"{self.chat_id}.json"
+        messages_path = self.output_dir / f"{self.chat_id}.jsonl"
+        metadata_path = self.output_dir / f"{self.chat_id}.metadata.json"
+        legacy_json_path = self.output_dir / f"{self.chat_id}.json"
+        recover_pending_export_publication(messages_path, metadata_path)
         started = utc_now()
         if self.monoforum_admin_export:
             self.history_sources = await self.list_monoforum_topics(api)
+        self.existing_export = load_existing_export(
+            messages_path,
+            metadata_path,
+            legacy_json_path,
+            self.args.overwrite,
+            self.chat_id,
+        )
+        self.incremental = self.existing_export is not None
+        if self.existing_export is not None:
+            previous_chat = self.existing_export.metadata.get("chat")
+            previous_scope = (
+                previous_chat.get("monoforum_scope")
+                if isinstance(previous_chat, Mapping)
+                else None
+            )
+            if previous_scope != self.monoforum_scope:
+                raise RuntimeError(
+                    "The accessible monoforum scope changed; use --overwrite "
+                    "to rebuild history without duplicates or gaps"
+                )
+            previous_summary = self.existing_export.metadata.get("summary")
+            previous_history_complete = bool(
+                previous_summary.get("history_complete", True)
+                if isinstance(previous_summary, Mapping)
+                else True
+            )
+            if not previous_history_complete and self.history_complete:
+                raise RuntimeError(
+                    "Telegram history access expanded since the previous limited "
+                    "export; use --overwrite to backfill older messages"
+                )
+            current_peers = dict(self.peers)
+            self.peers = {
+                **self.existing_export.peers,
+                **current_peers,
+            }
+            self.peer_avatar_records = list(self.existing_export.peer_avatars)
+            self.media_asset_cache.update(self.existing_export.media_assets)
+            for avatar in self.peer_avatar_records:
+                owner_id = avatar.get("owner_id")
+                photo_id = avatar.get("id")
+                relative = avatar.get("file")
+                if owner_id is None or photo_id is None or not relative:
+                    continue
+                avatar_path = self.output_dir / str(relative)
+                if avatar_path.is_file() and not avatar_path.is_symlink():
+                    self.existing_avatar_keys.add((int(owner_id), int(photo_id)))
         header = {
             "schema": SCHEMA_NAME,
             "schema_version": SCHEMA_VERSION,
             "telegram_layer": TELEGRAM_LAYER,
             "telethon_version": telethon.__version__,
             "exported_at": iso_datetime(started),
-            "order": (
-                "monoforum_topic_api_order_then_message_newest_to_oldest"
-                if self.monoforum_admin_export
-                else "newest_to_oldest_by_history_source"
-            ),
+            "order": "oldest_to_newest_by_created_at",
             "chat": {
                 "id": self.chat_id,
                 "type": chat_kind(self.entity),
@@ -3351,12 +4353,42 @@ class ChatExporter:
                 "raw": json_safe(self.entity),
             },
         }
-        writer = JsonExportWriter(final_path, header, self.args.overwrite)
-        self.error_log_path.unlink(missing_ok=True)
+        writer = JsonlExportWriter(
+            messages_path,
+            metadata_path,
+            header,
+            self.args.overwrite,
+            legacy_paths=(legacy_json_path,),
+            existing=self.existing_export,
+        )
+        if not self.incremental:
+            self.error_log_path.unlink(missing_ok=True)
         try:
             ranges = await self.history_ranges(api, use_takeout_ranges)
             for source_index, source in enumerate(self.history_sources, start=1):
+                source_key = checkpoint_key_from_source(source)
+                source_checkpoint = (
+                    self.existing_export.checkpoints.get(source_key, 0)
+                    if self.existing_export is not None
+                    else 0
+                )
+                if (
+                    source_checkpoint
+                    and source.topic_top_message is not None
+                    and int(source.topic_top_message) <= source_checkpoint
+                ):
+                    continue
                 for range_index, message_range in enumerate(ranges, start=1):
+                    range_max_id = int(
+                        getattr(message_range, "max_id", 0) or 0
+                    )
+                    if (
+                        source_checkpoint
+                        and message_range is not None
+                        and range_max_id
+                        and range_max_id <= source_checkpoint
+                    ):
+                        continue
                     offset_id = 0
                     while True:
                         response = await self.history_page(
@@ -3379,7 +4411,14 @@ class ChatExporter:
                             self.stats.empty_messages_skipped += len(page)
                             break
                         next_offset = min(page_ids)
-                        if offset_id and next_offset >= offset_id:
+                        reached_checkpoint = bool(
+                            source_checkpoint and next_offset <= source_checkpoint
+                        )
+                        if (
+                            offset_id
+                            and next_offset >= offset_id
+                            and not reached_checkpoint
+                        ):
                             raise RuntimeError(
                                 f"Telegram history pagination stopped advancing at message {offset_id}"
                             )
@@ -3390,7 +4429,9 @@ class ChatExporter:
                             if message_id <= 0 or tl_name(message) == "MessageEmpty":
                                 self.stats.empty_messages_skipped += 1
                                 continue
-                            message_key = (source.marked_id, message_id)
+                            if source_checkpoint and message_id <= source_checkpoint:
+                                continue
+                            message_key = (*source_key, message_id)
                             if message_key not in self.seen_message_ids:
                                 self.seen_message_ids.add(message_key)
                                 new_messages.append(message)
@@ -3409,7 +4450,8 @@ class ChatExporter:
                                 message_range,
                             )
                             writer.write_message(
-                                self.serialize_message(message, attachments, source)
+                                self.serialize_message(message, attachments, source),
+                                source_index,
                             )
                             self.stats.messages += 1
                             if (
@@ -3424,26 +4466,91 @@ class ChatExporter:
                                 )
 
                         offset_id = next_offset
+                        if reached_checkpoint:
+                            break
 
-            self.peer_avatar_records = await self.download_peer_avatars(api)
+            new_avatar_records = await self.download_peer_avatars(api)
+            merged_avatars: dict[tuple[Any, ...], dict[str, Any]] = {}
+            for avatar in [*self.peer_avatar_records, *new_avatar_records]:
+                identity = (
+                    avatar.get("owner_id"),
+                    avatar.get("id"),
+                    avatar.get("role"),
+                )
+                merged_avatars[identity] = avatar
+            self.peer_avatar_records = list(merged_avatars.values())
             finished = utc_now()
             failed = self.stats.attachments.get("failed", 0)
             skipped = self.stats.attachments.get("skipped_limit", 0)
             protected = self.stats.attachments.get("protected", 0)
             unavailable = self.stats.attachments.get("unavailable", 0)
-            complete_accessible = (
+            previous_summary_value = (
+                self.existing_export.metadata.get("summary")
+                if self.existing_export is not None
+                else None
+            )
+            previous_summary = (
+                previous_summary_value
+                if isinstance(previous_summary_value, Mapping)
+                else {}
+            )
+            previous_complete_accessible = bool(
+                previous_summary.get("complete_accessible", True)
+            )
+            previous_fully_complete = bool(previous_summary.get("complete", True))
+            previous_history_complete = bool(
+                previous_summary.get("history_complete", True)
+            )
+            current_complete_accessible = (
                 self.history_complete
                 and self.stats.metadata_failures == 0
                 and failed == 0
                 and skipped == 0
             )
-            fully_complete = complete_accessible and protected == 0 and unavailable == 0
+            current_fully_complete = (
+                current_complete_accessible
+                and protected == 0
+                and unavailable == 0
+            )
+            complete_accessible = (
+                previous_complete_accessible and current_complete_accessible
+            )
+            fully_complete = previous_fully_complete and current_fully_complete
+            combined_history_complete = (
+                previous_history_complete and self.history_complete
+            )
+            existing_messages = (
+                self.existing_export.message_count
+                if self.existing_export is not None
+                else 0
+            )
+            total_messages = existing_messages + self.stats.messages
+            previous_limitations = previous_summary.get("limitations") or []
+            limitations = list(
+                dict.fromkeys(
+                    [
+                        *(
+                            str(item)
+                            for item in previous_limitations
+                            if item is not None
+                        ),
+                        "Only history and files currently accessible to this user account are exportable.",
+                        "Deleted or expired content and secret-chat history cannot be recovered.",
+                        "Protected content, locked paid media, and live streams are recorded but not downloaded.",
+                        "Incremental updates add higher-ID messages only; edits, deletions, and reaction changes on existing messages require --overwrite.",
+                        *self.history_limitations,
+                    ]
+                )
+            )
             summary = {
                 "complete": fully_complete,
                 "complete_accessible": complete_accessible,
-                "history_complete": self.history_complete,
+                "history_complete": combined_history_complete,
                 "monoforum_scope": self.monoforum_scope,
-                "messages": self.stats.messages,
+                "mode": "incremental" if self.incremental else "full",
+                "messages": total_messages,
+                "messages_existing": existing_messages,
+                "messages_added": self.stats.messages,
                 "empty_messages_skipped": self.stats.empty_messages_skipped,
                 "history_requests": self.stats.history_requests,
                 "metadata_requests": self.stats.metadata_requests,
@@ -3459,37 +4566,44 @@ class ChatExporter:
                     sorted(self.stats.attachment_categories.items())
                 ),
                 "bytes_downloaded": self.stats.bytes_downloaded,
+                "attachment_stats_scope": "current_run_new_messages_and_avatars",
                 "started_at": iso_datetime(started),
                 "finished_at": iso_datetime(finished),
                 "duration_seconds": round((finished - started).total_seconds(), 3),
-                "limitations": [
-                    "Only history and files currently accessible to this user account are exportable.",
-                    "Deleted or expired content and secret-chat history cannot be recovered.",
-                    "Protected content, locked paid media, and live streams are recorded but not downloaded.",
-                    *self.history_limitations,
-                ],
+                "limitations": limitations,
             }
-            # Publish the new JSON before pruning.  If serialization/fsync/
-            # replace fails, the previous completed JSON and its files remain
-            # a consistent archive.
-            writer.finish(self.peers, self.peer_avatar_records, summary)
-            stale_files_removed = self.remove_migrated_legacy_files()
+            # Publish both message JSONL and its metadata completion marker
+            # before pruning. A failed write leaves attachments untouched.
+            writer.finish(
+                self.peers,
+                self.peer_avatar_records,
+                self.media_asset_cache,
+                summary,
+            )
+            stale_files_removed = 0
             legacy_files_archived = 0
-            if fully_complete:
-                stale_files_removed += self.prune_stale_files()
-            else:
-                legacy_files_archived = self.archive_unclassified_legacy_files()
+            if not self.incremental:
+                stale_files_removed = self.remove_migrated_legacy_files()
+                if fully_complete:
+                    stale_files_removed += self.prune_stale_files()
+                else:
+                    legacy_files_archived = self.archive_unclassified_legacy_files()
             print(
-                f"Finished: {self.stats.messages} messages -> {final_path} "
-                f"({failed} failed downloads, {stale_files_removed} stale files pruned, "
+                f"Finished: added {self.stats.messages} messages "
+                f"({total_messages} total) -> {messages_path} "
+                f"(metadata: {metadata_path.name}; "
+                f"{failed} failed downloads, {stale_files_removed} stale files pruned, "
                 f"{legacy_files_archived} unmatched legacy files archived)",
                 flush=True,
             )
             return summary
         except BaseException:
             writer.close_incomplete()
+            incomplete = ", ".join(
+                str(path) for path in writer.incomplete_paths()
+            ) or "no partial artifact"
             print(
-                f"Incomplete JSON kept at {writer.partial_path}",
+                f"Incomplete export work kept at: {incomplete}",
                 file=sys.stderr,
                 flush=True,
             )
@@ -3670,7 +4784,10 @@ def takeout_flags(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Download one complete accessible Telegram chat to JSON and files/.",
+        description=(
+            "Download or incrementally update one Telegram chat as chronological "
+            "JSONL, metadata JSON, and files/."
+        ),
         # ArgumentDefaultsHelpFormatter would print TG_PHONE/TG_SESSION from
         # the environment and leak credentials into help output and logs.
         formatter_class=argparse.HelpFormatter,
@@ -3716,12 +4833,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--overwrite",
         action="store_true",
-        help="Atomically replace an existing JSON export",
+        help=(
+            "Ignore incremental checkpoints and rebuild the complete export; "
+            "also converts a legacy aggregate .json export"
+        ),
     )
     parser.add_argument(
         "--keep-stale-files",
         action="store_true",
-        help="With --overwrite, do not prune files unreferenced by the new JSON",
+        help="With --overwrite, do not prune files unreferenced by the new export",
     )
     parser.add_argument(
         "--max-file-size",
@@ -3868,7 +4988,7 @@ def main() -> int:
         return asyncio.run(async_main(args))
     except KeyboardInterrupt:
         print(
-            "Export interrupted; downloaded files and the .json.part file were kept.",
+            "Export interrupted; downloaded files and JSONL work files were kept.",
             file=sys.stderr,
         )
         return 130
