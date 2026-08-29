@@ -150,6 +150,23 @@ EOF
 source ~/.profile
 ```
 
+10. Set up `ls` formatting
+```
+cat >> ~/.bashrc <<'EOF'
+
+# Display UTF-8 filenames literally in ls
+alias ls='ls --color=auto --quoting-style=literal --show-control-chars'
+EOF
+
+source ~/.bashrc
+```
+
+11. Set up `git` formatting
+```
+cd /srv/hermes/data
+git config core.quotepath false
+```
+
 # Obsidian sync (`hermes` user)
 1. Set up syncthing
 ```
@@ -200,8 +217,7 @@ mkdir -p \
   "/srv/hermes/data/vault/70 World" \
   "/srv/hermes/data/vault/80 Memory" \
   "/srv/hermes/data/vault/90 Archive" \
-  "/srv/hermes/data/vault/_System/Templates" \
-  "/srv/hermes/data/vault/_Attachments"
+  "/srv/hermes/data/vault/99 System/Templates"
 ```
 
 2. Main page
@@ -285,7 +301,7 @@ Folder Path: /srv/hermes/data/vault
 5.2. `File Versioning`:
 ```
 File Versioning: Staggered File Versioning
-Maximum Age: 365 days
+Maximum Age: 30 days
 ```
 
 5.3. `Advanced`:
@@ -457,6 +473,15 @@ node_modules/
 .DS_Store
 Thumbs.db
 EOF
+```
+
+8. `mkdir -p files`
+
+9. Commit
+```
+git add .
+git commit -m "Pilot"
+git push --set-upstream origin main
 ```
 
 # Rules

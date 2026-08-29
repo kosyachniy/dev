@@ -21,7 +21,10 @@ Examples:
 The result is written to:
 
     download/<marked-chat-id>/<marked-chat-id>.json
-    download/<marked-chat-id>/files/*
+    download/<marked-chat-id>/files/{media,forwarded,avatars,stickers,icons,
+                                      reactions,preview,effects,stories,
+                                      wallpapers,other,legacy}/*
+    download/<marked-chat-id>/media-errors.jsonl  # only when media issues occur
 
 The JSON keeps the legacy ``Telegram.mes2json`` keys and adds normalized
 current fields plus the complete raw TL object exposed by the installed
@@ -46,6 +49,7 @@ import mimetypes
 import os
 import random
 import re
+import shutil
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -71,7 +75,7 @@ except ImportError:  # Future Telethon versions may move this constant.
 MIN_TELETHON = (1, 44, 0)
 MIN_TELEGRAM_LAYER = 227
 SCHEMA_NAME = "telegram-chat-export"
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 HISTORY_PAGE_SIZE = 100  # Telegram list methods normally accept at most 100.
 CUSTOM_EMOJI_BATCH_SIZE = 100  # Official limit for getCustomEmojiDocuments.
 UNLIMITED_TAKEOUT_FILE_SIZE = (1 << 63) - 1
@@ -269,6 +273,19 @@ def is_file_reference_error(exc: BaseException) -> bool:
     return "FILE_REFERENCE_" in upper or "FILEREF_" in upper
 
 
+def file_reference_fingerprint(value: Any) -> Optional[str]:
+    """Return a safe identifier for comparing opaque Telegram references."""
+
+    reference = bytes(getattr(value, "file_reference", b"") or b"")
+    if reference:
+        return hashlib.sha256(reference).hexdigest()[:16]
+    profile_photo = getattr(value, "photo", None)
+    photo_id = getattr(profile_photo, "photo_id", None)
+    if photo_id is not None:
+        return hashlib.sha256(f"profile:{photo_id}".encode()).hexdigest()[:16]
+    return None
+
+
 def contact_vcard(media: Any) -> bytes:
     original = getattr(media, "vcard", None)
     if original:
@@ -351,6 +368,115 @@ class DownloadTarget:
     source_peer: Any = None
     message_range: Any = None
     dc_id: Optional[int] = None
+    refresh_url: Optional[str] = None
+    embedded_preview: Optional[bytes] = None
+    embedded_preview_info: Optional[dict[str, Any]] = None
+    forwarded: bool = False
+    category_hint: Optional[str] = None
+
+
+ATTACHMENT_CATEGORIES = frozenset(
+    {
+        "media",
+        "forwarded",
+        "avatars",
+        "stickers",
+        "icons",
+        "reactions",
+        "preview",
+        "effects",
+        "stories",
+        "wallpapers",
+        "other",
+    }
+)
+
+
+def attachment_base_category_values(
+    role: str,
+    subtype: str,
+    category_hint: Optional[str] = None,
+    refresh_url: Optional[str] = None,
+) -> str:
+    """Classify an attachment by semantic purpose before forwarded origin."""
+
+    role = role.lower()
+    subtype = subtype.lower()
+    if category_hint:
+        if category_hint not in ATTACHMENT_CATEGORIES - {"forwarded"}:
+            raise ValueError(f"Unsupported attachment category {category_hint!r}")
+        # ``other`` is deliberately a weak hint: known semantic asset types
+        # nested in a service message (for example a gift sticker) still go
+        # to their specific folder. All other context hints are authoritative.
+        if category_hint != "other":
+            return category_hint
+    if role.startswith("message.reaction_custom_emoji."):
+        return "reactions"
+    if role.startswith("message.effect."):
+        return "effects"
+    if any(token in role for token in ("avatar", "profile_photo", "peer.photo")):
+        return "avatars"
+    if subtype == "custom_emoji" or "custom_emoji" in role:
+        return "icons"
+    if (
+        refresh_url
+        or "reply_media" in role
+        or "video_cover" in role
+        or "accessible_preview" in role
+        or ".cached_page" in role
+    ):
+        return "preview"
+    if "story" in role:
+        return "stories"
+    if subtype in {
+        "sticker",
+        "animated_sticker",
+        "video_sticker",
+        "premium_sticker_effect",
+    }:
+        return "stickers"
+    if category_hint:
+        return category_hint
+    return "media"
+
+
+def attachment_category_values(
+    role: str,
+    subtype: str,
+    forwarded: bool,
+    category_hint: Optional[str] = None,
+    refresh_url: Optional[str] = None,
+) -> str:
+    base = attachment_base_category_values(
+        role,
+        subtype,
+        category_hint,
+        refresh_url,
+    )
+    if forwarded and base == "media":
+        return "forwarded"
+    return base
+
+
+def attachment_base_category(target: DownloadTarget) -> str:
+    return attachment_base_category_values(
+        target.role,
+        target.subtype,
+        target.category_hint,
+        target.refresh_url,
+    )
+
+
+def attachment_category(target: DownloadTarget) -> str:
+    # Keep semantic asset types together. Only ordinary message attachments
+    # split by origin into direct media versus forwarded media.
+    return attachment_category_values(
+        target.role,
+        target.subtype,
+        target.forwarded,
+        target.category_hint,
+        target.refresh_url,
+    )
 
 
 @dataclass
@@ -375,13 +501,22 @@ class ExportStats:
     metadata_requests: int = 0
     flood_waits: int = 0
     transient_retries: int = 0
+    file_reference_refreshes: int = 0
+    file_reference_refresh_successes: int = 0
     metadata_failures: int = 0
     attachments: dict[str, int] = field(default_factory=dict)
+    attachment_categories: dict[str, int] = field(default_factory=dict)
     bytes_downloaded: int = 0
 
     def observe_attachment(self, record: Mapping[str, Any]) -> None:
         status = str(record.get("status") or "unknown")
         self.attachments[status] = self.attachments.get(status, 0) + 1
+        category = record.get("category")
+        if category:
+            name = str(category)
+            self.attachment_categories[name] = (
+                self.attachment_categories.get(name, 0) + 1
+            )
         if status == "downloaded":
             self.bytes_downloaded += int(record.get("downloaded_size") or 0)
 
@@ -735,6 +870,17 @@ def custom_emoji_ids(value: Any) -> set[int]:
     return found
 
 
+def message_custom_emoji_ids(message: Any) -> tuple[set[int], set[int]]:
+    """Return (icons, reactions) without flattening their semantic purpose."""
+
+    reactions = custom_emoji_ids(getattr(message, "reactions", None))
+    icons: set[int] = set()
+    for key, value in vars(message).items() if hasattr(message, "__dict__") else []:
+        if not key.startswith("_") and key != "reactions":
+            icons.update(custom_emoji_ids(value))
+    return icons, reactions
+
+
 def nested_story_media(value: Any) -> list[Any]:
     """Find story references anywhere in a message's current TL graph."""
     found: list[Any] = []
@@ -770,12 +916,14 @@ class AttachmentCollector:
         self,
         message_id: int,
         protected: bool,
+        forwarded: bool = False,
         source_chat_id: Optional[int] = None,
         source_peer: Any = None,
         message_range: Any = None,
     ) -> None:
         self.message_id = message_id
         self.protected = protected
+        self.forwarded = forwarded
         self.source_chat_id = source_chat_id
         self.source_peer = source_peer
         self.message_range = message_range
@@ -789,6 +937,8 @@ class AttachmentCollector:
         role: str,
         value: Any,
         status: str = "metadata_only",
+        attachment_subtype: Optional[str] = None,
+        category_hint: Optional[str] = None,
         **extra: Any,
     ) -> None:
         record = {
@@ -798,20 +948,44 @@ class AttachmentCollector:
             **extra,
             "telegram": json_safe(value),
         }
+        if attachment_subtype is not None or category_hint is not None:
+            record["category"] = attachment_category_values(
+                role,
+                attachment_subtype or media_type,
+                self.forwarded,
+                category_hint,
+            )
         self.records.append(record)
 
     def add_photo(
-        self, photo: Any, role: str, protected: Optional[bool] = None
+        self,
+        photo: Any,
+        role: str,
+        protected: Optional[bool] = None,
+        refresh_url: Optional[str] = None,
+        category_hint: Optional[str] = None,
     ) -> None:
         if photo is None or tl_name(photo) in {"PhotoEmpty", "None"}:
             self.metadata_record(
-                "image", role, photo, status="unavailable", reason="empty_photo"
+                "image",
+                role,
+                photo,
+                status="unavailable",
+                attachment_subtype="image",
+                category_hint=category_hint,
+                reason="empty_photo",
             )
             return
         size = best_photo_size(photo)
         if size is None:
             self.metadata_record(
-                "image", role, photo, status="unavailable", reason="no_photo_size"
+                "image",
+                role,
+                photo,
+                status="unavailable",
+                attachment_subtype="image",
+                category_hint=category_hint,
+                reason="no_photo_size",
             )
             return
         selected = photo_size_info(size)
@@ -842,6 +1016,27 @@ class AttachmentCollector:
             # Telethon inflates stripped thumbnail bytes into a JPEG, so the
             # downloaded size cannot equal the compressed TL byte count.
             expected_size = None
+        embedded_size = max(
+            (
+                item
+                for item in (getattr(photo, "sizes", None) or [])
+                if tl_name(item) in {"PhotoCachedSize", "PhotoStrippedSize"}
+                and getattr(item, "bytes", None)
+            ),
+            key=lambda item: len(bytes(getattr(item, "bytes", b"") or b"")),
+            default=None,
+        )
+        embedded_preview: Optional[bytes] = None
+        embedded_preview_info: Optional[dict[str, Any]] = None
+        if embedded_size is not None:
+            embedded_preview = bytes(getattr(embedded_size, "bytes", b"") or b"")
+            if tl_name(embedded_size) == "PhotoStrippedSize":
+                try:
+                    embedded_preview = utils.stripped_photo_to_jpg(embedded_preview)
+                except (IndexError, TypeError, ValueError):
+                    embedded_preview = None
+            if embedded_preview:
+                embedded_preview_info = photo_size_info(embedded_size)
         self.targets.append(
             DownloadTarget(
                 obj=photo,
@@ -858,9 +1053,14 @@ class AttachmentCollector:
                 # directly even though they can resolve its type.
                 thumb=getattr(size, "type", None),
                 protected=self.protected if protected is None else protected,
+                forwarded=self.forwarded,
                 source_chat_id=self.source_chat_id,
                 source_peer=self.source_peer,
                 message_range=self.message_range,
+                refresh_url=refresh_url,
+                embedded_preview=embedded_preview,
+                embedded_preview_info=embedded_preview_info,
+                category_hint=category_hint,
             )
         )
 
@@ -904,9 +1104,14 @@ class AttachmentCollector:
                     },
                     thumb=getattr(video_size, "type", None),
                     protected=self.protected if protected is None else protected,
+                    forwarded=self.forwarded,
                     source_chat_id=self.source_chat_id,
                     source_peer=self.source_peer,
                     message_range=self.message_range,
+                    refresh_url=refresh_url,
+                    embedded_preview=embedded_preview,
+                    embedded_preview_info=embedded_preview_info,
+                    category_hint=category_hint,
                 )
             )
 
@@ -915,6 +1120,7 @@ class AttachmentCollector:
         size: Any,
         role: str,
         protected: Optional[bool] = None,
+        category_hint: Optional[str] = "preview",
     ) -> None:
         if tl_name(size) not in {"PhotoCachedSize", "PhotoStrippedSize"}:
             return
@@ -944,9 +1150,11 @@ class AttachmentCollector:
                     "telegram": json_safe(size),
                 },
                 protected=self.protected if protected is None else protected,
+                forwarded=self.forwarded,
                 source_chat_id=self.source_chat_id,
                 source_peer=self.source_peer,
                 message_range=self.message_range,
+                category_hint=category_hint,
             )
         )
 
@@ -957,6 +1165,8 @@ class AttachmentCollector:
         *,
         alternatives: Optional[Iterable[Any]] = None,
         protected: Optional[bool] = None,
+        refresh_url: Optional[str] = None,
+        category_hint: Optional[str] = None,
     ) -> None:
         candidates = [
             item
@@ -965,7 +1175,13 @@ class AttachmentCollector:
         ]
         if not candidates:
             self.metadata_record(
-                "file", role, document, status="unavailable", reason="empty_document"
+                "file",
+                role,
+                document,
+                status="unavailable",
+                attachment_subtype="file",
+                category_hint=category_hint,
+                reason="empty_document",
             )
             return
 
@@ -1023,9 +1239,12 @@ class AttachmentCollector:
                 metadata=metadata,
                 original_name=filename,
                 protected=self.protected if protected is None else protected,
+                forwarded=self.forwarded,
                 source_chat_id=self.source_chat_id,
                 source_peer=self.source_peer,
                 message_range=self.message_range,
+                refresh_url=refresh_url,
+                category_hint=category_hint,
             )
         )
 
@@ -1065,10 +1284,13 @@ class AttachmentCollector:
                         "telegram": json_safe(effect),
                     },
                     protected=self.protected if protected is None else protected,
+                    forwarded=self.forwarded,
                     source_chat_id=self.source_chat_id,
                     source_peer=self.source_peer,
                     message_range=self.message_range,
                     dc_id=getattr(selected_document, "dc_id", None),
+                    refresh_url=refresh_url,
+                    category_hint=category_hint,
                 )
             )
 
@@ -1077,6 +1299,7 @@ class AttachmentCollector:
         document: Any,
         role: str,
         protected: Optional[bool] = None,
+        category_hint: Optional[str] = None,
     ) -> None:
         url = getattr(document, "url", None)
         mime = getattr(document, "mime_type", None)
@@ -1105,9 +1328,11 @@ class AttachmentCollector:
                 expected_size=size,
                 metadata=metadata,
                 protected=self.protected if protected is None else protected,
+                forwarded=self.forwarded,
                 source_chat_id=self.source_chat_id,
                 source_peer=self.source_peer,
                 message_range=self.message_range,
+                category_hint=category_hint,
             )
         )
 
@@ -1116,6 +1341,7 @@ class AttachmentCollector:
         media: Any,
         role: str,
         protected: Optional[bool] = None,
+        category_hint: Optional[str] = None,
     ) -> None:
         metadata = {
             "type": "contact",
@@ -1149,9 +1375,11 @@ class AttachmentCollector:
                 metadata=metadata,
                 original_name=metadata["name"] or metadata["phone"],
                 protected=self.protected if protected is None else protected,
+                forwarded=self.forwarded,
                 source_chat_id=self.source_chat_id,
                 source_peer=self.source_peer,
                 message_range=self.message_range,
+                category_hint=category_hint,
             )
         )
 
@@ -1160,27 +1388,53 @@ class AttachmentCollector:
         story: Any,
         role: str,
         protected: Optional[bool] = None,
+        category_hint: Optional[str] = "stories",
     ) -> None:
         name = tl_name(story)
         if name != "StoryItem":
             self.metadata_record(
-                "story", role, story, status="unavailable", reason=name
+                "story",
+                role,
+                story,
+                status="unavailable",
+                attachment_subtype="story",
+                category_hint=category_hint,
+                reason=name,
             )
             return
         story_protected = (self.protected if protected is None else protected) or bool(
             getattr(story, "noforwards", False)
         )
         self.collect_media(
-            getattr(story, "media", None), f"{role}.media", protected=story_protected
+            getattr(story, "media", None),
+            f"{role}.media",
+            protected=story_protected,
+            category_hint=category_hint,
         )
         music = getattr(story, "music", None)
         if music is not None:
-            self.add_document(music, f"{role}.music", protected=story_protected)
+            self.add_document(
+                music,
+                f"{role}.music",
+                protected=story_protected,
+                category_hint=category_hint,
+            )
         for key, child in vars(story).items() if hasattr(story, "__dict__") else []:
             if not key.startswith("_") and key not in {"media", "music"}:
-                self.discover(child, f"{role}.{key}", protected=story_protected)
+                self.discover(
+                    child,
+                    f"{role}.{key}",
+                    protected=story_protected,
+                    category_hint=category_hint,
+                )
 
-    def discover(self, value: Any, role: str, protected: Optional[bool] = None) -> None:
+    def discover(
+        self,
+        value: Any,
+        role: str,
+        protected: Optional[bool] = None,
+        category_hint: Optional[str] = None,
+    ) -> None:
         if value is None or isinstance(
             value, (str, int, float, bool, bytes, dt.datetime)
         ):
@@ -1192,22 +1446,43 @@ class AttachmentCollector:
         name = tl_name(value)
         active_protection = self.protected if protected is None else protected
         if name == "Photo":
-            self.add_photo(value, role, protected=active_protection)
+            self.add_photo(
+                value,
+                role,
+                protected=active_protection,
+                category_hint=category_hint,
+            )
             return
         if name == "Document":
-            self.add_document(value, role, protected=active_protection)
+            self.add_document(
+                value,
+                role,
+                protected=active_protection,
+                category_hint=category_hint,
+            )
             return
         if name in {"WebDocument", "WebDocumentNoProxy"}:
-            self.add_web_document(value, role, protected=active_protection)
+            self.add_web_document(
+                value,
+                role,
+                protected=active_protection,
+                category_hint=category_hint,
+            )
             return
         if name.startswith("MessageMedia"):
-            self.collect_media(value, role, protected=active_protection)
+            self.collect_media(
+                value,
+                role,
+                protected=active_protection,
+                category_hint=category_hint,
+            )
             return
         if name == "MessageExtendedMedia":
             self.collect_media(
                 getattr(value, "media", None),
                 f"{role}.media",
                 protected=active_protection,
+                category_hint=category_hint,
             )
             return
         if name == "MessageExtendedMediaPreview":
@@ -1216,27 +1491,49 @@ class AttachmentCollector:
                 role,
                 value,
                 status="unavailable",
+                attachment_subtype="paid_media_preview",
+                category_hint="preview",
                 reason="paid_media_not_purchased",
             )
             self.add_embedded_photo_size(
                 getattr(value, "thumb", None),
                 f"{role}.accessible_preview",
                 protected=active_protection,
+                category_hint="preview",
             )
             return
         if name.startswith("StoryItem"):
-            self.collect_story(value, role, protected=active_protection)
+            self.collect_story(
+                value,
+                role,
+                protected=active_protection,
+                category_hint=category_hint or "stories",
+            )
             return
         if isinstance(value, (list, tuple, set, frozenset)):
             for index, child in enumerate(value):
-                self.discover(child, f"{role}.{index}", protected=active_protection)
+                self.discover(
+                    child,
+                    f"{role}.{index}",
+                    protected=active_protection,
+                    category_hint=category_hint,
+                )
             return
         for key, child in vars(value).items() if hasattr(value, "__dict__") else []:
             if not key.startswith("_"):
-                self.discover(child, f"{role}.{key}", protected=active_protection)
+                self.discover(
+                    child,
+                    f"{role}.{key}",
+                    protected=active_protection,
+                    category_hint=category_hint,
+                )
 
     def collect_media(
-        self, media: Any, role: str, protected: Optional[bool] = None
+        self,
+        media: Any,
+        role: str,
+        protected: Optional[bool] = None,
+        category_hint: Optional[str] = None,
     ) -> None:
         if media is None:
             return
@@ -1248,11 +1545,15 @@ class AttachmentCollector:
                 getattr(media, "photo", None),
                 f"{role}.photo",
                 protected=active_protection,
+                category_hint=category_hint,
             )
             live_video = getattr(media, "video", None)
             if live_video is not None:
                 self.add_document(
-                    live_video, f"{role}.live_photo_video", protected=active_protection
+                    live_video,
+                    f"{role}.live_photo_video",
+                    protected=active_protection,
+                    category_hint=category_hint,
                 )
             return
 
@@ -1262,16 +1563,25 @@ class AttachmentCollector:
                 f"{role}.document",
                 alternatives=getattr(media, "alt_documents", None) or [],
                 protected=active_protection,
+                category_hint=category_hint,
             )
             cover = getattr(media, "video_cover", None)
             if cover is not None:
                 self.add_photo(
-                    cover, f"{role}.video_cover", protected=active_protection
+                    cover,
+                    f"{role}.video_cover",
+                    protected=active_protection,
+                    category_hint=category_hint,
                 )
             return
 
         if name == "MessageMediaContact":
-            self.add_contact(media, role, protected=active_protection)
+            self.add_contact(
+                media,
+                role,
+                protected=active_protection,
+                category_hint=category_hint,
+            )
             return
 
         if name in {"MessageMediaGeo", "MessageMediaGeoLive", "MessageMediaVenue"}:
@@ -1290,6 +1600,7 @@ class AttachmentCollector:
 
         if name == "MessageMediaWebPage":
             webpage = getattr(media, "webpage", None)
+            refresh_url = getattr(webpage, "url", None)
             self.metadata_record(
                 "web",
                 role,
@@ -1298,23 +1609,35 @@ class AttachmentCollector:
                 title=getattr(webpage, "title", None),
             )
             if tl_name(webpage) == "WebPage":
-                self.discover(
-                    getattr(webpage, "photo", None), f"{role}.photo", active_protection
-                )
-                self.discover(
-                    getattr(webpage, "document", None),
-                    f"{role}.document",
-                    active_protection,
-                )
+                webpage_photo = getattr(webpage, "photo", None)
+                if webpage_photo is not None:
+                    self.add_photo(
+                        webpage_photo,
+                        f"{role}.photo",
+                        protected=active_protection,
+                        refresh_url=refresh_url,
+                        category_hint="preview",
+                    )
+                webpage_document = getattr(webpage, "document", None)
+                if webpage_document is not None:
+                    self.add_document(
+                        webpage_document,
+                        f"{role}.document",
+                        protected=active_protection,
+                        refresh_url=refresh_url,
+                        category_hint="preview",
+                    )
                 self.discover(
                     getattr(webpage, "cached_page", None),
                     f"{role}.cached_page",
                     active_protection,
+                    category_hint="preview",
                 )
                 self.discover(
                     getattr(webpage, "attributes", None),
                     f"{role}.attributes",
                     active_protection,
+                    category_hint="preview",
                 )
             return
 
@@ -1323,7 +1646,12 @@ class AttachmentCollector:
             self.metadata_record(
                 "game", role, media, title=getattr(game, "title", None)
             )
-            self.discover(game, f"{role}.game", active_protection)
+            self.discover(
+                game,
+                f"{role}.game",
+                active_protection,
+                category_hint="preview",
+            )
             return
 
         if name == "MessageMediaInvoice":
@@ -1337,12 +1665,16 @@ class AttachmentCollector:
                 total_amount=getattr(media, "total_amount", None),
             )
             self.discover(
-                getattr(media, "photo", None), f"{role}.photo", active_protection
+                getattr(media, "photo", None),
+                f"{role}.photo",
+                active_protection,
+                category_hint="preview",
             )
             self.discover(
                 getattr(media, "extended_media", None),
                 f"{role}.extended_media",
                 active_protection,
+                category_hint="preview",
             )
             return
 
@@ -1356,7 +1688,12 @@ class AttachmentCollector:
             for index, extended in enumerate(
                 getattr(media, "extended_media", None) or []
             ):
-                self.discover(extended, f"{role}.{index}", active_protection)
+                self.discover(
+                    extended,
+                    f"{role}.{index}",
+                    active_protection,
+                    category_hint=category_hint,
+                )
             return
 
         if name == "MessageMediaPoll":
@@ -1372,18 +1709,21 @@ class AttachmentCollector:
                 getattr(media, "attached_media", None),
                 f"{role}.attached_media",
                 active_protection,
+                category_hint=category_hint,
             )
             for index, answer in enumerate(getattr(poll, "answers", None) or []):
                 self.discover(
                     getattr(answer, "media", None),
                     f"{role}.answer.{index}",
                     active_protection,
+                    category_hint=category_hint,
                 )
             results = getattr(media, "results", None)
             self.discover(
                 getattr(results, "solution_media", None),
                 f"{role}.solution",
                 active_protection,
+                category_hint=category_hint,
             )
             return
 
@@ -1395,13 +1735,20 @@ class AttachmentCollector:
                 role,
                 media,
                 status=status,
+                attachment_subtype=("story" if status == "unavailable" else None),
+                category_hint=("stories" if status == "unavailable" else None),
                 source=peer_id(getattr(media, "peer", None)),
                 id=getattr(media, "id", None),
                 mention=bool(getattr(media, "via_mention", False)),
                 reason=None if story is not None else "story_not_returned_or_expired",
             )
             if story is not None:
-                self.collect_story(story, f"{role}.story", protected=active_protection)
+                self.collect_story(
+                    story,
+                    f"{role}.story",
+                    protected=active_protection,
+                    category_hint=category_hint or "stories",
+                )
             return
 
         metadata_types = {
@@ -1427,32 +1774,77 @@ class AttachmentCollector:
         self.metadata_record(name, role, media, status="metadata_only")
         for key, child in vars(media).items() if hasattr(media, "__dict__") else []:
             if not key.startswith("_"):
-                self.discover(child, f"{role}.{key}", active_protection)
+                self.discover(
+                    child,
+                    f"{role}.{key}",
+                    active_protection,
+                    category_hint=category_hint,
+                )
 
     def collect_message(self, message: Any, emoji_documents: Mapping[int, Any]) -> None:
         self.collect_media(getattr(message, "media", None), "message.media")
         reply = getattr(message, "reply_to", None)
-        self.collect_media(getattr(reply, "reply_media", None), "message.reply_media")
-        self.discover(getattr(message, "action", None), "message.action")
-        self.discover(getattr(message, "rich_message", None), "message.rich_message")
+        self.collect_media(
+            getattr(reply, "reply_media", None),
+            "message.reply_media",
+            category_hint="preview",
+        )
+        action = getattr(message, "action", None)
+        action_name = tl_name(action)
+        if action_name in {
+            "MessageActionChatEditPhoto",
+            "MessageActionSuggestProfilePhoto",
+        }:
+            action_category = "avatars"
+        elif action_name == "MessageActionSetChatWallPaper":
+            action_category = "wallpapers"
+        else:
+            action_category = "other"
+        self.discover(
+            action,
+            "message.action",
+            category_hint=action_category,
+        )
+        self.discover(
+            getattr(message, "rich_message", None),
+            "message.rich_message",
+            category_hint="preview",
+        )
 
-        for document_id in sorted(custom_emoji_ids(message)):
-            document = emoji_documents.get(document_id)
-            if document is None:
-                self.metadata_record(
-                    "custom_emoji",
-                    f"message.custom_emoji.{document_id}",
-                    None,
-                    status="unavailable",
-                    id=document_id,
-                    reason="custom_emoji_document_not_returned",
-                )
-            else:
-                self.add_document(
-                    document,
-                    f"message.custom_emoji.{document_id}",
-                    protected=self.protected,
-                )
+        icon_ids, reaction_ids = message_custom_emoji_ids(message)
+        for purpose, document_ids in (
+            ("custom_emoji", icon_ids),
+            ("reaction_custom_emoji", reaction_ids),
+        ):
+            for document_id in sorted(document_ids):
+                role = f"message.{purpose}.{document_id}"
+                document = emoji_documents.get(document_id)
+                if document is None:
+                    self.metadata_record(
+                        "custom_emoji",
+                        role,
+                        None,
+                        status="unavailable",
+                        attachment_subtype="custom_emoji",
+                        category_hint=(
+                            "reactions"
+                            if purpose == "reaction_custom_emoji"
+                            else "icons"
+                        ),
+                        id=document_id,
+                        reason="custom_emoji_document_not_returned",
+                    )
+                else:
+                    self.add_document(
+                        document,
+                        role,
+                        protected=self.protected,
+                        category_hint=(
+                            "reactions"
+                            if purpose == "reaction_custom_emoji"
+                            else "icons"
+                        ),
+                    )
 
 
 class JsonExportWriter:
@@ -1486,11 +1878,25 @@ class JsonExportWriter:
         )
         self.first = False
 
-    def finish(self, peers: Mapping[str, Any], summary: Mapping[str, Any]) -> None:
+    def finish(
+        self,
+        peers: Mapping[str, Any],
+        peer_avatars: Iterable[Mapping[str, Any]],
+        summary: Mapping[str, Any],
+    ) -> None:
         self.file.write("\n],\n")
         self.file.write('"peers": ')
         self.file.write(
             json.dumps(json_safe(peers), ensure_ascii=False, separators=(",", ":"))
+        )
+        self.file.write(",\n")
+        self.file.write('"peer_avatars": ')
+        self.file.write(
+            json.dumps(
+                json_safe(list(peer_avatars)),
+                ensure_ascii=False,
+                separators=(",", ":"),
+            )
         )
         self.file.write(",\n")
         self.file.write('"summary": ')
@@ -1524,6 +1930,7 @@ class ChatExporter:
         self.chat_id = marked_chat_id(entity)
         self.output_dir = output_dir
         self.files_dir = output_dir / "files"
+        self.error_log_path = output_dir / "media-errors.jsonl"
         self.args = args
         self.pacer = Pacer(
             args.history_delay,
@@ -1550,6 +1957,8 @@ class ChatExporter:
         self.search_own_messages = False
         self.stats = ExportStats()
         self.media_cache: dict[str, dict[str, Any]] = {}
+        self.media_asset_cache: dict[str, dict[str, Any]] = {}
+        self.migrated_legacy_files: set[Path] = set()
         self.referenced_files: set[str] = set()
         self.emoji_documents: dict[int, Any] = {}
         self.unresolved_emoji: set[int] = set()
@@ -1559,6 +1968,8 @@ class ChatExporter:
         self.message_effects: dict[int, dict[str, Any]] = {}
         self.seen_message_ids: set[tuple[int, int]] = set()
         self.peers: dict[str, Any] = {str(self.chat_id): json_safe(entity)}
+        self.peer_entities: dict[int, Any] = {self.chat_id: entity}
+        self.peer_avatar_records: list[dict[str, Any]] = []
 
     async def rpc(self, factory: Callable[[], Any], label: str) -> Any:
         attempts = 0
@@ -1593,6 +2004,11 @@ class ChatExporter:
             marked_id = peer_id(entity)
             if marked_id is not None:
                 self.peers.setdefault(str(marked_id), json_safe(entity))
+                if (
+                    marked_id not in self.peer_entities
+                    or getattr(entity, "photo", None) is not None
+                ):
+                    self.peer_entities[marked_id] = entity
 
     async def prepare(self) -> None:
         """Resolve protection and migration metadata before opening takeout."""
@@ -1697,6 +2113,7 @@ class ChatExporter:
                 )
                 self.chat_protected = self.chat_protected or self.entity_protected
                 self.peers.setdefault(str(current_marked_id), json_safe(current_entity))
+                self.peer_entities.setdefault(current_marked_id, current_entity)
                 old_source = self.history_sources[0]
                 old_source.label = "migrated_from_basic_group"
                 self.history_sources = [
@@ -1807,6 +2224,8 @@ class ChatExporter:
                 "message.effect",
                 None,
                 status="unavailable",
+                attachment_subtype="message_effect",
+                category_hint="effects",
                 id=effect_id,
                 reason="message_effect_catalog_entry_not_returned",
             )
@@ -1988,6 +2407,12 @@ class ChatExporter:
                 await self.pacer.after_metadata()
 
     def target_filename(self, target: DownloadTarget, ordinal: int) -> str:
+        if target.kind == "profile_photo":
+            owner = sanitize_component(
+                str(target.metadata.get("owner_type") or "peer"), "peer", 24
+            )
+            photo_id = target.metadata.get("id")
+            return f"{target.source_chat_id}_{photo_id}_{owner}_avatar.jpg"
         if target.original_name:
             original = sanitize_component(target.original_name, target.subtype)
             stem = sanitize_component(Path(original).stem, target.subtype, 40)
@@ -2000,10 +2425,125 @@ class ChatExporter:
         )
         return f"{source_part}_{target.message_id}_{ordinal:02d}{id_part}_{stem}{target.extension}"
 
+    def save_embedded_preview(
+        self, target: DownloadTarget, final_path: Path
+    ) -> Optional[dict[str, Any]]:
+        if not target.embedded_preview:
+            return None
+        preview_path = final_path.with_name(f"{final_path.stem}_embedded_preview.jpg")
+        preview_path.parent.mkdir(parents=True, exist_ok=True)
+        partial_path = preview_path.with_suffix(preview_path.suffix + ".part")
+        partial_path.write_bytes(target.embedded_preview)
+        os.replace(partial_path, preview_path)
+        relative_path = preview_path.relative_to(self.output_dir).as_posix()
+        self.referenced_files.add(relative_path)
+        return {
+            "status": "downloaded_embedded_preview",
+            "category": attachment_category(target),
+            "file": relative_path,
+            "downloaded_size": len(target.embedded_preview),
+            "quality": target.embedded_preview_info,
+        }
+
+    def log_media_issue(
+        self,
+        target: DownloadTarget,
+        record: Mapping[str, Any],
+        relative_path: str,
+    ) -> None:
+        entry = {
+            "at": iso_datetime(utc_now()),
+            "chat_id": self.chat_id,
+            "source_chat_id": target.source_chat_id,
+            "message_id": target.message_id,
+            "role": target.role,
+            "category": record.get("category"),
+            "kind": target.kind,
+            "cache_key": target.cache_key,
+            "media_id": target.metadata.get("id"),
+            "source_url": target.refresh_url,
+            "intended_file": relative_path,
+            "status": record.get("status"),
+            "reason": record.get("reason"),
+            "error_type": record.get("error_type"),
+            "error": record.get("error"),
+            "attempts": record.get("attempts"),
+            "file_reference_refresh": record.get("file_reference_refresh"),
+            "fallback": record.get("fallback"),
+        }
+        with self.error_log_path.open("a", encoding="utf-8") as log:
+            log.write(json.dumps(json_safe(entry), ensure_ascii=False) + "\n")
+
     async def refresh_target(
-        self, api: Any, target: DownloadTarget
+        self,
+        api: Any,
+        target: DownloadTarget,
+        diagnostic: dict[str, Any],
     ) -> Optional[DownloadTarget]:
+        diagnostic.update(
+            strategy="source_refetch",
+            file_reference_before=file_reference_fingerprint(target.obj),
+            steps=[],
+        )
         try:
+            if target.kind == "profile_photo":
+                fresh_entity = await self.rpc(
+                    lambda: self.base_client.get_entity(
+                        target.source_peer or target.obj
+                    ),
+                    f"refresh peer avatar {target.source_chat_id}",
+                )
+                await self.pacer.after_metadata()
+                diagnostic["steps"].append(
+                    {
+                        "method": "get_entity",
+                        "response_type": tl_name(fresh_entity),
+                    }
+                )
+                refreshed = copy.copy(target)
+                refreshed.obj = fresh_entity
+                return refreshed
+            if target.refresh_url:
+                preview = await self.rpc(
+                    lambda: self.base_client(
+                        functions.messages.GetWebPagePreviewRequest(
+                            message=target.refresh_url
+                        )
+                    ),
+                    f"refresh web preview for message {target.message_id}",
+                )
+                self.stats.metadata_requests += 1
+                await self.pacer.after_metadata()
+                preview_media = getattr(preview, "media", None)
+                webpage = getattr(preview_media, "webpage", None)
+                diagnostic["steps"].append(
+                    {
+                        "method": "messages.getWebPagePreview",
+                        "media_type": tl_name(preview_media),
+                        "webpage_type": tl_name(webpage),
+                    }
+                )
+                if tl_name(webpage) == "WebPage":
+                    collector = AttachmentCollector(
+                        target.message_id,
+                        target.protected,
+                        forwarded=target.forwarded,
+                        source_chat_id=target.source_chat_id,
+                        source_peer=target.source_peer,
+                        message_range=target.message_range,
+                    )
+                    collector.collect_media(preview_media, "message.media")
+                    candidate = next(
+                        (
+                            item
+                            for item in collector.targets
+                            if item.cache_key == target.cache_key
+                        ),
+                        None,
+                    )
+                    if candidate is not None:
+                        return candidate
+
             if "story" in target.role.lower():
                 # Force stories.getStoriesByID to supply a new file_reference
                 # instead of reusing the in-run hydrated StoryItem cache.
@@ -2019,6 +2559,7 @@ class ChatExporter:
                 collector = AttachmentCollector(
                     target.message_id,
                     target.protected,
+                    forwarded=target.forwarded,
                     source_chat_id=target.source_chat_id,
                     source_peer=target.source_peer,
                     message_range=target.message_range,
@@ -2040,7 +2581,9 @@ class ChatExporter:
                     ),
                     None,
                 )
-            if target.role.startswith("message.custom_emoji."):
+            if target.role.startswith(
+                ("message.custom_emoji.", "message.reaction_custom_emoji.")
+            ):
                 document_id = int(target.metadata.get("id") or 0)
                 documents = await self.rpc(
                     lambda: api(
@@ -2059,6 +2602,7 @@ class ChatExporter:
                 collector = AttachmentCollector(
                     target.message_id,
                     target.protected,
+                    forwarded=target.forwarded,
                     source_chat_id=target.source_chat_id,
                     source_peer=target.source_peer,
                     message_range=target.message_range,
@@ -2095,6 +2639,16 @@ class ChatExporter:
             )
             self.stats.metadata_requests += 1
             await self.pacer.after_metadata()
+            diagnostic["steps"].append(
+                {
+                    "method": (
+                        "channels.getMessages"
+                        if tl_name(source_peer) == "InputPeerChannel"
+                        else "messages.getMessages"
+                    ),
+                    "response_type": tl_name(response),
+                }
+            )
             fresh = next(iter(getattr(response, "messages", None) or []), None)
             if fresh is None:
                 return None
@@ -2102,6 +2656,7 @@ class ChatExporter:
             collector = AttachmentCollector(
                 target.message_id,
                 target.protected,
+                forwarded=target.forwarded,
                 source_chat_id=target.source_chat_id,
                 source_peer=source_peer,
                 message_range=target.message_range,
@@ -2111,14 +2666,28 @@ class ChatExporter:
             for candidate in collector.targets:
                 if candidate.cache_key == target.cache_key:
                     return candidate
-        except (errors.RPCError, asyncio.TimeoutError, OSError, ValueError, TypeError):
+        except (
+            errors.RPCError,
+            asyncio.TimeoutError,
+            OSError,
+            ValueError,
+            TypeError,
+        ) as exc:
+            diagnostic.update(
+                result="refresh_error",
+                error_type=type(exc).__name__,
+                error=error_text(exc),
+            )
             return None
+        diagnostic.setdefault("result", "source_no_longer_returns_media")
         return None
 
     async def download_target(
         self, api: Any, target: DownloadTarget, ordinal: int
     ) -> dict[str, Any]:
         record = copy.deepcopy(target.metadata)
+        category = attachment_category(target)
+        record["category"] = category
         if target.protected:
             record.update(status="protected", reason="telegram_content_protection")
             return record
@@ -2132,38 +2701,107 @@ class ChatExporter:
                 )
                 return record
 
-        cached = self.media_cache.get(target.cache_key)
+        filename = self.target_filename(target, ordinal)
+        final_path = self.files_dir / category / filename
+        final_path.parent.mkdir(parents=True, exist_ok=True)
+        relative_path = final_path.relative_to(self.output_dir).as_posix()
+        cache_slot = f"{category}\0{target.cache_key}"
+
+        def usable_file(path: Path) -> bool:
+            if path.is_symlink() or not path.is_file():
+                return False
+            size = path.stat().st_size
+            return (
+                target.expected_size is None and size > 0
+            ) or size == target.expected_size
+
+        def remember_asset(cache: dict[str, Any]) -> None:
+            self.media_cache[cache_slot] = cache
+            self.media_asset_cache.setdefault(target.cache_key, cache)
+
+        def clone_file(source: Path, destination: Path) -> None:
+            temporary = destination.with_suffix(destination.suffix + ".reuse.part")
+            temporary.unlink(missing_ok=True)
+            try:
+                os.link(source, temporary)
+            except OSError:
+                shutil.copy2(source, temporary)
+            os.replace(temporary, destination)
+
+        cached = self.media_cache.get(cache_slot)
         if cached:
-            self.referenced_files.add(str(cached["file"]))
-            record.update(
-                status="reused",
-                file=cached["file"],
-                downloaded_size=cached["downloaded_size"],
-                reused_from=cached.get("first_message"),
-            )
+            cached_path = self.output_dir / str(cached["file"])
+            if usable_file(cached_path):
+                self.referenced_files.add(str(cached["file"]))
+                record.update(
+                    status="reused",
+                    file=cached["file"],
+                    downloaded_size=cached["downloaded_size"],
+                    reused_from=cached.get("first_message"),
+                )
+                return record
+
+        if usable_file(final_path):
+            existing_size = final_path.stat().st_size
+            cache = {
+                "file": relative_path,
+                "downloaded_size": existing_size,
+                "first_message": target.message_id,
+            }
+            remember_asset(cache)
+            self.referenced_files.add(relative_path)
+            record.update(status="existing", **cache)
             return record
 
-        filename = self.target_filename(target, ordinal)
-        final_path = self.files_dir / filename
-        relative_path = final_path.relative_to(self.output_dir).as_posix()
-        if final_path.is_file():
-            existing_size = final_path.stat().st_size
-            if (
-                target.expected_size is None and existing_size > 0
-            ) or existing_size == target.expected_size:
+        # Preserve crash consistency with an older completed JSON: clone its
+        # flat file now and let post-publication pruning remove the old link.
+        for legacy_path in (
+            self.files_dir / filename,
+            self.files_dir / "legacy" / filename,
+        ):
+            if usable_file(legacy_path):
+                clone_file(legacy_path, final_path)
+                self.migrated_legacy_files.add(legacy_path)
                 cache = {
                     "file": relative_path,
-                    "downloaded_size": existing_size,
+                    "downloaded_size": final_path.stat().st_size,
                     "first_message": target.message_id,
                 }
-                self.media_cache[target.cache_key] = cache
+                remember_asset(cache)
                 self.referenced_files.add(relative_path)
-                record.update(status="existing", **cache)
+                record.update(
+                    status="existing",
+                    migrated_from=legacy_path.relative_to(
+                        self.output_dir
+                    ).as_posix(),
+                    **cache,
+                )
+                return record
+
+        asset = self.media_asset_cache.get(target.cache_key)
+        if asset:
+            asset_path = self.output_dir / str(asset["file"])
+            if usable_file(asset_path):
+                clone_file(asset_path, final_path)
+                cache = {
+                    "file": relative_path,
+                    "downloaded_size": final_path.stat().st_size,
+                    "first_message": target.message_id,
+                }
+                remember_asset(cache)
+                self.referenced_files.add(relative_path)
+                record.update(
+                    status="reused",
+                    reused_from=asset.get("first_message"),
+                    reused_asset_from=asset["file"],
+                    **cache,
+                )
                 return record
 
         partial_path = final_path.with_suffix(final_path.suffix + ".part")
         current_target = target
         attempts = 0
+        reference_refreshes: list[dict[str, Any]] = []
         while True:
             partial_path.unlink(missing_ok=True)
             try:
@@ -2177,6 +2815,12 @@ class ChatExporter:
                 elif current_target.kind == "contact":
                     partial_path.write_bytes(contact_vcard(current_target.obj))
                     result = str(partial_path)
+                elif current_target.kind == "profile_photo":
+                    result = await self.base_client.download_profile_photo(
+                        current_target.obj,
+                        file=str(partial_path),
+                        download_big=True,
+                    )
                 elif current_target.kind == "web_document":
                     timeout = aiohttp.ClientTimeout(
                         total=None,
@@ -2230,9 +2874,13 @@ class ChatExporter:
                     "downloaded_size": actual_size,
                     "first_message": target.message_id,
                 }
-                self.media_cache[target.cache_key] = cache
+                remember_asset(cache)
                 self.referenced_files.add(relative_path)
                 record.update(status="downloaded", **cache)
+                if attempts:
+                    record["attempts"] = attempts
+                if reference_refreshes:
+                    record["file_reference_refresh"] = reference_refreshes
                 print(f"Downloaded {relative_path} ({actual_size} bytes)", flush=True)
                 if target.kind != "contact":
                     await self.pacer.after_media()
@@ -2246,9 +2894,93 @@ class ChatExporter:
             except Exception as exc:
                 attempts += 1
                 if is_file_reference_error(exc):
-                    refreshed = await self.refresh_target(api, current_target)
+                    diagnostic: dict[str, Any] = {
+                        "attempt": len(reference_refreshes) + 1,
+                        "trigger_error_type": type(exc).__name__,
+                    }
+                    if len(reference_refreshes) >= 2:
+                        diagnostic.update(
+                            result="refresh_limit_reached",
+                            file_reference_before=file_reference_fingerprint(
+                                current_target.obj
+                            ),
+                            steps=[],
+                        )
+                        refreshed = None
+                    else:
+                        self.stats.file_reference_refreshes += 1
+                        refreshed = await self.refresh_target(
+                            api, current_target, diagnostic
+                        )
                     if refreshed is not None:
-                        current_target = refreshed
+                        before = diagnostic.get("file_reference_before")
+                        after = file_reference_fingerprint(refreshed.obj)
+                        diagnostic["file_reference_after"] = after
+                        if after is not None and after != before:
+                            diagnostic["result"] = "refreshed"
+                            self.stats.file_reference_refresh_successes += 1
+                            reference_refreshes.append(diagnostic)
+                            current_target = refreshed
+                            print(
+                                f"Refreshed expired file reference for message "
+                                f"{target.message_id} {target.role}; retrying immediately",
+                                flush=True,
+                            )
+                            continue
+                        diagnostic["result"] = "unchanged_file_reference"
+                    else:
+                        diagnostic.setdefault(
+                            "result", "source_no_longer_returns_media"
+                        )
+                    reference_refreshes.append(diagnostic)
+                    partial_path.unlink(missing_ok=True)
+                    refresh_failed = diagnostic.get("result") == "refresh_error"
+                    fallback = self.save_embedded_preview(target, final_path)
+                    record.update(
+                        status="failed" if refresh_failed else "unavailable",
+                        reason=(
+                            "file_reference_refresh_failed"
+                            if refresh_failed
+                            else "expired_file_reference_not_refreshable"
+                        ),
+                        error_type=type(exc).__name__,
+                        error=error_text(exc),
+                        attempts=attempts,
+                        file_reference_refresh=reference_refreshes,
+                    )
+                    if fallback is not None:
+                        record["fallback"] = fallback
+                    self.log_media_issue(target, record, relative_path)
+                    print(
+                        f"Unavailable {target.role} in message {target.message_id}: "
+                        + (
+                            "refresh request failed"
+                            if refresh_failed
+                            else "Telegram no longer returns a fresh file reference"
+                        )
+                        + (
+                            f"; saved embedded preview to {fallback['file']}"
+                            if fallback is not None
+                            else ""
+                        ),
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    if target.kind != "contact":
+                        await self.pacer.after_media()
+                    return record
+                if target.kind == "profile_photo" and isinstance(exc, RuntimeError):
+                    partial_path.unlink(missing_ok=True)
+                    record.update(
+                        status="unavailable",
+                        reason="profile_photo_not_returned",
+                        error_type=type(exc).__name__,
+                        error=error_text(exc),
+                        attempts=attempts,
+                    )
+                    self.log_media_issue(target, record, relative_path)
+                    await self.pacer.after_media()
+                    return record
                 retryable = isinstance(
                     exc,
                     (
@@ -2260,7 +2992,7 @@ class ChatExporter:
                         RuntimeError,
                         aiohttp.ClientError,
                     ),
-                ) or is_file_reference_error(exc)
+                )
                 if retryable and attempts <= self.args.retries:
                     self.stats.transient_retries += 1
                     delay = min(60.0, 2.0**attempts) + random.uniform(
@@ -2278,7 +3010,9 @@ class ChatExporter:
                     status="failed",
                     error_type=type(exc).__name__,
                     error=error_text(exc),
+                    attempts=attempts,
                 )
+                self.log_media_issue(target, record, relative_path)
                 print(
                     f"Failed {target.role}: {error_text(exc)}",
                     file=sys.stderr,
@@ -2293,13 +3027,21 @@ class ChatExporter:
             return 0
         removed = 0
         try:
-            paths = list(self.files_dir.iterdir())
+            paths = sorted(
+                self.files_dir.rglob("*"),
+                key=lambda path: len(path.parts),
+                reverse=True,
+            )
         except OSError as exc:
             print(f"Could not inspect stale files: {error_text(exc)}", file=sys.stderr)
             return 0
         for path in paths:
             try:
-                if not path.is_file():
+                if path.is_dir() and not path.is_symlink():
+                    try:
+                        path.rmdir()
+                    except OSError:
+                        pass
                     continue
                 relative = path.relative_to(self.output_dir).as_posix()
                 if relative not in self.referenced_files:
@@ -2311,6 +3053,88 @@ class ChatExporter:
                     file=sys.stderr,
                 )
         return removed
+
+    def remove_migrated_legacy_files(self) -> int:
+        if self.args.keep_stale_files:
+            return 0
+        removed = 0
+        for path in self.migrated_legacy_files:
+            try:
+                if path.parent in {
+                    self.files_dir,
+                    self.files_dir / "legacy",
+                } and path.is_file():
+                    path.unlink()
+                    removed += 1
+            except OSError as exc:
+                print(
+                    f"Could not remove migrated legacy file {path}: {error_text(exc)}",
+                    file=sys.stderr,
+                )
+        return removed
+
+    def archive_unclassified_legacy_files(self) -> int:
+        """Move unmatched old flat files aside without deleting their data."""
+
+        if self.args.keep_stale_files:
+            return 0
+        archived = 0
+        legacy_dir = self.files_dir / "legacy"
+        for path in list(self.files_dir.iterdir()):
+            if path.is_symlink() or not path.is_file():
+                continue
+            try:
+                legacy_dir.mkdir(parents=True, exist_ok=True)
+                destination = legacy_dir / path.name
+                suffix = 1
+                while destination.exists():
+                    destination = legacy_dir / f"{path.stem}_{suffix}{path.suffix}"
+                    suffix += 1
+                os.replace(path, destination)
+                archived += 1
+            except OSError as exc:
+                print(
+                    f"Could not archive legacy file {path}: {error_text(exc)}",
+                    file=sys.stderr,
+                )
+        return archived
+
+    async def download_peer_avatars(self, api: Any) -> list[dict[str, Any]]:
+        records: list[dict[str, Any]] = []
+        for marked_id, entity in sorted(self.peer_entities.items()):
+            photo = getattr(entity, "photo", None)
+            photo_id = getattr(photo, "photo_id", None)
+            if photo_id is None or tl_name(photo) in {
+                "UserProfilePhotoEmpty",
+                "ChatPhotoEmpty",
+                "None",
+            }:
+                continue
+            target = DownloadTarget(
+                obj=entity,
+                kind="profile_photo",
+                subtype="avatar",
+                role="peer.avatar",
+                message_id=0,
+                cache_key=f"avatar:{marked_id}:{photo_id}:big",
+                extension=".jpg",
+                expected_size=None,
+                metadata={
+                    "type": "avatar",
+                    "role": "peer.avatar",
+                    "id": photo_id,
+                    "owner_id": marked_id,
+                    "owner_type": tl_name(entity),
+                    "owner_name": utils.get_display_name(entity),
+                    "telegram": json_safe(photo),
+                },
+                source_chat_id=marked_id,
+                category_hint="avatars",
+            )
+            record = await self.download_target(api, target, 1)
+            records.append(record)
+            self.stats.observe_attachment(record)
+        return records
 
     async def attachment_records(
         self,
@@ -2331,6 +3155,7 @@ class ChatExporter:
         collector = AttachmentCollector(
             int(message.id),
             protected,
+            forwarded=getattr(message, "fwd_from", None) is not None,
             source_chat_id=source.marked_id,
             source_peer=source.input_peer,
             message_range=message_range,
@@ -2527,6 +3352,7 @@ class ChatExporter:
             },
         }
         writer = JsonExportWriter(final_path, header, self.args.overwrite)
+        self.error_log_path.unlink(missing_ok=True)
         try:
             ranges = await self.history_ranges(api, use_takeout_ranges)
             for source_index, source in enumerate(self.history_sources, start=1):
@@ -2599,6 +3425,7 @@ class ChatExporter:
 
                         offset_id = next_offset
 
+            self.peer_avatar_records = await self.download_peer_avatars(api)
             finished = utc_now()
             failed = self.stats.attachments.get("failed", 0)
             skipped = self.stats.attachments.get("skipped_limit", 0)
@@ -2610,8 +3437,9 @@ class ChatExporter:
                 and failed == 0
                 and skipped == 0
             )
+            fully_complete = complete_accessible and protected == 0 and unavailable == 0
             summary = {
-                "complete": complete_accessible and protected == 0 and unavailable == 0,
+                "complete": fully_complete,
                 "complete_accessible": complete_accessible,
                 "history_complete": self.history_complete,
                 "monoforum_scope": self.monoforum_scope,
@@ -2621,8 +3449,15 @@ class ChatExporter:
                 "metadata_requests": self.stats.metadata_requests,
                 "flood_waits": self.stats.flood_waits,
                 "transient_retries": self.stats.transient_retries,
+                "file_reference_refreshes": self.stats.file_reference_refreshes,
+                "file_reference_refresh_successes": (
+                    self.stats.file_reference_refresh_successes
+                ),
                 "metadata_failures": self.stats.metadata_failures,
                 "attachments": dict(sorted(self.stats.attachments.items())),
+                "attachment_categories": dict(
+                    sorted(self.stats.attachment_categories.items())
+                ),
                 "bytes_downloaded": self.stats.bytes_downloaded,
                 "started_at": iso_datetime(started),
                 "finished_at": iso_datetime(finished),
@@ -2637,11 +3472,17 @@ class ChatExporter:
             # Publish the new JSON before pruning.  If serialization/fsync/
             # replace fails, the previous completed JSON and its files remain
             # a consistent archive.
-            writer.finish(self.peers, summary)
-            stale_files_removed = self.prune_stale_files() if complete_accessible else 0
+            writer.finish(self.peers, self.peer_avatar_records, summary)
+            stale_files_removed = self.remove_migrated_legacy_files()
+            legacy_files_archived = 0
+            if fully_complete:
+                stale_files_removed += self.prune_stale_files()
+            else:
+                legacy_files_archived = self.archive_unclassified_legacy_files()
             print(
                 f"Finished: {self.stats.messages} messages -> {final_path} "
-                f"({failed} failed downloads, {stale_files_removed} stale files pruned)",
+                f"({failed} failed downloads, {stale_files_removed} stale files pruned, "
+                f"{legacy_files_archived} unmatched legacy files archived)",
                 flush=True,
             )
             return summary
@@ -2830,7 +3671,9 @@ def takeout_flags(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Download one complete accessible Telegram chat to JSON and files/.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        # ArgumentDefaultsHelpFormatter would print TG_PHONE/TG_SESSION from
+        # the environment and leak credentials into help output and logs.
+        formatter_class=argparse.HelpFormatter,
     )
     parser.add_argument(
         "chat",
