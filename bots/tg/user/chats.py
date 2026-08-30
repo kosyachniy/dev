@@ -6,7 +6,7 @@ from telethon.sessions import StringSession
 from libdev.cfg import cfg
 
 
-LIMIT = 30  # None
+LIMIT = 200  # None
 FILTER = None  # ""
 # USER_SESSION = ""
 
