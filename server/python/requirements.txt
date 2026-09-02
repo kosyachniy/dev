@@ -3,4 +3,4 @@ fastapi==0.85.0
 uvicorn==0.18.3
 
 # Flask
-Flask==2.2.2
+Flask==2.3.2
