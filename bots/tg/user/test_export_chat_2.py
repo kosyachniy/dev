@@ -1276,6 +1276,231 @@ class ExportSchemaTests(unittest.TestCase):
                 expected_type,
             )
 
+    def test_link_preview_photo_suppresses_every_video_asset(self):
+        now = dt.datetime(2025, 1, 1, tzinfo=dt.timezone.utc)
+        photo = types.Photo(
+            1801,
+            2801,
+            b"photo-reference",
+            now,
+            [
+                types.PhotoSize("m", 320, 180, 100),
+                types.PhotoSize("x", 1280, 720, 900),
+            ],
+            2,
+            # A webpage preview must not export an animated/live-photo video
+            # rendition when a still image is available.
+            video_sizes=[types.VideoSize("u", 1280, 720, 1200)],
+        )
+        video = types.Document(
+            1802,
+            2802,
+            b"video-reference",
+            now,
+            "video/mp4",
+            5000,
+            2,
+            [types.DocumentAttributeVideo(12.0, 1920, 1080)],
+            thumbs=[types.PhotoSize("x", 1280, 720, 800)],
+        )
+        webpage = types.WebPage(
+            1803,
+            "https://example.com/video",
+            "example.com/video",
+            0,
+            title="Video preview",
+            photo=photo,
+            document=video,
+        )
+        message = types.Message(
+            id=1804,
+            peer_id=types.PeerUser(7),
+            date=now,
+            message="https://example.com/video",
+            media=types.MessageMediaWebPage(webpage),
+        )
+
+        collector = export.AttachmentCollector(1804, False, source_chat_id=7)
+        collector.collect_media(message.media, "message.media")
+
+        self.assertEqual(len(collector.targets), 1, collector.targets)
+        target = collector.targets[0]
+        self.assertEqual(target.metadata["type"], "image")
+        self.assertEqual(target.metadata["id"], photo.id)
+        self.assertEqual(target.metadata["mime"], "image/jpeg")
+        self.assertEqual(target.extension, ".jpg")
+        self.assertEqual(target.expected_size, 900)
+
+        emitted, exporter = self.emit_attachments(message)
+        downloaded = [item for item in emitted if "file" in item]
+        self.assertEqual([item["type"] for item in downloaded], ["image"])
+        self.assertEqual(downloaded[0]["id"], photo.id)
+        self.assertTrue(downloaded[0]["file"].endswith(".jpg"))
+        self.assertFalse(
+            any(
+                item.get("mime") == "video/mp4"
+                or str(item.get("file", "")).endswith(".mp4")
+                for item in emitted
+            ),
+            emitted,
+        )
+        self.assertEqual(exporter.stats.attachments.get("downloaded"), 1)
+
+    def test_video_only_link_preview_uses_largest_image_thumbnail(self):
+        now = dt.datetime(2025, 1, 1, tzinfo=dt.timezone.utc)
+        video = types.Document(
+            1811,
+            2811,
+            b"video-reference",
+            now,
+            "video/mp4",
+            5000,
+            2,
+            [types.DocumentAttributeVideo(12.0, 1920, 1080)],
+            thumbs=[
+                types.PhotoSize("m", 320, 180, 100),
+                types.PhotoSize("x", 1280, 720, 800),
+            ],
+        )
+        webpage = types.WebPage(
+            1812,
+            "https://example.com/video-only",
+            "example.com/video-only",
+            0,
+            title="Video-only preview",
+            document=video,
+        )
+        message = types.Message(
+            id=1813,
+            peer_id=types.PeerUser(7),
+            date=now,
+            message="https://example.com/video-only",
+            media=types.MessageMediaWebPage(webpage),
+        )
+
+        collector = export.AttachmentCollector(1813, False, source_chat_id=7)
+        collector.collect_media(message.media, "message.media")
+
+        self.assertEqual(len(collector.targets), 1, collector.targets)
+        target = collector.targets[0]
+        self.assertEqual(target.metadata["type"], "image")
+        self.assertEqual(target.metadata["id"], video.id)
+        self.assertEqual(target.metadata["mime"], "image/jpeg")
+        self.assertEqual(target.extension, ".jpg")
+        self.assertEqual(target.expected_size, 800)
+
+        emitted, exporter = self.emit_attachments(message)
+        downloaded = [item for item in emitted if "file" in item]
+        self.assertEqual([item["type"] for item in downloaded], ["image"])
+        self.assertEqual(downloaded[0]["id"], video.id)
+        self.assertTrue(downloaded[0]["file"].endswith(".jpg"))
+        self.assertFalse(
+            any(
+                item.get("mime") == "video/mp4"
+                or str(item.get("file", "")).endswith(".mp4")
+                for item in emitted
+            ),
+            emitted,
+        )
+        self.assertEqual(exporter.stats.attachments.get("downloaded"), 1)
+
+        no_thumb_video = types.Document(
+            1814,
+            2814,
+            b"video-reference",
+            now,
+            "video/mp4",
+            5000,
+            2,
+            [types.DocumentAttributeVideo(12.0, 1920, 1080)],
+        )
+        no_thumb_webpage = types.WebPage(
+            1815,
+            "https://example.com/no-thumbnail",
+            "example.com/no-thumbnail",
+            0,
+            document=no_thumb_video,
+        )
+        no_thumb_collector = export.AttachmentCollector(
+            1816,
+            False,
+            source_chat_id=7,
+        )
+        no_thumb_collector.collect_media(
+            types.MessageMediaWebPage(no_thumb_webpage),
+            "message.media",
+        )
+        self.assertEqual(no_thumb_collector.targets, [])
+
+    def test_recursive_preview_documents_use_thumbnail_policy_but_media_does_not(self):
+        now = dt.datetime(2025, 1, 1, tzinfo=dt.timezone.utc)
+        video = types.Document(
+            1821,
+            2821,
+            b"shared-video-reference",
+            now,
+            "video/mp4",
+            5000,
+            2,
+            [types.DocumentAttributeVideo(12.0, 1920, 1080)],
+            thumbs=[
+                types.PhotoSize("m", 320, 180, 100),
+                types.PhotoSize("x", 1280, 720, 800),
+            ],
+        )
+        cached_page = types.Page(
+            "https://example.com/cached-video",
+            [],
+            [],
+            [video],
+            v2=True,
+        )
+        webpage = types.WebPage(
+            1822,
+            "https://example.com/cached-video",
+            "example.com/cached-video",
+            0,
+            cached_page=cached_page,
+        )
+
+        preview_collector = export.AttachmentCollector(
+            1823,
+            False,
+            source_chat_id=7,
+        )
+        preview_collector.collect_media(
+            types.MessageMediaWebPage(webpage),
+            "message.media",
+        )
+
+        self.assertEqual(len(preview_collector.targets), 1)
+        preview = preview_collector.targets[0]
+        self.assertEqual(preview.metadata["type"], "image")
+        self.assertEqual(preview.metadata["mime"], "image/jpeg")
+        self.assertEqual(preview.extension, ".jpg")
+        self.assertEqual(preview.expected_size, 800)
+        self.assertEqual(preview.cache_key, f"document:{video.id}:thumb:x")
+        self.assertEqual(preview.subtype, "image")
+
+        media_collector = export.AttachmentCollector(
+            1824,
+            False,
+            source_chat_id=7,
+        )
+        media_collector.collect_media(
+            types.MessageMediaDocument(document=video),
+            "message.media",
+        )
+
+        self.assertEqual(len(media_collector.targets), 1)
+        media = media_collector.targets[0]
+        self.assertEqual(media.metadata["type"], "video")
+        self.assertEqual(media.metadata["mime"], "video/mp4")
+        self.assertEqual(media.extension, ".mp4")
+        self.assertEqual(media.expected_size, 5000)
+        self.assertEqual(media.cache_key, f"document:{video.id}")
+        self.assertEqual(media.subtype, "video")
+
     def test_media_references_match_selected_saved_rendition(self):
         now = dt.datetime(2025, 1, 1, tzinfo=dt.timezone.utc)
 
@@ -1555,13 +1780,16 @@ class ExportSchemaTests(unittest.TestCase):
         self.assertEqual(exporter.stats.empty_messages_skipped, 100)
 
     def test_writer_and_resume_use_id(self):
+        # Preview download selection changed behavior, not the JSON contract;
+        # existing schema-14 exports must therefore remain resumable.
+        self.assertEqual(export.SCHEMA_VERSION, 14)
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory)
             messages_path = output / "7.jsonl"
             metadata_path = output / "7.metadata.json"
             header = {
                 "schema": export.SCHEMA_NAME,
-                "schema_version": export.SCHEMA_VERSION,
+                "schema_version": 14,
                 "attachment_hash_algorithm": "sha256",
                 "telegram_layer": export.TELEGRAM_LAYER,
                 "telethon_version": export.telethon.__version__,

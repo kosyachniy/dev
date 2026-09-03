@@ -41,8 +41,10 @@ their normalized content; physical assets expose one selected rendition and
 its saved local file. File-carrying Telegram wrappers are folded into that one
 concrete attachment, so they never create a second generic photo/document/
 contact entry. Public attachments omit internal download routing fields such as
-role and category. All absolute times are integer Unix seconds, and recursively
-empty optional values are omitted. Poll option tokens are retained;
+role and category. Link/reply previews save still images only: a Telegram video
+preview is represented by its largest available JPEG thumbnail, never by the
+full video. All absolute times are integer Unix seconds, and recursively empty
+optional values are omitted. Poll option tokens are retained;
 other opaque binary and authorization-capability tokens are represented by
 SHA-256 and byte size instead of copying potentially sensitive payload bytes.
 
@@ -953,10 +955,11 @@ def photo_size_info(size: Any) -> dict[str, Any]:
     }
 
 
-def best_photo_size(photo: Any) -> Any:
+def best_static_photo_size(sizes: Iterable[Any]) -> Any:
     candidates = []
-    for size in getattr(photo, "sizes", None) or []:
-        if tl_name(size) in {"PhotoSizeEmpty", "PhotoStrippedSize", "PhotoPathSize"}:
+    all_sizes = list(sizes)
+    for size in all_sizes:
+        if tl_name(size) not in {"PhotoSize", "PhotoSizeProgressive"}:
             continue
         info = photo_size_info(size)
         area = int(info.get("width") or 0) * int(info.get("height") or 0)
@@ -977,11 +980,19 @@ def best_photo_size(photo: Any) -> Any:
 
     # A cached/stripped image is better than silently losing the attachment.
     fallback = []
-    for size in getattr(photo, "sizes", None) or []:
+    for size in all_sizes:
         if tl_name(size) in {"PhotoCachedSize", "PhotoStrippedSize"}:
             fallback.append((len(getattr(size, "bytes", b"") or b""), size))
     if fallback:
         return max(fallback, key=lambda item: item[0])[1]
+
+    return None
+
+
+def best_photo_size(photo: Any, *, allow_video: bool = True) -> Any:
+    static_size = best_static_photo_size(getattr(photo, "sizes", None) or [])
+    if static_size is not None or not allow_video:
+        return static_size
 
     video_sizes = [
         size
@@ -3015,7 +3026,8 @@ class AttachmentCollector:
                 content=content,
             )
             return
-        size = best_photo_size(photo)
+        preview_only = category_hint == "preview" or refresh_url is not None
+        size = best_photo_size(photo, allow_video=not preview_only)
         if size is None:
             self.metadata_record(
                 "image",
@@ -3079,7 +3091,7 @@ class AttachmentCollector:
             for item in (getattr(photo, "video_sizes", None) or [])
             if tl_name(item) == "VideoSize"
         ]
-        if video_sizes and not is_video:
+        if video_sizes and not is_video and not preview_only:
             video_size = max(
                 video_sizes,
                 key=lambda item: (
@@ -3175,6 +3187,17 @@ class AttachmentCollector:
         title: Optional[str] = None,
         content: Optional[Mapping[str, Any]] = None,
     ) -> None:
+        if category_hint == "preview" or refresh_url is not None:
+            self.add_document_preview_image(
+                document,
+                role,
+                alternatives=alternatives,
+                protected=protected,
+                refresh_url=refresh_url,
+                title=title,
+                content=content,
+            )
+            return
         selected_document = select_document_rendition(document, alternatives)
         if selected_document is None or tl_name(selected_document) in {
             "DocumentEmpty",
@@ -3293,6 +3316,115 @@ class AttachmentCollector:
                 )
             )
 
+    def add_document_preview_image(
+        self,
+        document: Any,
+        role: str,
+        *,
+        alternatives: Optional[Iterable[Any]] = None,
+        protected: Optional[bool] = None,
+        refresh_url: Optional[str] = None,
+        title: Optional[str] = None,
+        content: Optional[Mapping[str, Any]] = None,
+    ) -> bool:
+        """Save one still document thumbnail without fetching the document."""
+
+        alternative_list = list(alternatives or [])
+        preferred = select_document_rendition(document, alternative_list)
+        candidates: list[Any] = []
+        seen_candidates: set[int] = set()
+        for candidate in (preferred, document, *alternative_list):
+            if candidate is None or tl_name(candidate) != "Document":
+                continue
+            identity = id(candidate)
+            if identity in seen_candidates:
+                continue
+            seen_candidates.add(identity)
+            candidates.append(candidate)
+        selected_document = None
+        size = None
+        for candidate in candidates:
+            candidate_size = best_static_photo_size(
+                getattr(candidate, "thumbs", None) or []
+            )
+            if candidate_size is not None:
+                selected_document = candidate
+                size = candidate_size
+                break
+        if selected_document is None or size is None:
+            return False
+        selected = photo_size_info(size)
+        thumb_type = getattr(size, "type", None)
+        if not isinstance(thumb_type, str) or not thumb_type:
+            return False
+
+        media_id = getattr(selected_document, "id", None)
+        access_hash = getattr(selected_document, "access_hash", None)
+        file_reference = getattr(selected_document, "file_reference", None)
+        metadata = {
+            "type": "image",
+            "id": media_id,
+            "access_hash": access_hash,
+            "mime": "image/jpeg",
+            "title": title or document_attributes(selected_document).get("title"),
+            "created": unix_timestamp(getattr(selected_document, "date", None)),
+        }
+        if content:
+            metadata["content"] = sparse_json(dict(content))
+
+        size_name = tl_name(size)
+        expected_size = int(selected.get("size") or 0) or None
+        if size_name in {"PhotoCachedSize", "PhotoStrippedSize"}:
+            data = bytes(getattr(size, "bytes", b"") or b"")
+            if size_name == "PhotoStrippedSize":
+                try:
+                    data = utils.stripped_photo_to_jpg(data)
+                except (IndexError, TypeError, ValueError):
+                    return False
+            if not data:
+                return False
+            target_object: Any = data
+            target_kind = "bytes"
+            expected_size = len(data)
+        else:
+            if (
+                type(media_id) is not int
+                or type(access_hash) is not int
+                or not isinstance(file_reference, bytes)
+            ):
+                return False
+            target_object = types.InputDocumentFileLocation(
+                id=media_id,
+                access_hash=access_hash,
+                file_reference=file_reference,
+                thumb_size=thumb_type,
+            )
+            target_kind = "file_location"
+
+        self.targets.append(
+            DownloadTarget(
+                obj=target_object,
+                kind=target_kind,
+                subtype="image",
+                role=f"{role}.thumbnail",
+                message_id=self.message_id,
+                cache_key=f"document:{media_id}:thumb:{thumb_type}",
+                extension=".jpg",
+                expected_size=expected_size,
+                metadata=metadata,
+                thumb=thumb_type,
+                protected=self.protected if protected is None else protected,
+                forwarded=self.forwarded,
+                source_chat_id=self.source_chat_id,
+                source_peer=self.source_peer,
+                message_range=self.message_range,
+                dc_id=getattr(selected_document, "dc_id", None),
+                refresh_url=refresh_url,
+                category_hint="preview",
+            )
+        )
+        return True
+
     def add_web_document(
         self,
         document: Any,
@@ -3305,6 +3437,10 @@ class AttachmentCollector:
         size = getattr(document, "size", None)
         access_hash = getattr(document, "access_hash", None)
         attributes = document_attributes(document)
+        preview_only = category_hint == "preview"
+        if preview_only and document_subtype(document, attributes) != "image":
+            return
+        subtype = "image" if preview_only else "web_file"
         file_name = attributes.get("filename")
         # WebDocument access_hash identifies Telegram-proxied content. A
         # WebDocumentNoProxy URL may be mutable, so scope it to this message
@@ -3317,7 +3453,7 @@ class AttachmentCollector:
         ).hexdigest()[:24]
         extension = safe_extension(file_name or url, mime, ".bin")
         metadata = {
-            "type": "web_file",
+            "type": subtype,
             "access_hash": access_hash,
             "mime": mime,
             "file_name": file_name,
@@ -3329,7 +3465,7 @@ class AttachmentCollector:
             DownloadTarget(
                 obj=document,
                 kind="web_document",
-                subtype="web_file",
+                subtype=subtype,
                 role=role,
                 message_id=self.message_id,
                 cache_key=f"web:{digest}",
@@ -3354,6 +3490,8 @@ class AttachmentCollector:
         category_hint: Optional[str] = None,
         content: Optional[Mapping[str, Any]] = None,
     ) -> None:
+        if category_hint == "preview":
+            return
         content_hash = hashlib.sha256(contact_vcard(media)).hexdigest()[:24]
         metadata = {
             "type": "contact",
@@ -3426,12 +3564,19 @@ class AttachmentCollector:
         )
         music = getattr(story, "music", None)
         if music is not None:
-            self.add_document(
-                music,
-                f"{role}.music",
-                protected=story_protected,
-                category_hint=category_hint,
-            )
+            if category_hint == "preview":
+                self.add_document_preview_image(
+                    music,
+                    f"{role}.music",
+                    protected=story_protected,
+                )
+            else:
+                self.add_document(
+                    music,
+                    f"{role}.music",
+                    protected=story_protected,
+                    category_hint=category_hint,
+                )
         for key, child in vars(story).items() if hasattr(story, "__dict__") else []:
             if not key.startswith("_") and key not in {"media", "music"}:
                 self.discover(
@@ -3479,12 +3624,19 @@ class AttachmentCollector:
             )
             return
         if name in {"Document", "DocumentEmpty"}:
-            self.add_document(
-                value,
-                role,
-                protected=active_protection,
-                category_hint=category_hint,
-            )
+            if category_hint == "preview":
+                self.add_document_preview_image(
+                    value,
+                    role,
+                    protected=active_protection,
+                )
+            else:
+                self.add_document(
+                    value,
+                    role,
+                    protected=active_protection,
+                    category_hint=category_hint,
+                )
             return
         if name in {"WebDocument", "WebDocumentNoProxy"}:
             self.add_web_document(
@@ -3622,7 +3774,7 @@ class AttachmentCollector:
                 content=carrier_attachment_content(media),
             )
             live_video = getattr(media, "video", None)
-            if live_video is not None:
+            if live_video is not None and category_hint != "preview":
                 self.add_document(
                     live_video,
                     f"{role}.live_photo_video",
@@ -3632,6 +3784,28 @@ class AttachmentCollector:
             return
 
         if name == "MessageMediaDocument":
+            if category_hint == "preview":
+                cover = getattr(media, "video_cover", None)
+                if (
+                    cover is not None
+                    and best_photo_size(cover, allow_video=False) is not None
+                ):
+                    self.add_photo(
+                        cover,
+                        f"{role}.video_cover",
+                        protected=active_protection,
+                        category_hint="preview",
+                        content=carrier_attachment_content(media),
+                    )
+                else:
+                    self.add_document_preview_image(
+                        getattr(media, "document", None),
+                        f"{role}.document",
+                        alternatives=getattr(media, "alt_documents", None) or [],
+                        protected=active_protection,
+                        content=carrier_attachment_content(media),
+                    )
+                return
             self.add_document(
                 getattr(media, "document", None),
                 f"{role}.document",
@@ -3668,7 +3842,10 @@ class AttachmentCollector:
             refresh_url = getattr(webpage, "url", None)
             if tl_name(webpage) == "WebPage":
                 webpage_photo = getattr(webpage, "photo", None)
-                if webpage_photo is not None:
+                if (
+                    webpage_photo is not None
+                    and best_photo_size(webpage_photo, allow_video=False) is not None
+                ):
                     self.add_photo(
                         webpage_photo,
                         f"{role}.photo",
@@ -3677,14 +3854,12 @@ class AttachmentCollector:
                         category_hint="preview",
                         title=getattr(webpage, "title", None),
                     )
-                webpage_document = getattr(webpage, "document", None)
-                if webpage_document is not None:
-                    self.add_document(
-                        webpage_document,
+                else:
+                    self.add_document_preview_image(
+                        getattr(webpage, "document", None),
                         f"{role}.document",
                         protected=active_protection,
                         refresh_url=refresh_url,
-                        category_hint="preview",
                         title=getattr(webpage, "title", None),
                     )
                 self.discover(

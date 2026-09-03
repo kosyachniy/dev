@@ -6,7 +6,8 @@ from telethon.sessions import StringSession
 from libdev.cfg import cfg
 
 
-LIMIT = 200  # None
+LIMIT = 50  # None
+OFFSET = 0  # 1000
 FILTER = None  # ""
 # USER_SESSION = ""
 
@@ -17,9 +18,9 @@ async def chats(client, limit=None):
     text = ""
 
     for i, dialog in enumerate(dialogs):
-        # print("!", i)
-
-        if i == limit:
+        if i < OFFSET:
+            continue
+        if i >= OFFSET + limit:
             break
         if FILTER is not None and (
             FILTER != dialog.name if FILTER in {""} else FILTER not in dialog.name
@@ -106,8 +107,8 @@ async def main():
     ) as client:
         _, text = await chats(client, LIMIT)
         print(text)
-        # with open("chats.txt", "w") as file:
-        #     print(text, file=file)
+        with open("chats.txt", "w") as file:
+            print(text, file=file)
 
 
 if __name__ == "__main__":
