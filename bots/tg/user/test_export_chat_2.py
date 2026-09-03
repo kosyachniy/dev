@@ -1,6 +1,8 @@
 import asyncio
+import contextlib
 import datetime as dt
 import inspect
+import io
 import json
 import tempfile
 import unittest
@@ -1556,6 +1558,123 @@ class ExportSchemaTests(unittest.TestCase):
             self.assertNotIn(secret, safe_error)
             self.assertNotIn(secret, safe_source)
 
+    def test_tl_decode_error_text_never_exposes_raw_payload(self):
+        error = export.errors.TypeNotFoundError(
+            0x3A54685E,
+            b"private message body and credentials",
+        )
+
+        safe_error = export.error_text(error)
+
+        self.assertIn("constructor 0x3a54685e", safe_error)
+        self.assertIn("36 bytes", safe_error)
+        self.assertIn("sha256", safe_error)
+        self.assertNotIn("private", safe_error)
+        self.assertNotIn("credentials", safe_error)
+
+    def test_tl_decode_failure_reconnects_reinitializes_and_retries(self):
+        class BaseClient:
+            def __init__(self):
+                self.disconnects = 0
+                self.connects = 0
+
+            async def disconnect(self):
+                self.disconnects += 1
+
+            async def connect(self):
+                self.connects += 1
+
+        exporter: Any = object.__new__(export.ChatExporter)
+        exporter.args = SimpleNamespace(retries=2, jitter=0.0)
+        exporter.stats = export.ExportStats()
+        exporter.base_client = BaseClient()
+        calls = 0
+
+        async def factory():
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                raise export.errors.TypeNotFoundError(
+                    0x3A54685E,
+                    b"private message body",
+                )
+            return "current-layer response"
+
+        async def run():
+            original_sleep = export.asyncio.sleep
+
+            async def no_sleep(_delay):
+                return None
+
+            export.asyncio.sleep = no_sleep
+            try:
+                return await exporter.rpc(factory, "message history")
+            finally:
+                export.asyncio.sleep = original_sleep
+
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            result = asyncio.run(run())
+
+        self.assertEqual(result, "current-layer response")
+        self.assertEqual(calls, 2)
+        self.assertEqual(exporter.base_client.disconnects, 1)
+        self.assertEqual(exporter.base_client.connects, 1)
+        self.assertEqual(exporter.stats.transient_retries, 1)
+        self.assertIn("constructor 0x3a54685e", output.getvalue())
+        self.assertIn("retrying 1/2", output.getvalue())
+        self.assertNotIn("private message body", output.getvalue())
+
+    def test_repeated_tl_decode_failures_are_bounded_and_safe(self):
+        class BaseClient:
+            def __init__(self):
+                self.disconnects = 0
+                self.connects = 0
+
+            async def disconnect(self):
+                self.disconnects += 1
+
+            async def connect(self):
+                self.connects += 1
+
+        exporter: Any = object.__new__(export.ChatExporter)
+        exporter.args = SimpleNamespace(retries=1, jitter=0.0)
+        exporter.stats = export.ExportStats()
+        exporter.base_client = BaseClient()
+        calls = 0
+
+        async def factory():
+            nonlocal calls
+            calls += 1
+            raise export.errors.TypeNotFoundError(
+                0x3A54685E,
+                b"private message body",
+            )
+
+        async def run():
+            original_sleep = export.asyncio.sleep
+
+            async def no_sleep(_delay):
+                return None
+
+            export.asyncio.sleep = no_sleep
+            try:
+                return await exporter.rpc(factory, "message history")
+            finally:
+                export.asyncio.sleep = original_sleep
+
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            with self.assertRaisesRegex(RuntimeError, "constructor 0x3a54685e") as raised:
+                asyncio.run(run())
+
+        self.assertEqual(calls, 2)
+        self.assertEqual(exporter.base_client.disconnects, 1)
+        self.assertEqual(exporter.base_client.connects, 1)
+        self.assertEqual(exporter.stats.transient_retries, 2)
+        self.assertNotIn("private message body", str(raised.exception))
+        self.assertNotIn("private message body", output.getvalue())
+
     def test_marked_peers_fact_check_and_empty_reactions(self):
         now = dt.datetime(2025, 1, 1, tzinfo=dt.timezone.utc)
         giveaway = export.normalized_content(
@@ -1694,6 +1813,146 @@ class ExportSchemaTests(unittest.TestCase):
                 }
             )
 
+    def test_media_flood_wait_is_bounded_logged_and_does_not_block_next_file(self):
+        class RecordingPacer:
+            def __init__(self):
+                self.flood_waits = []
+                self.media_delays = 0
+
+            async def flood_wait(self, seconds, label):
+                self.flood_waits.append((seconds, label))
+
+            async def after_chunk(self):
+                return None
+
+            async def after_media(self):
+                self.media_delays += 1
+
+        class DownloadApi:
+            def __init__(self):
+                self.calls = {"blocked": 0, "good": 0}
+
+            async def download_media(
+                self,
+                media,
+                *,
+                file,
+                thumb,
+                progress_callback,
+            ):
+                self.calls[media] += 1
+                if media == "blocked" and self.calls[media] <= 4:
+                    raise export.errors.FloodWaitError(request=None, capture=0)
+                Path(file).write_bytes(b"downloaded")
+                return file
+
+        def target(media, message_id):
+            return export.DownloadTarget(
+                obj=media,
+                kind="media",
+                subtype="file",
+                role="message.media.document",
+                message_id=message_id,
+                cache_key=f"document:{message_id}",
+                extension=".bin",
+                expected_size=None,
+                metadata={"type": "file", "id": message_id},
+                source_chat_id=7,
+            )
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            exporter: Any = object.__new__(export.ChatExporter)
+            exporter.output_dir = output
+            exporter.files_dir = output / "files"
+            exporter.error_log_path = output / "media-errors.jsonl"
+            exporter.chat_id = 7
+            exporter.args = SimpleNamespace(
+                max_file_size=0,
+                retries=2,
+                jitter=0.0,
+            )
+            exporter.pacer = RecordingPacer()
+            exporter.stats = export.ExportStats()
+            exporter.media_cache = {}
+            exporter.media_asset_cache = {}
+            exporter.referenced_files = set()
+
+            api = DownloadApi()
+            failed = asyncio.run(
+                exporter.download_target(api, target("blocked", 41), 1)
+            )
+            downloaded = asyncio.run(
+                exporter.download_target(api, target("good", 42), 1)
+            )
+
+            self.assertEqual(api.calls["blocked"], 3)
+            self.assertEqual(failed["status"], "failed")
+            self.assertEqual(failed["reason"], "flood_wait_limit")
+            self.assertEqual(failed["error_type"], "FloodWaitError")
+            self.assertEqual(failed["attempts"], 3)
+            public_failed = export.public_attachment_record(failed)
+            self.assertEqual(
+                public_failed,
+                {
+                    "type": "file",
+                    "id": 41,
+                    "status": "failed",
+                    "reason": "flood_wait_limit",
+                },
+            )
+            export.validate_message_contract(
+                {
+                    "id": 41,
+                    "source": 7,
+                    "author": 7,
+                    "created": 1,
+                    "attachments": [public_failed],
+                }
+            )
+            self.assertEqual(exporter.stats.flood_waits, 3)
+            self.assertEqual(
+                exporter.pacer.flood_waits,
+                [
+                    (
+                        0,
+                        "media message.media.document in message 41 "
+                        "(media 41, retry 1/2)",
+                    ),
+                    (
+                        0,
+                        "media message.media.document in message 41 "
+                        "(media 41, retry 2/2)",
+                    ),
+                ],
+            )
+
+            self.assertEqual(api.calls["good"], 1)
+            self.assertEqual(downloaded["status"], "downloaded")
+            self.assertTrue((output / downloaded["file"]).is_file())
+
+            issues = [
+                json.loads(line)
+                for line in exporter.error_log_path.read_text(
+                    encoding="utf-8"
+                ).splitlines()
+            ]
+            self.assertEqual(len(issues), 1)
+            self.assertEqual(issues[0]["message_id"], 41)
+            self.assertEqual(issues[0]["media_id"], 41)
+            self.assertEqual(issues[0]["status"], "failed")
+            self.assertEqual(issues[0]["reason"], "flood_wait_limit")
+            self.assertEqual(issues[0]["error_type"], "FloodWaitError")
+            self.assertIn("wait of 0 seconds", issues[0]["error"])
+            self.assertEqual(issues[0]["attempts"], 3)
+            self.assertEqual(
+                [
+                    item["telegram_wait_seconds"]
+                    for item in issues[0]["flood_wait_history"]
+                ],
+                [0, 0, 0],
+            )
+
     def test_empty_placeholders_advance_history_without_becoming_rows(self):
         class Pacer:
             async def after_history(self):
@@ -1778,6 +2037,343 @@ class ExportSchemaTests(unittest.TestCase):
         rows = asyncio.run(collect())
         self.assertEqual([item[0].id for item in rows], [101])
         self.assertEqual(exporter.stats.empty_messages_skipped, 100)
+
+    def test_partial_jsonl_resumes_after_last_verified_message_and_media(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            messages_path = output / "7.jsonl"
+            metadata_path = output / "7.metadata.json"
+            partial_path = messages_path.with_suffix(messages_path.suffix + ".part")
+            media_path = output / "files" / "media" / "saved.bin"
+            media_path.parent.mkdir(parents=True)
+            media_path.write_bytes(b"verified media")
+
+            rows = [
+                {
+                    "id": 1,
+                    "source": 7,
+                    "author": 7,
+                    "created": 10,
+                    "data": "first",
+                },
+                {
+                    "id": 2,
+                    "source": 7,
+                    "author": 7,
+                    "created": 20,
+                    "data": "second",
+                    "attachments": [
+                        {
+                            "type": "file",
+                            "id": 22,
+                            "file": "files/media/saved.bin",
+                            "hash": export.file_sha256(media_path),
+                        },
+                        {
+                            "type": "story",
+                            "status": "unavailable",
+                            "reason": "expired",
+                        },
+                    ],
+                },
+            ]
+            committed = b"".join(
+                json.dumps(row, separators=(",", ":")).encode("utf-8") + b"\n"
+                for row in rows
+            )
+            partial_path.write_bytes(committed)
+
+            partial = export.load_partial_export(
+                messages_path,
+                existing=None,
+                expected_chat_id=7,
+            )
+            self.assertIsNotNone(partial)
+            assert partial is not None
+            self.assertEqual(partial.message_count, 2)
+            self.assertEqual(partial.checkpoints, {(7, 0): 2})
+            self.assertEqual(partial.attachment_error_statuses, {"unavailable": 1})
+            self.assertEqual(len(partial.media_assets), 1)
+            resumed_asset = next(iter(partial.media_assets.values()))
+            self.assertEqual(resumed_asset["file"], "files/media/saved.bin")
+            self.assertEqual(resumed_asset["hash"], export.file_sha256(media_path))
+            with self.assertRaisesRegex(RuntimeError, "current chat/topic scope"):
+                export.load_partial_export(
+                    messages_path,
+                    existing=None,
+                    expected_chat_id=7,
+                    allowed_checkpoint_keys={(8, 0)},
+                )
+
+            header = {
+                "schema": export.SCHEMA_NAME,
+                "schema_version": export.SCHEMA_VERSION,
+                "attachment_hash_algorithm": "sha256",
+                "telegram_layer": export.TELEGRAM_LAYER,
+                "telethon_version": export.telethon.__version__,
+                "exported_at": 100,
+                "order": "oldest_to_newest_by_created_at",
+                "chat": {
+                    "id": 7,
+                    "monoforum_scope": None,
+                    "history_sources": [],
+                },
+            }
+            writer = export.JsonlExportWriter(
+                messages_path,
+                metadata_path,
+                header,
+                overwrite=False,
+                partial=partial,
+            )
+            writer.write_message(
+                {
+                    "id": 3,
+                    "source": 7,
+                    "author": 7,
+                    "created": 30,
+                    "data": "third",
+                }
+            )
+            writer.finish(
+                {},
+                [],
+                partial.media_assets,
+                {
+                    "messages": 3,
+                    "complete": False,
+                    "complete_accessible": True,
+                    "history_complete": True,
+                    "started_at": 100,
+                    "finished_at": 101,
+                    "duration_seconds": 1.0,
+                },
+            )
+
+            self.assertTrue(messages_path.read_bytes().startswith(committed))
+            resumed_rows = [
+                json.loads(line)
+                for line in messages_path.read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertEqual([row["id"] for row in resumed_rows], [1, 2, 3])
+            existing = export.load_existing_export(
+                messages_path,
+                metadata_path,
+                overwrite=False,
+                expected_chat_id=7,
+            )
+            self.assertIsNotNone(existing)
+            assert existing is not None
+            validation_writer = export.JsonlExportWriter(
+                messages_path,
+                metadata_path,
+                header,
+                overwrite=False,
+                existing=existing,
+            )
+            validation_writer.close_incomplete()
+
+    def test_partial_jsonl_truncates_only_recoverable_tail_failures(self):
+        first = {
+            "id": 1,
+            "source": 7,
+            "author": 7,
+            "created": 10,
+            "data": "first",
+        }
+        first_line = (
+            json.dumps(first, separators=(",", ":")).encode("utf-8") + b"\n"
+        )
+
+        with self.subTest("unterminated JSON write"):
+            with tempfile.TemporaryDirectory() as directory:
+                messages_path = Path(directory) / "7.jsonl"
+                partial_path = messages_path.with_suffix(
+                    messages_path.suffix + ".part"
+                )
+                partial_path.write_bytes(first_line + b'{"id":2,"source":7')
+
+                partial = export.load_partial_export(
+                    messages_path,
+                    existing=None,
+                    expected_chat_id=7,
+                )
+
+                self.assertIsNotNone(partial)
+                assert partial is not None
+                self.assertEqual(partial.message_count, 1)
+                self.assertEqual(partial.checkpoints, {(7, 0): 1})
+                self.assertEqual(partial_path.read_bytes(), first_line)
+
+        for label, attachment, create_file in (
+            (
+                "missing final media",
+                {
+                    "type": "file",
+                    "file": "files/media/missing.bin",
+                    "hash": "0" * 64,
+                },
+                False,
+            ),
+            (
+                "hash-mismatched final media",
+                {
+                    "type": "file",
+                    "file": "files/media/bad-hash.bin",
+                    "hash": "0" * 64,
+                },
+                True,
+            ),
+            (
+                "failed final media",
+                {
+                    "type": "file",
+                    "status": "failed",
+                    "reason": "flood_wait_limit",
+                },
+                False,
+            ),
+        ):
+            with self.subTest(label):
+                with tempfile.TemporaryDirectory() as directory:
+                    output = Path(directory)
+                    messages_path = output / "7.jsonl"
+                    partial_path = messages_path.with_suffix(
+                        messages_path.suffix + ".part"
+                    )
+                    if create_file:
+                        media_path = output / "files" / "media" / "bad-hash.bin"
+                        media_path.parent.mkdir(parents=True)
+                        media_path.write_bytes(b"does not match declared hash")
+                    failed_row = {
+                        "id": 2,
+                        "source": 7,
+                        "author": 7,
+                        "created": 20,
+                        "attachments": [attachment],
+                    }
+                    partial_path.write_bytes(
+                        first_line
+                        + json.dumps(
+                            failed_row,
+                            separators=(",", ":"),
+                        ).encode("utf-8")
+                        + b"\n"
+                    )
+
+                    partial = export.load_partial_export(
+                        messages_path,
+                        existing=None,
+                        expected_chat_id=7,
+                    )
+
+                    self.assertIsNotNone(partial)
+                    assert partial is not None
+                    self.assertEqual(partial.message_count, 1)
+                    self.assertEqual(partial.checkpoints, {(7, 0): 1})
+                    self.assertEqual(partial_path.read_bytes(), first_line)
+
+    def test_partial_jsonl_recovers_media_gap_but_rejects_structural_corruption(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            messages_path = output / "7.jsonl"
+            partial_path = messages_path.with_suffix(messages_path.suffix + ".part")
+            rows = [
+                {
+                    "id": 1,
+                    "source": 7,
+                    "author": 7,
+                    "created": 10,
+                    "attachments": [
+                        {
+                            "type": "file",
+                            "file": "files/media/missing.bin",
+                            "hash": "0" * 64,
+                        }
+                    ],
+                },
+                {
+                    "id": 2,
+                    "source": 7,
+                    "author": 7,
+                    "created": 20,
+                    "data": "later committed row",
+                },
+            ]
+            original = b"".join(
+                json.dumps(row, separators=(",", ":")).encode("utf-8") + b"\n"
+                for row in rows
+            )
+            partial_path.write_bytes(original)
+
+            partial = export.load_partial_export(
+                messages_path,
+                existing=None,
+                expected_chat_id=7,
+            )
+            self.assertIsNotNone(partial)
+            assert partial is not None
+            self.assertEqual(partial.message_count, 0)
+            self.assertEqual(partial.checkpoints, {})
+            self.assertEqual(partial_path.read_bytes(), b"")
+
+        with tempfile.TemporaryDirectory() as directory:
+            messages_path = Path(directory) / "7.jsonl"
+            partial_path = messages_path.with_suffix(messages_path.suffix + ".part")
+            partial_path.write_bytes(
+                b'{"id":1,"source":7,"author":7,"created":10}\n'
+                b'{"id":2,"source":7}\n'
+            )
+            with self.assertRaises(RuntimeError):
+                export.load_partial_export(
+                    messages_path,
+                    existing=None,
+                    expected_chat_id=7,
+                )
+
+    def test_partial_jsonl_prefix_mismatch_falls_back_to_published_export(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            messages_path = output / "7.jsonl"
+            partial_path = messages_path.with_suffix(messages_path.suffix + ".part")
+            published_row = {
+                "id": 1,
+                "source": 7,
+                "author": 7,
+                "created": 10,
+                "data": "published",
+            }
+            published = (
+                json.dumps(published_row, separators=(",", ":")).encode("utf-8")
+                + b"\n"
+            )
+            messages_path.write_bytes(published)
+            partial_path.write_bytes(published.replace(b"published", b"different"))
+            existing = export.ExistingExportState(
+                metadata={},
+                message_count=1,
+                byte_size=len(published),
+                sha256=export.hashlib.sha256(published).hexdigest(),
+                checkpoints={(7, 0): 1},
+                first_created_epoch=10,
+                last_created_epoch=10,
+                has_undated_messages=False,
+                peers={},
+                peer_avatars=[],
+                media_assets={},
+            )
+
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                partial = export.load_partial_export(
+                    messages_path,
+                    existing=existing,
+                    expected_chat_id=7,
+                )
+
+            self.assertIsNone(partial)
+            self.assertRegex(stderr.getvalue().lower(), r"interrupted.*jsonl")
+            self.assertIn("published", stderr.getvalue().lower())
 
     def test_writer_and_resume_use_id(self):
         # Preview download selection changed behavior, not the JSON contract;

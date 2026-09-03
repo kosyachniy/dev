@@ -52,6 +52,10 @@ Re-running the same command against a valid JSONL/metadata pair performs an
 incremental update: it checks each chat/topic history boundary, processes only
 higher-ID messages, and preserves/reuses existing media.  Use ``--overwrite``
 to rebuild all message state, including edits, deletions, and changed reactions.
+An interrupted normal export resumes from its validated ``.jsonl.part`` rows;
+an unfinished final row is discarded and requested again.
+If Telegram transiently returns constructors from an older API layer, the
+exporter reopens and reinitializes the connection before retrying the request.
 
 Only history and media available to the logged-in user can be exported.
 Telegram cannot reconstruct deleted messages, expired/self-destructed media,
@@ -583,9 +587,35 @@ def sanitize_log_text(value: str) -> str:
 
 
 def error_text(exc: BaseException) -> str:
+    if isinstance(exc, errors.TypeNotFoundError):
+        return type_not_found_error_details(exc)
     text = re.sub(r"\s+", " ", str(exc)).strip()
     text = sanitize_log_text(text)
     return text[:1000]
+
+
+def type_not_found_error_details(exc: BaseException) -> str:
+    """Describe a TL decode failure without exposing its raw message bytes."""
+
+    constructor_id = int(getattr(exc, "invalid_constructor_id", 0)) & 0xFFFFFFFF
+    remaining_value = getattr(exc, "remaining", b"")
+    try:
+        remaining = bytes(remaining_value)
+    except (TypeError, ValueError):
+        remaining = b""
+    digest = hashlib.sha256(remaining).hexdigest()
+    return (
+        "Telegram returned an undecodable TL payload "
+        f"(constructor 0x{constructor_id:08x}, {len(remaining)} bytes, "
+        f"sha256 {digest})"
+    )
+
+
+async def reinitialize_telegram_connection(client: Any) -> None:
+    """Reopen the socket so Telethon sends initConnection and its API layer."""
+
+    await cast(Awaitable[Any], client.disconnect())
+    await cast(Awaitable[Any], client.connect())
 
 
 def is_file_reference_error(exc: BaseException) -> bool:
@@ -4104,6 +4134,25 @@ class ExistingExportState:
     media_assets: dict[str, dict[str, Any]]
 
 
+@dataclass
+class PartialExportState:
+    """Validated state reconstructed from an interrupted JSONL work file."""
+
+    partial_path: Path
+    message_count: int
+    byte_size: int
+    sha256: str
+    checkpoints: dict[CheckpointKey, int]
+    first_created_epoch: Optional[int]
+    last_created_epoch: Optional[int]
+    has_undated_messages: bool
+    last_order_key: Optional[tuple[int, int]]
+    referenced_files: set[str]
+    media_assets: dict[str, dict[str, Any]]
+    attachment_error_statuses: dict[str, int]
+    digest: Any = field(repr=False)
+
+
 def checkpoint_key_from_source(source: HistorySource) -> CheckpointKey:
     return int(source.marked_id), int(source.topic_peer_id or 0)
 
@@ -4578,6 +4627,331 @@ def load_existing_export(
     )
 
 
+class _PartialMediaValidationError(ValueError):
+    """A committed partial row references media that is no longer complete."""
+
+
+def load_partial_export(
+    messages_path: Path,
+    existing: Optional[ExistingExportState],
+    expected_chat_id: int,
+    *,
+    overwrite: bool = False,
+    allowed_checkpoint_keys: Optional[set[CheckpointKey]] = None,
+) -> Optional[PartialExportState]:
+    """Validate and recover an interrupted ``.jsonl.part`` append.
+
+    A terminating newline is the row commit marker. An unterminated byte tail is
+    discarded. Structurally invalid committed rows are rejected. If a partial
+    row has missing/corrupt (or explicitly failed) media, that row and its
+    suffix are rolled back so Telegram can be asked for them again.
+    """
+
+    partial_path = messages_path.with_suffix(messages_path.suffix + ".part")
+    if overwrite or not partial_path.exists():
+        return None
+    if partial_path.is_symlink() or not partial_path.is_file():
+        raise RuntimeError(
+            f"Interrupted JSONL work file {partial_path} must be a regular, "
+            "non-symbolic-link file"
+        )
+
+    base_byte_size = existing.byte_size if existing is not None else 0
+    partial_size = partial_path.stat().st_size
+    if existing is not None:
+        if partial_size < base_byte_size:
+            print(
+                f"Ignoring interrupted JSONL {partial_path}: it is shorter than "
+                "the published export",
+                file=sys.stderr,
+                flush=True,
+            )
+            return None
+        prefix_matches = True
+        remaining = base_byte_size
+        with messages_path.open("rb") as published, partial_path.open("rb") as partial:
+            while remaining:
+                chunk_size = min(1024 * 1024, remaining)
+                if partial.read(chunk_size) != published.read(chunk_size):
+                    prefix_matches = False
+                    break
+                remaining -= chunk_size
+        if not prefix_matches:
+            print(
+                f"Ignoring interrupted JSONL {partial_path}: it does not start "
+                "with the published export",
+                file=sys.stderr,
+                flush=True,
+            )
+            return None
+
+    checkpoints: dict[CheckpointKey, int] = {}
+    first_created_epoch: Optional[int] = None
+    last_created_epoch: Optional[int] = None
+    has_undated = False
+    previous_order_key: Optional[tuple[int, int]] = None
+    message_count = 0
+    byte_size = 0
+    digest = hashlib.sha256()
+    referenced_files: set[str] = set()
+    media_assets = dict(existing.media_assets) if existing is not None else {}
+    attachment_error_statuses: dict[str, int] = {}
+    verified_file_hashes: dict[str, str] = {}
+    prefix_state_checked = existing is None or base_byte_size == 0
+
+    def validate_published_prefix_state() -> None:
+        nonlocal prefix_state_checked
+        if existing is None or prefix_state_checked or byte_size != base_byte_size:
+            return
+        if (
+            message_count != existing.message_count
+            or digest.hexdigest() != existing.sha256
+            or checkpoints != existing.checkpoints
+            or first_created_epoch != existing.first_created_epoch
+            or last_created_epoch != existing.last_created_epoch
+            or has_undated != existing.has_undated_messages
+        ):
+            raise RuntimeError(
+                "Interrupted JSONL published prefix does not match its metadata"
+            )
+        prefix_state_checked = True
+
+    def commit_row(
+        line: bytes,
+        message: Mapping[str, Any],
+        line_number: int,
+        *,
+        line_start: int,
+    ) -> bool:
+        """Apply one row to resume state; false asks the caller to roll it back."""
+
+        nonlocal message_count, byte_size, first_created_epoch
+        nonlocal last_created_epoch, has_undated, previous_order_key
+
+        attachments = message.get("attachments") or []
+        retryable_partial_row = line_start >= base_byte_size
+        if retryable_partial_row and any(
+            isinstance(attachment, Mapping)
+            and attachment.get("status") == "failed"
+            for attachment in attachments
+        ):
+            return False
+
+        message_id = int(message["id"])
+        history_source = effective_message_history_source(message)
+        if history_source is None:
+            raise RuntimeError(
+                f"Invalid interrupted JSONL message on line {line_number}: "
+                "history_source/source does not identify a history stream"
+            )
+        topic = message.get("monoforum_topic")
+        topic_peer_id = (
+            int(topic.get("peer_id") or 0) if isinstance(topic, Mapping) else 0
+        )
+        checkpoint_key = (history_source, topic_peer_id)
+        if message_id <= checkpoints.get(checkpoint_key, 0):
+            raise RuntimeError(
+                f"Invalid interrupted JSONL message on line {line_number}: "
+                "message IDs must increase within each history source"
+            )
+
+        created_value = message.get("created")
+        created = created_value if type(created_value) is int else None
+        order_key = (1, 0) if created is None else (0, created)
+        if previous_order_key is not None and order_key < previous_order_key:
+            raise RuntimeError(
+                f"Invalid interrupted JSONL message on line {line_number}: "
+                "messages must be ordered oldest-to-newest by created"
+            )
+
+        row_files: set[str] = set()
+        row_media_assets: dict[str, dict[str, Any]] = {}
+        try:
+            for attachment in attachments:
+                if not isinstance(attachment, Mapping) or not attachment.get("file"):
+                    continue
+                attachment_hash = str(attachment.get("hash") or "")
+                normalized = normalize_existing_file_record(
+                    attachment,
+                    messages_path.parent,
+                )
+                if normalized is None:
+                    raise _PartialMediaValidationError(
+                        "saved attachment file is missing or unsafe"
+                    )
+                relative_file = str(normalized["file"])
+                actual_hash = verified_file_hashes.get(relative_file)
+                if actual_hash is None:
+                    actual_hash = file_sha256(messages_path.parent / relative_file)
+                    verified_file_hashes[relative_file] = actual_hash
+                if actual_hash != attachment_hash:
+                    raise _PartialMediaValidationError(
+                        "saved attachment content does not match its hash"
+                    )
+                row_files.add(relative_file)
+                if retryable_partial_row:
+                    resumed_asset_key = "resumed-file:" + hashlib.sha256(
+                        relative_file.encode("utf-8")
+                    ).hexdigest()
+                    row_media_assets[resumed_asset_key] = {
+                        "file": relative_file,
+                        "hash": attachment_hash,
+                        "identity": media_asset_identity(
+                            resumed_asset_key,
+                            attachment,
+                        ),
+                        "downloaded_size": (
+                            messages_path.parent / relative_file
+                        ).stat().st_size,
+                        "first_message": message_id,
+                    }
+        except _PartialMediaValidationError as exc:
+            if retryable_partial_row:
+                print(
+                    f"Rolling back interrupted JSONL line {line_number}: {exc}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                return False
+            raise RuntimeError(
+                f"Invalid interrupted JSONL message on line {line_number}: {exc}"
+            ) from exc
+
+        checkpoints[checkpoint_key] = message_id
+        if created is None:
+            has_undated = True
+        else:
+            first_created_epoch = (
+                created
+                if first_created_epoch is None
+                else min(first_created_epoch, created)
+            )
+            last_created_epoch = (
+                created
+                if last_created_epoch is None
+                else max(last_created_epoch, created)
+            )
+        previous_order_key = order_key
+        referenced_files.update(row_files)
+        media_assets.update(row_media_assets)
+        if retryable_partial_row:
+            for attachment in attachments:
+                if not isinstance(attachment, Mapping):
+                    continue
+                status = attachment.get("status")
+                if status is None:
+                    continue
+                status_name = str(status)
+                attachment_error_statuses[status_name] = (
+                    attachment_error_statuses.get(status_name, 0) + 1
+                )
+        message_count += 1
+        byte_size += len(line)
+        digest.update(line)
+        if existing is not None and byte_size > base_byte_size and not prefix_state_checked:
+            raise RuntimeError(
+                "Interrupted JSONL row crosses the published export boundary"
+            )
+        validate_published_prefix_state()
+        return True
+
+    pending: Optional[tuple[bytes, Mapping[str, Any], int, int]] = None
+    truncate_to: Optional[int] = None
+    offset = 0
+    with partial_path.open("rb") as partial:
+        for line_number, line in enumerate(partial, start=1):
+            line_start = offset
+            offset += len(line)
+            if not line.endswith(b"\n"):
+                if pending is not None:
+                    pending_line, pending_message, pending_number, pending_start = pending
+                    if not commit_row(
+                        pending_line,
+                        pending_message,
+                        pending_number,
+                        line_start=pending_start,
+                    ):
+                        truncate_to = pending_start
+                    else:
+                        truncate_to = line_start
+                else:
+                    truncate_to = line_start
+                break
+
+            try:
+                decoded = json.loads(line)
+                if not isinstance(decoded, Mapping):
+                    raise ValueError("row is not a message object")
+                validate_message_contract(decoded)
+            except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError) as exc:
+                raise RuntimeError(
+                    f"Invalid interrupted JSONL message on line {line_number}: "
+                    f"{error_text(exc)}"
+                ) from exc
+
+            if pending is not None:
+                pending_line, pending_message, pending_number, pending_start = pending
+                if not commit_row(
+                    pending_line,
+                    pending_message,
+                    pending_number,
+                    line_start=pending_start,
+                ):
+                    truncate_to = pending_start
+                    break
+            pending = (line, decoded, line_number, line_start)
+        else:
+            if pending is not None:
+                pending_line, pending_message, pending_number, pending_start = pending
+                if not commit_row(
+                    pending_line,
+                    pending_message,
+                    pending_number,
+                    line_start=pending_start,
+                ):
+                    truncate_to = pending_start
+
+    if existing is not None and not prefix_state_checked:
+        raise RuntimeError(
+            "Interrupted JSONL does not contain the complete published export"
+        )
+    if allowed_checkpoint_keys is not None:
+        unexpected_checkpoints = set(checkpoints) - allowed_checkpoint_keys
+        if unexpected_checkpoints:
+            raise RuntimeError(
+                f"Interrupted JSONL for chat {expected_chat_id} contains history "
+                f"streams outside the current chat/topic scope: "
+                f"{sorted(unexpected_checkpoints)}"
+            )
+    if truncate_to is not None and truncate_to != partial_size:
+        with partial_path.open("r+b") as partial:
+            partial.truncate(truncate_to)
+            partial.flush()
+            os.fsync(partial.fileno())
+        removed = partial_size - truncate_to
+        print(
+            f"Discarded {removed} uncommitted bytes from {partial_path}",
+            file=sys.stderr,
+            flush=True,
+        )
+
+    return PartialExportState(
+        partial_path=partial_path,
+        message_count=message_count,
+        byte_size=byte_size,
+        sha256=digest.hexdigest(),
+        checkpoints=checkpoints,
+        first_created_epoch=first_created_epoch,
+        last_created_epoch=last_created_epoch,
+        has_undated_messages=has_undated,
+        last_order_key=previous_order_key,
+        referenced_files=referenced_files,
+        media_assets=media_assets,
+        attachment_error_statuses=attachment_error_statuses,
+        digest=digest,
+    )
+
+
 def recover_pending_export_publication(
     messages_path: Path,
     metadata_path: Path,
@@ -4663,9 +5037,12 @@ class JsonlExportWriter:
         header: Mapping[str, Any],
         overwrite: bool,
         existing: Optional[ExistingExportState] = None,
+        partial: Optional[PartialExportState] = None,
     ) -> None:
         if overwrite and existing is not None:
             raise ValueError("Full overwrite cannot also use incremental state")
+        if overwrite and partial is not None:
+            raise ValueError("Full overwrite cannot resume interrupted state")
         self.messages_path = messages_path
         self.metadata_path = metadata_path
         self.messages_partial_path = messages_path.with_suffix(
@@ -4688,23 +5065,15 @@ class JsonlExportWriter:
         )
         self.header = dict(header)
         self.existing = existing
-        self.checkpoints = dict(existing.checkpoints) if existing else {}
+        self.partial = partial
+        self.checkpoints: dict[CheckpointKey, int] = {}
         self.message_count = 0
         self.byte_size = 0
         self.digest = hashlib.sha256()
-        self.first_created_epoch = existing.first_created_epoch if existing else None
-        self.last_created_epoch = existing.last_created_epoch if existing else None
-        self.has_undated_messages = (
-            existing.has_undated_messages if existing else False
-        )
+        self.first_created_epoch: Optional[int] = None
+        self.last_created_epoch: Optional[int] = None
+        self.has_undated_messages = False
         self.last_order_key: Optional[tuple[int, int]] = None
-        if existing is not None and existing.message_count:
-            if existing.has_undated_messages:
-                self.last_order_key = (1, 0)
-            elif existing.last_created_epoch is not None:
-                self.last_order_key = (0, existing.last_created_epoch)
-            else:
-                raise RuntimeError("Existing non-empty JSONL has no ordering boundary")
         self.closed = False
         self.published = False
 
@@ -4724,15 +5093,41 @@ class JsonlExportWriter:
                 "replace it after a complete export"
             )
 
-        for path in (
-            self.messages_partial_path,
+        stale_paths = [
             self.metadata_partial_path,
             self.publication_marker_partial_path,
-        ):
+        ]
+        if partial is None:
+            stale_paths.insert(0, self.messages_partial_path)
+        for path in stale_paths:
             path.unlink(missing_ok=True)
 
-        self.output = self.messages_partial_path.open("wb")
-        if existing is not None:
+        if partial is not None:
+            if partial.partial_path != self.messages_partial_path:
+                raise RuntimeError("Partial export state belongs to another work file")
+            if (
+                not self.messages_partial_path.is_file()
+                or self.messages_partial_path.is_symlink()
+                or self.messages_partial_path.stat().st_size != partial.byte_size
+            ):
+                raise RuntimeError("Interrupted JSONL changed after validation")
+            self.checkpoints = dict(partial.checkpoints)
+            self.message_count = partial.message_count
+            self.byte_size = partial.byte_size
+            self.digest = partial.digest.copy()
+            self.first_created_epoch = partial.first_created_epoch
+            self.last_created_epoch = partial.last_created_epoch
+            self.has_undated_messages = partial.has_undated_messages
+            self.last_order_key = partial.last_order_key
+            self.output = self.messages_partial_path.open("ab")
+            print(
+                f"Resuming {self.messages_partial_path} after "
+                f"{self.message_count} validated messages",
+                flush=True,
+            )
+        else:
+            self.output = self.messages_partial_path.open("wb")
+        if existing is not None and partial is None:
             try:
                 self.copy_and_validate_existing(existing)
             except BaseException:
@@ -5314,6 +5709,7 @@ class ChatExporter:
         self.peer_avatar_records: list[dict[str, Any]] = []
         self.existing_export: Optional[ExistingExportState] = None
         self.incremental = False
+        self.resuming_partial = False
         self.existing_avatar_keys: set[tuple[int, int]] = set()
 
     async def rpc(self, factory: Callable[[], Any], label: str) -> Any:
@@ -5339,6 +5735,31 @@ class ChatExporter:
                     f"Transient {type(exc).__name__} during {label}; retrying in {delay:.1f}s",
                     flush=True,
                 )
+                await asyncio.sleep(delay)
+            except errors.TypeNotFoundError as exc:
+                # Telegram documents that it can occasionally return an older
+                # layer's constructors. Those payloads may contain an entire
+                # old object graph, so registering one compatibility alias is
+                # unsafe. Treat it like a 500: reopen the socket, which makes
+                # Telethon resend invokeWithLayer(initConnection(...)), then
+                # repeat this read-only request.
+                attempts += 1
+                self.stats.transient_retries += 1
+                details = type_not_found_error_details(exc)
+                if attempts > self.args.retries:
+                    raise RuntimeError(
+                        f"{details} during {label} after "
+                        f"{attempts} responses; exhausted {self.args.retries} retries"
+                    ) from None
+                delay = min(60.0, 2.0**attempts) + random.uniform(
+                    0.0, self.args.jitter
+                )
+                print(
+                    f"{details} during {label}; reconnecting and retrying "
+                    f"{attempts}/{self.args.retries} in {delay:.1f}s",
+                    flush=True,
+                )
+                await reinitialize_telegram_connection(self.base_client)
                 await asyncio.sleep(delay)
 
     async def get_webfile_dc_id(self) -> int:
@@ -5794,6 +6215,10 @@ class ChatExporter:
             "role": target.role,
             "category": record.get("category"),
             "kind": target.kind,
+            "attachment_type": target.metadata.get("type"),
+            "mime": target.metadata.get("mime"),
+            "expected_size": target.expected_size,
+            "dc_id": target.dc_id,
             "cache_key": target.cache_key,
             "media_id": target.metadata.get("id"),
             "source_url": safe_url_for_log(target.refresh_url),
@@ -5803,6 +6228,7 @@ class ChatExporter:
             "error_type": record.get("error_type"),
             "error": record.get("error"),
             "attempts": record.get("attempts"),
+            "flood_wait_history": record.get("flood_wait_history"),
             "file_reference_refresh": record.get("file_reference_refresh"),
         }
         with self.error_log_path.open("a", encoding="utf-8") as log:
@@ -6138,6 +6564,7 @@ class ChatExporter:
         partial_path = final_path.with_suffix(final_path.suffix + ".part")
         current_target = target
         attempts = 0
+        flood_wait_history: list[dict[str, Any]] = []
         reference_refreshes: list[dict[str, Any]] = []
         while True:
             partial_path.unlink(missing_ok=True)
@@ -6279,9 +6706,48 @@ class ChatExporter:
                 return record
 
             except (errors.FloodWaitError, errors.FloodPremiumWaitError) as exc:
+                attempts += 1
                 self.stats.flood_waits += 1
+                telegram_wait_seconds = max(
+                    0, int(getattr(exc, "seconds", 0) or 0)
+                )
+                flood_wait_history.append(
+                    {
+                        "attempt": attempts,
+                        "error_type": type(exc).__name__,
+                        "error": error_text(exc),
+                        "telegram_wait_seconds": telegram_wait_seconds,
+                        "request_type": tl_name(getattr(exc, "request", None)),
+                    }
+                )
+                partial_path.unlink(missing_ok=True)
+                if attempts > self.args.retries:
+                    record.update(
+                        status="failed",
+                        reason="flood_wait_limit",
+                        error_type=type(exc).__name__,
+                        error=error_text(exc),
+                        attempts=attempts,
+                        flood_wait_history=flood_wait_history,
+                    )
+                    self.log_media_issue(target, record, relative_path)
+                    print(
+                        f"Failed {target.role} in message {target.message_id} "
+                        f"(media {target.metadata.get('id')}) after {attempts} "
+                        f"flood-limit responses: {error_text(exc)}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    if target.kind != "contact":
+                        await self.pacer.after_media()
+                    return record
                 await self.pacer.flood_wait(
-                    int(getattr(exc, "seconds", 0)), f"media {target.role}"
+                    telegram_wait_seconds,
+                    (
+                        f"media {target.role} in message {target.message_id} "
+                        f"(media {target.metadata.get('id')}, "
+                        f"retry {attempts}/{self.args.retries})"
+                    ),
                 )
             except Exception as exc:
                 attempts += 1
@@ -6944,6 +7410,20 @@ class ChatExporter:
                 avatar_path = self.output_dir / str(relative)
                 if avatar_path.is_file() and not avatar_path.is_symlink():
                     self.existing_avatar_keys.add((int(owner_id), int(photo_id)))
+        partial_state = load_partial_export(
+            messages_path,
+            self.existing_export,
+            self.chat_id,
+            overwrite=self.args.overwrite,
+            allowed_checkpoint_keys={
+                checkpoint_key_from_source(source)
+                for source in self.history_sources
+            },
+        )
+        self.resuming_partial = partial_state is not None
+        if partial_state is not None:
+            self.referenced_files.update(partial_state.referenced_files)
+            self.media_asset_cache.update(partial_state.media_assets)
         header = {
             "schema": SCHEMA_NAME,
             "schema_version": SCHEMA_VERSION,
@@ -6972,12 +7452,13 @@ class ChatExporter:
             header,
             self.args.overwrite,
             existing=self.existing_export,
+            partial=partial_state,
         )
         if self.existing_export is not None:
             # Validation may repair the cache to another surviving categorized
             # copy of the same asset.
             self.media_asset_cache.update(self.existing_export.media_assets)
-        if not self.incremental:
+        if not self.incremental and not self.resuming_partial:
             self.error_log_path.unlink(missing_ok=True)
         try:
             ranges = await self.history_ranges(api, use_takeout_ranges)
@@ -7016,11 +7497,7 @@ class ChatExporter:
 
             for source_index, source in enumerate(self.history_sources, start=1):
                 source_key = checkpoint_key_from_source(source)
-                source_checkpoint = (
-                    self.existing_export.checkpoints.get(source_key, 0)
-                    if self.existing_export is not None
-                    else 0
-                )
+                source_checkpoint = writer.checkpoints.get(source_key, 0)
                 range_snapshots = await self.source_range_high_watermarks(
                     api,
                     source,
@@ -7065,12 +7542,9 @@ class ChatExporter:
                     self.serialize_message(message, attachments, source)
                 )
                 self.stats.messages += 1
-                if (
-                    self.args.log_every
-                    and self.stats.messages % self.args.log_every == 0
-                ):
+                if self.args.log_every and writer.message_count % self.args.log_every == 0:
                     print(
-                        f"Exported {self.stats.messages} messages "
+                        f"Exported {writer.message_count} messages "
                         f"(source {source_index}/{len(self.history_sources)}, "
                         f"range {range_index}/{len(ranges)}, next offset {next_offset})",
                         flush=True,
@@ -7087,10 +7561,26 @@ class ChatExporter:
                 merged_avatars[identity] = avatar
             self.peer_avatar_records = list(merged_avatars.values())
             finished = utc_now()
-            failed = self.stats.attachments.get("failed", 0)
-            skipped = self.stats.attachments.get("skipped_limit", 0)
-            protected = self.stats.attachments.get("protected", 0)
-            unavailable = self.stats.attachments.get("unavailable", 0)
+            resumed_attachment_errors = (
+                partial_state.attachment_error_statuses
+                if partial_state is not None
+                else {}
+            )
+            failed = self.stats.attachments.get("failed", 0) + int(
+                resumed_attachment_errors.get("failed", 0)
+            )
+            skipped = self.stats.attachments.get("skipped_limit", 0) + int(
+                resumed_attachment_errors.get("skipped_limit", 0)
+            )
+            protected = self.stats.attachments.get("protected", 0) + int(
+                resumed_attachment_errors.get("protected", 0)
+            )
+            unavailable = self.stats.attachments.get("unavailable", 0) + int(
+                resumed_attachment_errors.get("unavailable", 0)
+            )
+            attachment_stats = dict(self.stats.attachments)
+            for status, count in resumed_attachment_errors.items():
+                attachment_stats[status] = attachment_stats.get(status, 0) + count
             previous_summary_value = (
                 self.existing_export.metadata.get("summary")
                 if self.existing_export is not None
@@ -7131,7 +7621,8 @@ class ChatExporter:
                 if self.existing_export is not None
                 else 0
             )
-            total_messages = existing_messages + self.stats.messages
+            total_messages = writer.message_count
+            messages_added = total_messages - existing_messages
             previous_limitations = previous_summary.get("limitations") or []
             limitations = list(
                 dict.fromkeys(
@@ -7161,7 +7652,7 @@ class ChatExporter:
                 "mode": "incremental" if self.incremental else "full",
                 "messages": total_messages,
                 "messages_existing": existing_messages,
-                "messages_added": self.stats.messages,
+                "messages_added": messages_added,
                 "empty_messages_skipped": self.stats.empty_messages_skipped,
                 "history_requests": self.stats.history_requests,
                 "metadata_requests": self.stats.metadata_requests,
@@ -7172,12 +7663,16 @@ class ChatExporter:
                     self.stats.file_reference_refresh_successes
                 ),
                 "metadata_failures": self.stats.metadata_failures,
-                "attachments": dict(sorted(self.stats.attachments.items())),
+                "attachments": dict(sorted(attachment_stats.items())),
                 "attachment_categories": dict(
                     sorted(self.stats.attachment_categories.items())
                 ),
                 "bytes_downloaded": self.stats.bytes_downloaded,
-                "attachment_stats_scope": "current_run_new_messages_and_avatars",
+                "attachment_stats_scope": (
+                    "current_process_plus_resumed_partial_error_statuses"
+                    if partial_state is not None
+                    else "current_run_new_messages_and_avatars"
+                ),
                 "started_at": unix_timestamp(started),
                 "finished_at": unix_timestamp(finished),
                 "duration_seconds": round((finished - started).total_seconds(), 3),
@@ -7195,7 +7690,7 @@ class ChatExporter:
             if not self.incremental and fully_complete:
                 stale_files_removed = self.prune_stale_files()
             print(
-                f"Finished: added {self.stats.messages} messages "
+                f"Finished: added {messages_added} messages "
                 f"({total_messages} total) -> {messages_path} "
                 f"(metadata: {metadata_path.name}; "
                 f"{failed} failed downloads, "
@@ -7227,6 +7722,8 @@ async def preflight_call(
     factory: Callable[[], Any],
     args: argparse.Namespace,
     label: str,
+    *,
+    client: Optional[TelegramClient] = None,
 ) -> Any:
     attempts = 0
     while True:
@@ -7254,6 +7751,22 @@ async def preflight_call(
             await asyncio.sleep(
                 min(60.0, 2.0**attempts) + random.uniform(0.0, args.jitter)
             )
+        except errors.TypeNotFoundError as exc:
+            attempts += 1
+            details = type_not_found_error_details(exc)
+            if attempts > args.retries or client is None:
+                raise RuntimeError(
+                    f"{details} during {label} after {attempts} responses; "
+                    f"exhausted {args.retries} retries"
+                ) from None
+            delay = min(60.0, 2.0**attempts) + random.uniform(0.0, args.jitter)
+            print(
+                f"{details} during {label}; reconnecting and retrying "
+                f"{attempts}/{args.retries} in {delay:.1f}s",
+                flush=True,
+            )
+            await reinitialize_telegram_connection(client)
+            await asyncio.sleep(delay)
 
 
 async def resolve_selected_chat(
@@ -7265,6 +7778,7 @@ async def resolve_selected_chat(
             lambda: client.get_entity(reference),
             args,
             "selected-chat resolution",
+            client=client,
         )
     except (ValueError, TypeError):
         pass
@@ -7284,6 +7798,7 @@ async def resolve_selected_chat(
                 lambda: client.get_entity(types.InputPeerChat(real_id)),
                 args,
                 "basic-chat resolution",
+                client=client,
             )
         if args.access_hash is None:
             input_peer = None
@@ -7296,6 +7811,7 @@ async def resolve_selected_chat(
                 lambda: client.get_entity(input_peer),
                 args,
                 "numeric-peer resolution",
+                client=client,
             )
 
     if isinstance(reference, int):
@@ -7316,6 +7832,7 @@ async def resolve_selected_chat(
                 ),
                 args,
                 "dialog scan",
+                client=client,
             )
             for dialog in dialogs:
                 if marked_chat_id(dialog.entity) == reference:
@@ -7350,6 +7867,7 @@ async def resolve_selected_chat(
                     ),
                     args,
                     "left-channel scan",
+                    client=client,
                 )
                 chats = list(getattr(result, "chats", None) or [])
                 for chat in chats:
@@ -7540,7 +8058,9 @@ async def async_main(args: argparse.Namespace) -> int:
         flood_sleep_threshold=0,  # All flood waits are handled with reserve above.
     )
 
-    await cast(Awaitable[Any], client.start(phone=args.phone))
+    await cast(Awaitable[Any], client.connect())
+    if not await client.is_user_authorized():
+        await cast(Awaitable[Any], client.start(phone=args.phone))
     try:
         me = await client.get_me()
         if getattr(me, "bot", False):
@@ -7552,6 +8072,7 @@ async def async_main(args: argparse.Namespace) -> int:
             lambda: client.get_input_entity(entity),
             args,
             "selected-chat input-peer resolution",
+            client=client,
         )
         chat_id = marked_chat_id(entity)
         output_dir = args.output.expanduser().resolve() / str(chat_id)
