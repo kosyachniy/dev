@@ -1813,6 +1813,122 @@ class ExportSchemaTests(unittest.TestCase):
                 }
             )
 
+    def test_default_pacing_is_zero_and_zero_base_ignores_global_jitter(self):
+        parser = export.build_parser()
+        args = parser.parse_args(
+            ["chat", "--api-id", "1", "--api-hash", "hash"]
+        )
+        self.assertEqual(
+            (
+                args.history_delay,
+                args.metadata_delay,
+                args.media_delay,
+                args.chunk_delay,
+                args.jitter,
+                args.flood_reserve,
+            ),
+            (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+        )
+
+        pacer = export.Pacer(
+            history_delay=args.history_delay,
+            metadata_delay=args.metadata_delay,
+            media_delay=args.media_delay,
+            chunk_delay=args.chunk_delay,
+            jitter=0.75,
+            flood_reserve=args.flood_reserve,
+        )
+        sleep_calls = []
+        original_sleep = export.asyncio.sleep
+        original_uniform = export.random.uniform
+
+        async def record_sleep(delay):
+            sleep_calls.append(delay)
+
+        def unexpected_uniform(_minimum, _maximum):
+            raise AssertionError("successful chunk pacing must not use jitter")
+
+        export.asyncio.sleep = record_sleep
+        export.random.uniform = unexpected_uniform
+        try:
+            async def pace_success_paths():
+                await pacer.sleep(0.0)
+                await pacer.after_history()
+                await pacer.after_metadata()
+                await pacer.after_media()
+                await pacer.after_chunk()
+
+            asyncio.run(pace_success_paths())
+        finally:
+            export.asyncio.sleep = original_sleep
+            export.random.uniform = original_uniform
+
+        self.assertEqual(sleep_calls, [])
+
+    def test_explicit_chunk_delay_is_exact_without_global_jitter(self):
+        pacer = export.Pacer(
+            history_delay=0.0,
+            metadata_delay=0.0,
+            media_delay=0.0,
+            chunk_delay=0.25,
+            jitter=0.75,
+            flood_reserve=0.0,
+        )
+        sleep_calls = []
+        original_sleep = export.asyncio.sleep
+        original_uniform = export.random.uniform
+
+        async def record_sleep(delay):
+            sleep_calls.append(delay)
+
+        def unexpected_uniform(_minimum, _maximum):
+            raise AssertionError("explicit chunk delay must not use jitter")
+
+        export.asyncio.sleep = record_sleep
+        export.random.uniform = unexpected_uniform
+        try:
+            asyncio.run(pacer.after_chunk())
+        finally:
+            export.asyncio.sleep = original_sleep
+            export.random.uniform = original_uniform
+
+        self.assertEqual(sleep_calls, [0.25])
+
+    def test_flood_wait_still_adds_reserve_and_global_jitter(self):
+        pacer = export.Pacer(
+            history_delay=0.0,
+            metadata_delay=0.0,
+            media_delay=0.0,
+            chunk_delay=0.0,
+            jitter=0.5,
+            flood_reserve=5.0,
+        )
+        sleep_calls = []
+        uniform_calls = []
+        original_sleep = export.asyncio.sleep
+        original_uniform = export.random.uniform
+
+        async def record_sleep(delay):
+            sleep_calls.append(delay)
+
+        def fixed_uniform(minimum, maximum):
+            uniform_calls.append((minimum, maximum))
+            return 0.3
+
+        export.asyncio.sleep = record_sleep
+        export.random.uniform = fixed_uniform
+        output = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(output):
+                asyncio.run(pacer.flood_wait(9, "test request"))
+        finally:
+            export.asyncio.sleep = original_sleep
+            export.random.uniform = original_uniform
+
+        self.assertEqual(uniform_calls, [(0.0, 0.5)])
+        self.assertEqual(sleep_calls, [14.3])
+        self.assertIn("sleeping 14.3s", output.getvalue())
+
     def test_media_flood_wait_is_bounded_logged_and_does_not_block_next_file(self):
         class RecordingPacer:
             def __init__(self):
@@ -1886,11 +2002,13 @@ class ExportSchemaTests(unittest.TestCase):
                 exporter.download_target(api, target("good", 42), 1)
             )
 
-            self.assertEqual(api.calls["blocked"], 3)
+            # retries=2 permits retries+1=3 directed waits, followed by one
+            # final probe which fails without another sleep.
+            self.assertEqual(api.calls["blocked"], 4)
             self.assertEqual(failed["status"], "failed")
             self.assertEqual(failed["reason"], "flood_wait_limit")
             self.assertEqual(failed["error_type"], "FloodWaitError")
-            self.assertEqual(failed["attempts"], 3)
+            self.assertEqual(failed["attempts"], 4)
             public_failed = export.public_attachment_record(failed)
             self.assertEqual(
                 public_failed,
@@ -1910,19 +2028,24 @@ class ExportSchemaTests(unittest.TestCase):
                     "attachments": [public_failed],
                 }
             )
-            self.assertEqual(exporter.stats.flood_waits, 3)
+            self.assertEqual(exporter.stats.flood_waits, 4)
             self.assertEqual(
                 exporter.pacer.flood_waits,
                 [
                     (
                         0,
                         "media message.media.document in message 41 "
-                        "(media 41, retry 1/2)",
+                        "(media 41, wait 1/3)",
                     ),
                     (
                         0,
                         "media message.media.document in message 41 "
-                        "(media 41, retry 2/2)",
+                        "(media 41, wait 2/3)",
+                    ),
+                    (
+                        0,
+                        "media message.media.document in message 41 "
+                        "(media 41, wait 3/3)",
                     ),
                 ],
             )
@@ -1944,14 +2067,1133 @@ class ExportSchemaTests(unittest.TestCase):
             self.assertEqual(issues[0]["reason"], "flood_wait_limit")
             self.assertEqual(issues[0]["error_type"], "FloodWaitError")
             self.assertIn("wait of 0 seconds", issues[0]["error"])
-            self.assertEqual(issues[0]["attempts"], 3)
+            self.assertEqual(issues[0]["attempts"], 4)
             self.assertEqual(
                 [
                     item["telegram_wait_seconds"]
                     for item in issues[0]["flood_wait_history"]
                 ],
-                [0, 0, 0],
+                [0, 0, 0, 0],
             )
+
+    def test_aligned_document_partial_resumes_with_iter_download(self):
+        chunk_size = export.TELEGRAM_DOWNLOAD_CHUNK_SIZE
+        prefix = b"p" * chunk_size
+        suffix = b"finished"
+
+        class Pacer:
+            async def after_chunk(self):
+                return None
+
+            async def after_media(self):
+                return None
+
+        class DownloadStream:
+            def __init__(self):
+                self.chunks = iter((suffix,))
+                self.closed = False
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                try:
+                    return next(self.chunks)
+                except StopIteration:
+                    raise StopAsyncIteration
+
+            async def close(self):
+                self.closed = True
+
+        class BaseClient:
+            def __init__(self):
+                self.calls = []
+                self.stream = DownloadStream()
+
+            def iter_download(self, media, **kwargs):
+                self.calls.append((media, kwargs))
+                return self.stream
+
+        class UnexpectedDownloadApi:
+            async def download_media(self, *_args, **_kwargs):
+                raise AssertionError("a resumable partial must use iter_download")
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            base_client = BaseClient()
+            exporter: Any = object.__new__(export.ChatExporter)
+            exporter.output_dir = output
+            exporter.files_dir = output / "files"
+            exporter.error_log_path = output / "media-errors.jsonl"
+            exporter.chat_id = 7
+            exporter.base_client = base_client
+            exporter.args = SimpleNamespace(
+                max_file_size=0,
+                retries=0,
+                jitter=0.0,
+                media_stall_timeout=0.25,
+                media_progress_interval=0.0,
+            )
+            exporter.pacer = Pacer()
+            exporter.stats = export.ExportStats()
+            exporter.media_cache = {}
+            exporter.media_asset_cache = {}
+            exporter.referenced_files = set()
+
+            media = object()
+            target = export.DownloadTarget(
+                obj=media,
+                kind="document",
+                subtype="file",
+                role="message.media.document",
+                message_id=51,
+                cache_key="document:51",
+                extension=".bin",
+                expected_size=len(prefix) + len(suffix),
+                metadata={"type": "file", "id": 51},
+                source_chat_id=7,
+                dc_id=4,
+            )
+            final_path = (
+                exporter.files_dir
+                / export.attachment_category(target)
+                / exporter.target_filename(target, 1)
+            )
+            partial_path = final_path.with_suffix(final_path.suffix + ".part")
+            partial_path.parent.mkdir(parents=True)
+            partial_path.write_bytes(prefix)
+
+            async def run():
+                return await asyncio.wait_for(
+                    exporter.download_target(UnexpectedDownloadApi(), target, 1),
+                    timeout=1.0,
+                )
+
+            record = asyncio.run(run())
+
+            self.assertEqual(record["status"], "downloaded")
+            self.assertEqual(final_path.read_bytes(), prefix + suffix)
+            self.assertFalse(partial_path.exists())
+            self.assertTrue(base_client.stream.closed)
+            self.assertEqual(len(base_client.calls), 1)
+            called_media, kwargs = base_client.calls[0]
+            self.assertIs(called_media, media)
+            self.assertEqual(kwargs["offset"], len(prefix))
+            self.assertEqual(kwargs["request_size"], chunk_size)
+            self.assertEqual(kwargs["chunk_size"], chunk_size)
+            self.assertEqual(kwargs["file_size"], len(prefix) + len(suffix))
+            self.assertEqual(kwargs["dc_id"], 4)
+
+    def test_parallel_document_resume_commits_out_of_order_lanes_in_order(self):
+        chunk_size = export.TELEGRAM_DOWNLOAD_CHUNK_SIZE
+        prefix = b"p" * chunk_size
+        first = b"a" * chunk_size
+        second = b"b" * chunk_size
+        final = b"tail"
+        expected_size = len(prefix + first + second + final)
+        completion_order = []
+        progress = []
+
+        class DownloadStream:
+            def __init__(self, lane, values):
+                self.lane = lane
+                self.values = iter(values)
+                self.closed = False
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                try:
+                    value = next(self.values)
+                except StopIteration:
+                    raise StopAsyncIteration
+                base_client.active += 1
+                base_client.max_active = max(
+                    base_client.max_active, base_client.active
+                )
+                try:
+                    # Lane 1 must be allowed to finish before lane 0. This
+                    # catches implementations which merely alternate two
+                    # sequential requests instead of keeping both in flight.
+                    if self.lane == 0 and not completion_order:
+                        await asyncio.sleep(0.02)
+                    completion_order.append(self.lane)
+                    return value
+                finally:
+                    base_client.active -= 1
+
+            async def close(self):
+                self.closed = True
+
+        class BaseClient:
+            def __init__(self):
+                self.calls = []
+                self.streams = []
+                self.active = 0
+                self.max_active = 0
+
+            def iter_download(self, media, **kwargs):
+                self.calls.append((media, kwargs))
+                lane = len(self.calls) - 1
+                values = ((first, final), (second,))[lane]
+                stream = DownloadStream(lane, values)
+                self.streams.append(stream)
+                return stream
+
+        async def progress_callback(downloaded, total):
+            progress.append((downloaded, total))
+
+        with tempfile.TemporaryDirectory() as directory:
+            partial_path = Path(directory) / "video.mov.part"
+            partial_path.write_bytes(prefix)
+            base_client = BaseClient()
+            exporter: Any = object.__new__(export.ChatExporter)
+            exporter.base_client = base_client
+            media = object()
+            target = export.DownloadTarget(
+                obj=media,
+                kind="document",
+                subtype="video",
+                role="message.media.document",
+                message_id=57,
+                cache_key="document:57",
+                extension=".mov",
+                expected_size=expected_size,
+                metadata={"type": "video", "id": 57},
+                source_chat_id=7,
+                dc_id=4,
+            )
+
+            asyncio.run(
+                asyncio.wait_for(
+                    exporter.download_document_parallel(
+                        target,
+                        partial_path,
+                        len(prefix),
+                        expected_size,
+                        progress_callback,
+                        workers=2,
+                    ),
+                    timeout=1.0,
+                )
+            )
+
+            self.assertEqual(partial_path.read_bytes(), prefix + first + second + final)
+            self.assertEqual(completion_order[:2], [1, 0])
+            self.assertEqual(base_client.max_active, 2)
+            self.assertEqual(len(base_client.calls), 2)
+            expected_calls = (
+                (len(prefix), 2),
+                (len(prefix) + chunk_size, 1),
+            )
+            for (called_media, kwargs), (offset, limit) in zip(
+                base_client.calls, expected_calls
+            ):
+                self.assertIs(called_media, media)
+                self.assertEqual(kwargs["offset"], offset)
+                self.assertEqual(kwargs["stride"], 2 * chunk_size)
+                self.assertEqual(kwargs["limit"], limit)
+                self.assertEqual(kwargs["request_size"], chunk_size)
+                self.assertEqual(kwargs["chunk_size"], chunk_size)
+                self.assertEqual(kwargs["file_size"], expected_size)
+                self.assertEqual(kwargs["dc_id"], 4)
+            self.assertTrue(all(stream.closed for stream in base_client.streams))
+            self.assertEqual(
+                progress,
+                [
+                    (len(prefix) + len(first), expected_size),
+                    (len(prefix) + len(first) + len(second), expected_size),
+                    (expected_size, expected_size),
+                ],
+            )
+
+    def test_parallel_document_does_not_commit_successful_half_round(self):
+        chunk_size = export.TELEGRAM_DOWNLOAD_CHUNK_SIZE
+        prefix = b"p" * chunk_size
+        first = b"a" * chunk_size
+        expected_size = len(prefix) + 2 * chunk_size
+        progress = []
+
+        class ExpectedFailure(RuntimeError):
+            pass
+
+        class DownloadStream:
+            def __init__(self, lane):
+                self.lane = lane
+                self.closed = False
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if self.lane == 0:
+                    return first
+                await asyncio.sleep(0.01)
+                raise ExpectedFailure("second lane failed")
+
+            async def close(self):
+                self.closed = True
+
+        class BaseClient:
+            def __init__(self):
+                self.streams = []
+
+            def iter_download(self, _media, **_kwargs):
+                stream = DownloadStream(len(self.streams))
+                self.streams.append(stream)
+                return stream
+
+        async def progress_callback(downloaded, total):
+            progress.append((downloaded, total))
+
+        with tempfile.TemporaryDirectory() as directory:
+            partial_path = Path(directory) / "video.mov.part"
+            partial_path.write_bytes(prefix)
+            base_client = BaseClient()
+            exporter: Any = object.__new__(export.ChatExporter)
+            exporter.base_client = base_client
+            target = export.DownloadTarget(
+                obj=object(),
+                kind="document",
+                subtype="video",
+                role="message.media.document",
+                message_id=58,
+                cache_key="document:58",
+                extension=".mov",
+                expected_size=expected_size,
+                metadata={"type": "video", "id": 58},
+                source_chat_id=7,
+            )
+
+            async def run():
+                await exporter.download_document_parallel(
+                    target,
+                    partial_path,
+                    len(prefix),
+                    expected_size,
+                    progress_callback,
+                    workers=2,
+                )
+
+            with self.assertRaisesRegex(ExpectedFailure, "second lane failed"):
+                asyncio.run(asyncio.wait_for(run(), timeout=1.0))
+
+            self.assertEqual(partial_path.read_bytes(), prefix)
+            self.assertEqual(progress, [])
+            self.assertEqual(len(base_client.streams), 2)
+            self.assertTrue(all(stream.closed for stream in base_client.streams))
+
+    def test_parallel_document_cancels_sibling_without_masking_primary_error(self):
+        chunk_size = export.TELEGRAM_DOWNLOAD_CHUNK_SIZE
+        prefix = b"p" * chunk_size
+        expected_size = len(prefix) + 2 * chunk_size
+
+        class ExpectedFailure(RuntimeError):
+            pass
+
+        class DownloadStream:
+            def __init__(self, lane):
+                self.lane = lane
+                self.cancelled = False
+                self.closed = False
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                if self.lane == 0:
+                    await asyncio.sleep(0)
+                    raise ExpectedFailure("first lane failed")
+                try:
+                    await asyncio.get_running_loop().create_future()
+                except asyncio.CancelledError:
+                    self.cancelled = True
+                    raise
+
+            async def close(self):
+                self.closed = True
+                if self.lane == 1:
+                    raise AttributeError("cleanup must not mask download error")
+
+        class BaseClient:
+            def __init__(self):
+                self.streams = []
+
+            def iter_download(self, _media, **_kwargs):
+                stream = DownloadStream(len(self.streams))
+                self.streams.append(stream)
+                return stream
+
+        async def progress_callback(_downloaded, _total):
+            raise AssertionError("failed round must not report progress")
+
+        with tempfile.TemporaryDirectory() as directory:
+            partial_path = Path(directory) / "video.mov.part"
+            partial_path.write_bytes(prefix)
+            base_client = BaseClient()
+            exporter: Any = object.__new__(export.ChatExporter)
+            exporter.base_client = base_client
+            target = export.DownloadTarget(
+                obj=object(),
+                kind="document",
+                subtype="video",
+                role="message.media.document",
+                message_id=59,
+                cache_key="document:59",
+                extension=".mov",
+                expected_size=expected_size,
+                metadata={"type": "video", "id": 59},
+                source_chat_id=7,
+            )
+
+            async def run():
+                await exporter.download_document_parallel(
+                    target,
+                    partial_path,
+                    len(prefix),
+                    expected_size,
+                    progress_callback,
+                    workers=2,
+                )
+
+            with self.assertRaisesRegex(ExpectedFailure, "first lane failed"):
+                asyncio.run(asyncio.wait_for(run(), timeout=1.0))
+
+            self.assertEqual(partial_path.read_bytes(), prefix)
+            self.assertEqual(len(base_client.streams), 2)
+            self.assertTrue(base_client.streams[1].cancelled)
+            self.assertTrue(all(stream.closed for stream in base_client.streams))
+
+    def test_parallel_document_cdn_redirect_falls_back_immediately(self):
+        chunk_size = export.TELEGRAM_DOWNLOAD_CHUNK_SIZE
+        expected_size = 2 * chunk_size
+        parallel_calls = []
+        sleep_calls = []
+
+        class _CdnRedirect(Exception):
+            pass
+
+        class Pacer:
+            def __init__(self):
+                self.media_delays = 0
+
+            async def after_chunk(self):
+                return None
+
+            async def after_media(self):
+                self.media_delays += 1
+
+        class DownloadApi:
+            def __init__(self):
+                self.calls = 0
+                self.partial_existed_at_call = None
+
+            async def download_media(
+                self,
+                _media,
+                *,
+                file,
+                thumb,
+                progress_callback,
+            ):
+                self.calls += 1
+                self.partial_existed_at_call = Path(file).exists()
+                Path(file).write_bytes(b"z" * expected_size)
+                await progress_callback(expected_size, expected_size)
+                return file
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            exporter: Any = object.__new__(export.ChatExporter)
+            exporter.output_dir = output
+            exporter.files_dir = output / "files"
+            exporter.error_log_path = output / "media-errors.jsonl"
+            exporter.chat_id = 7
+            exporter.base_client = SimpleNamespace()
+            exporter.args = SimpleNamespace(
+                max_file_size=0,
+                retries=0,
+                jitter=0.0,
+                media_stall_timeout=0.25,
+                media_progress_interval=0.0,
+                media_download_workers=2,
+            )
+            exporter.pacer = Pacer()
+            exporter.stats = export.ExportStats()
+            exporter.media_cache = {}
+            exporter.media_asset_cache = {}
+            exporter.referenced_files = set()
+            target = export.DownloadTarget(
+                obj=object(),
+                kind="document",
+                subtype="video",
+                role="message.media.document",
+                message_id=60,
+                cache_key="document:60",
+                extension=".mov",
+                expected_size=expected_size,
+                metadata={"type": "video", "id": 60},
+                source_chat_id=7,
+                dc_id=4,
+            )
+
+            async def redirecting_parallel(
+                called_target,
+                partial_path,
+                resume_offset,
+                called_expected_size,
+                _progress_callback,
+                *,
+                workers,
+            ):
+                parallel_calls.append(
+                    (
+                        called_target,
+                        resume_offset,
+                        called_expected_size,
+                        workers,
+                    )
+                )
+                Path(partial_path).write_bytes(b"p" * chunk_size)
+                raise _CdnRedirect("test CDN redirect")
+
+            async def unexpected_sleep(delay):
+                sleep_calls.append(delay)
+                raise AssertionError("CDN fallback must not sleep")
+
+            exporter.download_document_parallel = redirecting_parallel
+            api = DownloadApi()
+            original_min_size = export.PARALLEL_DOCUMENT_MIN_SIZE
+            original_sleep = export.asyncio.sleep
+            export.PARALLEL_DOCUMENT_MIN_SIZE = 1
+            export.asyncio.sleep = unexpected_sleep
+            try:
+                record = asyncio.run(exporter.download_target(api, target, 1))
+            finally:
+                export.PARALLEL_DOCUMENT_MIN_SIZE = original_min_size
+                export.asyncio.sleep = original_sleep
+
+            self.assertEqual(
+                parallel_calls,
+                [(target, 0, expected_size, 2)],
+            )
+            self.assertEqual(api.calls, 1)
+            self.assertFalse(api.partial_existed_at_call)
+            self.assertEqual(sleep_calls, [])
+            self.assertEqual(record["status"], "downloaded")
+            self.assertEqual(record["downloaded_size"], expected_size)
+            final_path = output / record["file"]
+            self.assertEqual(final_path.read_bytes(), b"z" * expected_size)
+            self.assertFalse(
+                final_path.with_suffix(final_path.suffix + ".part").exists()
+            )
+            self.assertEqual(exporter.pacer.media_delays, 1)
+
+    def test_expired_document_reference_resumes_bytes_downloaded_before_error(self):
+        chunk_size = export.TELEGRAM_DOWNLOAD_CHUNK_SIZE
+        prefix = b"p" * chunk_size
+        suffix = b"after-refresh"
+
+        class Pacer:
+            async def after_chunk(self):
+                return None
+
+            async def after_media(self):
+                return None
+
+        class DownloadStream:
+            def __init__(self):
+                self.chunks = iter((suffix,))
+                self.closed = False
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                try:
+                    return next(self.chunks)
+                except StopIteration:
+                    raise StopAsyncIteration
+
+            async def close(self):
+                self.closed = True
+
+        class BaseClient:
+            def __init__(self):
+                self.calls = []
+                self.stream = DownloadStream()
+
+            def iter_download(self, media, **kwargs):
+                self.calls.append((media, kwargs))
+                return self.stream
+
+        class DownloadApi:
+            def __init__(self):
+                self.calls = []
+
+            async def download_media(
+                self,
+                media,
+                *,
+                file,
+                thumb,
+                progress_callback,
+            ):
+                self.calls.append(media)
+                if media.file_reference != b"expired":
+                    raise AssertionError(
+                        "fresh-reference continuation must use iter_download"
+                    )
+                Path(file).write_bytes(prefix)
+                await progress_callback(len(prefix), len(prefix) + len(suffix))
+                raise export.errors.FileReferenceExpiredError(request=None)
+
+        def target(file_reference):
+            return export.DownloadTarget(
+                obj=SimpleNamespace(file_reference=file_reference),
+                kind="document",
+                subtype="file",
+                role="message.media.document",
+                message_id=54,
+                cache_key="document:54",
+                extension=".bin",
+                expected_size=len(prefix) + len(suffix),
+                metadata={"type": "file", "id": 54},
+                source_chat_id=7,
+                dc_id=2,
+            )
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            base_client = BaseClient()
+            exporter: Any = object.__new__(export.ChatExporter)
+            exporter.output_dir = output
+            exporter.files_dir = output / "files"
+            exporter.error_log_path = output / "media-errors.jsonl"
+            exporter.chat_id = 7
+            exporter.base_client = base_client
+            exporter.args = SimpleNamespace(
+                max_file_size=0,
+                retries=1,
+                jitter=0.0,
+                media_stall_timeout=0.25,
+                media_progress_interval=0.0,
+            )
+            exporter.pacer = Pacer()
+            exporter.stats = export.ExportStats()
+            exporter.media_cache = {}
+            exporter.media_asset_cache = {}
+            exporter.referenced_files = set()
+
+            async def refresh_target(_api, stale_target, diagnostic):
+                diagnostic.update(
+                    strategy="test",
+                    file_reference_before=export.file_reference_fingerprint(
+                        stale_target.obj
+                    ),
+                    steps=[],
+                )
+                return target(b"fresh")
+
+            exporter.refresh_target = refresh_target
+            original_target = target(b"expired")
+            final_path = (
+                exporter.files_dir
+                / export.attachment_category(original_target)
+                / exporter.target_filename(original_target, 1)
+            )
+            partial_path = final_path.with_suffix(final_path.suffix + ".part")
+            api = DownloadApi()
+
+            async def run():
+                return await asyncio.wait_for(
+                    exporter.download_target(api, original_target, 1),
+                    timeout=1.0,
+                )
+
+            record = asyncio.run(run())
+
+            self.assertEqual(api.calls, [original_target.obj])
+            self.assertEqual(len(base_client.calls), 1)
+            resumed_media, kwargs = base_client.calls[0]
+            self.assertEqual(resumed_media.file_reference, b"fresh")
+            self.assertEqual(kwargs["offset"], chunk_size)
+            self.assertEqual(kwargs["request_size"], chunk_size)
+            self.assertEqual(kwargs["chunk_size"], chunk_size)
+            self.assertEqual(kwargs["file_size"], len(prefix) + len(suffix))
+            self.assertEqual(kwargs["dc_id"], 2)
+            self.assertTrue(base_client.stream.closed)
+            self.assertEqual(record["status"], "downloaded")
+            self.assertEqual(record["attempts"], 1)
+            self.assertEqual(
+                record["file_reference_refresh"][0]["result"], "refreshed"
+            )
+            self.assertEqual(final_path.read_bytes(), prefix + suffix)
+            self.assertFalse(partial_path.exists())
+
+    def test_expired_reference_then_stalled_document_keeps_resumable_partial(self):
+        chunk_size = export.TELEGRAM_DOWNLOAD_CHUNK_SIZE
+
+        class Pacer:
+            async def after_chunk(self):
+                return None
+
+            async def after_media(self):
+                return None
+
+        class BaseClient:
+            async def disconnect(self):
+                return None
+
+            async def connect(self):
+                return None
+
+        class DownloadApi:
+            def __init__(self):
+                self.calls = 0
+                self.cancelled = False
+
+            async def download_media(
+                self,
+                media,
+                *,
+                file,
+                thumb,
+                progress_callback,
+            ):
+                self.calls += 1
+                if media.file_reference == b"expired":
+                    raise export.errors.FileReferenceExpiredError(request=None)
+                Path(file).write_bytes(b"p" * chunk_size)
+                await progress_callback(chunk_size, chunk_size * 2)
+                try:
+                    await asyncio.get_running_loop().create_future()
+                except asyncio.CancelledError:
+                    self.cancelled = True
+                    raise
+
+        def target(file_reference):
+            return export.DownloadTarget(
+                obj=SimpleNamespace(file_reference=file_reference),
+                kind="document",
+                subtype="file",
+                role="message.media.document",
+                message_id=52,
+                cache_key="document:52",
+                extension=".bin",
+                expected_size=chunk_size * 2,
+                metadata={"type": "file", "id": 52},
+                source_chat_id=7,
+            )
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            exporter: Any = object.__new__(export.ChatExporter)
+            exporter.output_dir = output
+            exporter.files_dir = output / "files"
+            exporter.error_log_path = output / "media-errors.jsonl"
+            exporter.chat_id = 7
+            exporter.base_client = BaseClient()
+            exporter.args = SimpleNamespace(
+                max_file_size=0,
+                retries=0,
+                jitter=0.0,
+                media_stall_timeout=0.02,
+                media_progress_interval=0.0,
+            )
+            exporter.pacer = Pacer()
+            exporter.stats = export.ExportStats()
+            exporter.media_cache = {}
+            exporter.media_asset_cache = {}
+            exporter.referenced_files = set()
+
+            async def refresh_target(_api, _target, diagnostic):
+                diagnostic.update(
+                    strategy="test",
+                    file_reference_before=export.file_reference_fingerprint(
+                        _target.obj
+                    ),
+                    steps=[],
+                )
+                return target(b"fresh")
+
+            exporter.refresh_target = refresh_target
+            original_target = target(b"expired")
+            final_path = (
+                exporter.files_dir
+                / export.attachment_category(original_target)
+                / exporter.target_filename(original_target, 1)
+            )
+            partial_path = final_path.with_suffix(final_path.suffix + ".part")
+            api = DownloadApi()
+
+            async def run():
+                return await asyncio.wait_for(
+                    exporter.download_target(api, original_target, 1),
+                    timeout=1.0,
+                )
+
+            record = asyncio.run(run())
+
+            self.assertEqual(api.calls, 2)
+            self.assertTrue(api.cancelled)
+            self.assertEqual(record["status"], "failed")
+            self.assertEqual(record["reason"], "download_stalled")
+            self.assertEqual(record["partial_bytes"], chunk_size)
+            self.assertEqual(
+                record["partial_file"],
+                final_path.relative_to(output).as_posix() + ".part",
+            )
+            self.assertEqual(partial_path.stat().st_size, chunk_size)
+            self.assertFalse(final_path.exists())
+            self.assertEqual(
+                record["file_reference_refresh"][0]["result"], "refreshed"
+            )
+            issue = json.loads(
+                exporter.error_log_path.read_text(encoding="utf-8").splitlines()[0]
+            )
+            self.assertEqual(issue["message_id"], 52)
+            self.assertEqual(issue["media_id"], 52)
+            self.assertEqual(issue["reason"], "download_stalled")
+            self.assertEqual(
+                issue["file_reference_refresh"][0]["result"], "refreshed"
+            )
+
+    def test_stalled_file_reference_refresh_is_bounded_and_keeps_partial(self):
+        chunk_size = export.TELEGRAM_DOWNLOAD_CHUNK_SIZE
+
+        class Pacer:
+            async def after_chunk(self):
+                return None
+
+            async def after_media(self):
+                return None
+
+        class DownloadApi:
+            async def download_media(
+                self,
+                _media,
+                *,
+                file,
+                thumb,
+                progress_callback,
+            ):
+                Path(file).write_bytes(b"p" * chunk_size)
+                await progress_callback(chunk_size, chunk_size * 2)
+                raise export.errors.FileReferenceExpiredError(request=None)
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            exporter: Any = object.__new__(export.ChatExporter)
+            exporter.output_dir = output
+            exporter.files_dir = output / "files"
+            exporter.error_log_path = output / "media-errors.jsonl"
+            exporter.chat_id = 7
+            exporter.base_client = SimpleNamespace()
+            exporter.args = SimpleNamespace(
+                max_file_size=0,
+                retries=0,
+                jitter=0.0,
+                media_stall_timeout=0.02,
+                media_progress_interval=0.0,
+            )
+            exporter.pacer = Pacer()
+            exporter.stats = export.ExportStats()
+            exporter.media_cache = {}
+            exporter.media_asset_cache = {}
+            exporter.referenced_files = set()
+            target = export.DownloadTarget(
+                obj=SimpleNamespace(file_reference=b"expired"),
+                kind="document",
+                subtype="file",
+                role="message.media.document",
+                message_id=55,
+                cache_key="document:55",
+                extension=".bin",
+                expected_size=chunk_size * 2,
+                metadata={"type": "file", "id": 55},
+                source_chat_id=7,
+            )
+            final_path = (
+                exporter.files_dir
+                / export.attachment_category(target)
+                / exporter.target_filename(target, 1)
+            )
+            partial_path = final_path.with_suffix(final_path.suffix + ".part")
+            refresh_cancelled = False
+
+            async def stalled_refresh(_api, _target, diagnostic):
+                nonlocal refresh_cancelled
+                diagnostic.update(
+                    strategy="test",
+                    file_reference_before=export.file_reference_fingerprint(
+                        _target.obj
+                    ),
+                    steps=[],
+                )
+                try:
+                    await asyncio.get_running_loop().create_future()
+                except asyncio.CancelledError:
+                    refresh_cancelled = True
+                    raise
+
+            exporter.refresh_target = stalled_refresh
+
+            async def run():
+                return await asyncio.wait_for(
+                    exporter.download_target(DownloadApi(), target, 1),
+                    timeout=1.0,
+                )
+
+            record = asyncio.run(run())
+
+            self.assertTrue(refresh_cancelled)
+            self.assertEqual(record["status"], "failed")
+            self.assertEqual(record["reason"], "file_reference_refresh_failed")
+            self.assertEqual(record["partial_bytes"], chunk_size)
+            self.assertEqual(partial_path.stat().st_size, chunk_size)
+            self.assertFalse(final_path.exists())
+            refresh = record["file_reference_refresh"][0]
+            self.assertEqual(refresh["result"], "refresh_error")
+            self.assertEqual(refresh["error_type"], "TimeoutError")
+            issue = json.loads(
+                exporter.error_log_path.read_text(encoding="utf-8").splitlines()[0]
+            )
+            self.assertEqual(issue["message_id"], 55)
+            self.assertEqual(issue["media_id"], 55)
+            self.assertEqual(issue["reason"], "file_reference_refresh_failed")
+            self.assertEqual(
+                issue["file_reference_refresh"][0]["error_type"],
+                "TimeoutError",
+            )
+
+    def test_resumed_stream_close_error_does_not_mask_primary_stall(self):
+        chunk_size = export.TELEGRAM_DOWNLOAD_CHUNK_SIZE
+
+        class Pacer:
+            async def after_chunk(self):
+                return None
+
+            async def after_media(self):
+                return None
+
+        class StalledStream:
+            def __init__(self):
+                self.cancelled = False
+                self.closed = False
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                try:
+                    await asyncio.get_running_loop().create_future()
+                except asyncio.CancelledError:
+                    self.cancelled = True
+                    raise
+
+            async def close(self):
+                self.closed = True
+                raise AttributeError("simulated stream cleanup failure")
+
+        class BaseClient:
+            def __init__(self):
+                self.stream = StalledStream()
+
+            def iter_download(self, _media, **_kwargs):
+                return self.stream
+
+        class UnexpectedDownloadApi:
+            async def download_media(self, *_args, **_kwargs):
+                raise AssertionError("existing partial must use iter_download")
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            base_client = BaseClient()
+            exporter: Any = object.__new__(export.ChatExporter)
+            exporter.output_dir = output
+            exporter.files_dir = output / "files"
+            exporter.error_log_path = output / "media-errors.jsonl"
+            exporter.chat_id = 7
+            exporter.base_client = base_client
+            exporter.args = SimpleNamespace(
+                max_file_size=0,
+                retries=0,
+                jitter=0.0,
+                media_stall_timeout=0.02,
+                media_progress_interval=0.0,
+            )
+            exporter.pacer = Pacer()
+            exporter.stats = export.ExportStats()
+            exporter.media_cache = {}
+            exporter.media_asset_cache = {}
+            exporter.referenced_files = set()
+            target = export.DownloadTarget(
+                obj="document",
+                kind="document",
+                subtype="file",
+                role="message.media.document",
+                message_id=56,
+                cache_key="document:56",
+                extension=".bin",
+                expected_size=chunk_size * 2,
+                metadata={"type": "file", "id": 56},
+                source_chat_id=7,
+            )
+            final_path = (
+                exporter.files_dir
+                / export.attachment_category(target)
+                / exporter.target_filename(target, 1)
+            )
+            partial_path = final_path.with_suffix(final_path.suffix + ".part")
+            partial_path.parent.mkdir(parents=True)
+            partial_path.write_bytes(b"p" * chunk_size)
+
+            async def run():
+                return await asyncio.wait_for(
+                    exporter.download_target(UnexpectedDownloadApi(), target, 1),
+                    timeout=1.0,
+                )
+
+            record = asyncio.run(run())
+
+            self.assertTrue(base_client.stream.cancelled)
+            self.assertTrue(base_client.stream.closed)
+            self.assertEqual(record["status"], "failed")
+            self.assertEqual(record["reason"], "download_stalled")
+            self.assertEqual(record["error_type"], "TimeoutError")
+            self.assertNotIn("cleanup failure", record["error"])
+            self.assertEqual(record["partial_bytes"], chunk_size)
+            self.assertEqual(partial_path.stat().st_size, chunk_size)
+            self.assertFalse(final_path.exists())
+            issue = json.loads(
+                exporter.error_log_path.read_text(encoding="utf-8").splitlines()[0]
+            )
+            self.assertEqual(issue["message_id"], 56)
+            self.assertEqual(issue["reason"], "download_stalled")
+            self.assertEqual(issue["error_type"], "TimeoutError")
+
+    def test_media_progress_resets_stall_watchdog(self):
+        stall_timeout = 0.15
+
+        class Pacer:
+            async def after_chunk(self):
+                return None
+
+            async def after_media(self):
+                return None
+
+        class DownloadApi:
+            async def download_media(
+                self,
+                _media,
+                *,
+                file,
+                thumb,
+                progress_callback,
+            ):
+                with Path(file).open("wb") as output:
+                    for downloaded in (1, 2):
+                        await asyncio.sleep(0.08)
+                        output.write(b"x")
+                        await progress_callback(downloaded, 2)
+                return file
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            exporter: Any = object.__new__(export.ChatExporter)
+            exporter.output_dir = output
+            exporter.files_dir = output / "files"
+            exporter.error_log_path = output / "media-errors.jsonl"
+            exporter.chat_id = 7
+            exporter.base_client = SimpleNamespace()
+            exporter.args = SimpleNamespace(
+                max_file_size=0,
+                retries=0,
+                jitter=0.0,
+                media_stall_timeout=stall_timeout,
+                media_progress_interval=0.0,
+            )
+            exporter.pacer = Pacer()
+            exporter.stats = export.ExportStats()
+            exporter.media_cache = {}
+            exporter.media_asset_cache = {}
+            exporter.referenced_files = set()
+            target = export.DownloadTarget(
+                obj="progressing",
+                kind="document",
+                subtype="file",
+                role="message.media.document",
+                message_id=53,
+                cache_key="document:53",
+                extension=".bin",
+                expected_size=2,
+                metadata={"type": "file", "id": 53},
+                source_chat_id=7,
+            )
+
+            async def run():
+                loop = asyncio.get_running_loop()
+                started = loop.time()
+                record = await asyncio.wait_for(
+                    exporter.download_target(DownloadApi(), target, 1),
+                    timeout=1.0,
+                )
+                return record, loop.time() - started
+
+            record, elapsed = asyncio.run(run())
+
+            self.assertGreater(elapsed, stall_timeout)
+            self.assertEqual(record["status"], "downloaded")
+            self.assertEqual((output / record["file"]).read_bytes(), b"xx")
+
+    def test_parser_rejects_negative_media_watchdog_values(self):
+        for option in ("--media-stall-timeout", "--media-progress-interval"):
+            with self.subTest(option=option):
+                parser = export.build_parser()
+                args = parser.parse_args(
+                    [
+                        "chat",
+                        "--api-id",
+                        "1",
+                        "--api-hash",
+                        "hash",
+                        option,
+                        "-0.1",
+                    ]
+                )
+                stderr = io.StringIO()
+                with contextlib.redirect_stderr(stderr):
+                    with self.assertRaises(SystemExit) as raised:
+                        export.validate_args(args, parser)
+                self.assertEqual(raised.exception.code, 2)
+                self.assertIn(option, stderr.getvalue())
+
+    def test_parser_defaults_to_two_media_download_workers_and_rejects_zero(self):
+        parser = export.build_parser()
+        args = parser.parse_args(
+            ["chat", "--api-id", "1", "--api-hash", "hash"]
+        )
+        self.assertEqual(args.media_download_workers, 2)
+
+        args = parser.parse_args(
+            [
+                "chat",
+                "--api-id",
+                "1",
+                "--api-hash",
+                "hash",
+                "--media-download-workers",
+                "0",
+            ]
+        )
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            with self.assertRaises(SystemExit) as raised:
+                export.validate_args(args, parser)
+        self.assertEqual(raised.exception.code, 2)
+        self.assertIn("--media-download-workers", stderr.getvalue())
 
     def test_empty_placeholders_advance_history_without_becoming_rows(self):
         class Pacer:
@@ -2066,6 +3308,8 @@ class ExportSchemaTests(unittest.TestCase):
                         {
                             "type": "file",
                             "id": 22,
+                            "access_hash": 23,
+                            "mime": "application/octet-stream",
                             "file": "files/media/saved.bin",
                             "hash": export.file_sha256(media_path),
                         },
@@ -2094,6 +3338,7 @@ class ExportSchemaTests(unittest.TestCase):
             self.assertEqual(partial.checkpoints, {(7, 0): 2})
             self.assertEqual(partial.attachment_error_statuses, {"unavailable": 1})
             self.assertEqual(len(partial.media_assets), 1)
+            self.assertEqual(len(partial.media_reuse_assets), 1)
             resumed_asset = next(iter(partial.media_assets.values()))
             self.assertEqual(resumed_asset["file"], "files/media/saved.bin")
             self.assertEqual(resumed_asset["hash"], export.file_sha256(media_path))
@@ -2171,7 +3416,271 @@ class ExportSchemaTests(unittest.TestCase):
                 overwrite=False,
                 existing=existing,
             )
+            self.assertEqual(len(validation_writer.media_reuse_assets), 1)
             validation_writer.close_incomplete()
+
+    def test_partial_media_signature_reuses_same_category_file_after_tail_rollback(self):
+        class Pacer:
+            async def after_chunk(self):
+                return None
+
+            async def after_media(self):
+                return None
+
+        class UnexpectedDownloadApi:
+            async def download_media(self, *_args, **_kwargs):
+                raise AssertionError("validated partial media must be reused")
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            messages_path = output / "7.jsonl"
+            partial_path = messages_path.with_suffix(messages_path.suffix + ".part")
+            relative_file = "files/stickers/7_1_01_900_sticker.webp"
+            media_path = output / relative_file
+            media_path.parent.mkdir(parents=True)
+            payload = b"validated partial sticker"
+            media_path.write_bytes(payload)
+            valid_row = {
+                "id": 1,
+                "source": 7,
+                "author": 7,
+                "created": 10,
+                "attachments": [
+                    {
+                        "type": "sticker",
+                        "id": 900,
+                        "access_hash": 901,
+                        "mime": "image/webp",
+                        "file_name": "original-sticker.webp",
+                        "file": relative_file,
+                        "hash": export.file_sha256(media_path),
+                    }
+                ],
+            }
+            failed_row = {
+                "id": 2,
+                "source": 7,
+                "author": 7,
+                "created": 20,
+                "attachments": [
+                    {
+                        "type": "file",
+                        "status": "failed",
+                        "reason": "flood_wait_limit",
+                    }
+                ],
+            }
+            valid_line = (
+                json.dumps(valid_row, separators=(",", ":")).encode("utf-8")
+                + b"\n"
+            )
+            partial_path.write_bytes(
+                valid_line
+                + json.dumps(failed_row, separators=(",", ":")).encode("utf-8")
+                + b"\n"
+            )
+
+            partial = export.load_partial_export(
+                messages_path,
+                existing=None,
+                expected_chat_id=7,
+            )
+
+            self.assertIsNotNone(partial)
+            assert partial is not None
+            self.assertEqual(partial_path.read_bytes(), valid_line)
+            self.assertTrue(partial.media_reuse_assets)
+
+            exporter: Any = object.__new__(export.ChatExporter)
+            exporter.output_dir = output
+            exporter.files_dir = output / "files"
+            exporter.error_log_path = output / "media-errors.jsonl"
+            exporter.chat_id = 7
+            exporter.args = SimpleNamespace(
+                max_file_size=0,
+                retries=0,
+                jitter=0.0,
+                media_stall_timeout=0.25,
+                media_progress_interval=0.0,
+            )
+            exporter.pacer = Pacer()
+            exporter.stats = export.ExportStats()
+            exporter.media_cache = {}
+            exporter.media_asset_cache = {}
+            exporter.media_reuse_cache = dict(partial.media_reuse_assets)
+            exporter.referenced_files = set()
+            target = export.DownloadTarget(
+                obj=object(),
+                kind="document",
+                subtype="sticker",
+                role="message.media.document",
+                message_id=3,
+                cache_key="document:900",
+                extension=".webp",
+                expected_size=len(payload),
+                metadata={
+                    "type": "sticker",
+                    "id": 900,
+                    "access_hash": 901,
+                    "mime": "image/webp",
+                    "file_name": "renamed-sticker.webp",
+                },
+                original_name="renamed-sticker.webp",
+                source_chat_id=7,
+            )
+
+            record = asyncio.run(
+                exporter.download_target(UnexpectedDownloadApi(), target, 4)
+            )
+
+            self.assertEqual(record["status"], "reused")
+            self.assertEqual(record["file"], relative_file)
+            self.assertEqual(record["hash"], export.file_sha256(media_path))
+            self.assertEqual(media_path.read_bytes(), payload)
+            self.assertFalse(
+                (
+                    exporter.files_dir
+                    / "stickers"
+                    / exporter.target_filename(target, 4)
+                ).exists()
+            )
+
+    def test_partial_media_signature_rejects_size_category_and_unknown_size_aliases(self):
+        class Pacer:
+            async def after_chunk(self):
+                return None
+
+            async def after_media(self):
+                return None
+
+        class DownloadApi:
+            def __init__(self, payload):
+                self.payload = payload
+                self.calls = 0
+
+            async def download_media(
+                self,
+                _media,
+                *,
+                file,
+                thumb,
+                progress_callback,
+            ):
+                self.calls += 1
+                Path(file).write_bytes(self.payload)
+                return file
+
+        cases = (
+            ("different physical size", "stickers", b"replacement!", 12),
+            ("different category", "icons", b"replacement", 11),
+            ("unknown target size", "stickers", b"replacement", None),
+        )
+        for label, target_category, downloaded_payload, expected_size in cases:
+            with self.subTest(label), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory)
+                messages_path = output / "7.jsonl"
+                partial_path = messages_path.with_suffix(
+                    messages_path.suffix + ".part"
+                )
+                relative_file = "files/stickers/7_1_01_900_sticker.webp"
+                media_path = output / relative_file
+                media_path.parent.mkdir(parents=True)
+                cached_payload = b"old sticker"
+                media_path.write_bytes(cached_payload)
+                valid_row = {
+                    "id": 1,
+                    "source": 7,
+                    "author": 7,
+                    "created": 10,
+                    "attachments": [
+                        {
+                            "type": "sticker",
+                            "id": 900,
+                            "access_hash": 901,
+                            "mime": "image/webp",
+                            "file": relative_file,
+                            "hash": export.file_sha256(media_path),
+                        }
+                    ],
+                }
+                failed_row = {
+                    "id": 2,
+                    "source": 7,
+                    "author": 7,
+                    "created": 20,
+                    "attachments": [
+                        {
+                            "type": "file",
+                            "status": "failed",
+                            "reason": "flood_wait_limit",
+                        }
+                    ],
+                }
+                partial_path.write_bytes(
+                    json.dumps(valid_row, separators=(",", ":")).encode("utf-8")
+                    + b"\n"
+                    + json.dumps(failed_row, separators=(",", ":")).encode("utf-8")
+                    + b"\n"
+                )
+                partial = export.load_partial_export(
+                    messages_path,
+                    existing=None,
+                    expected_chat_id=7,
+                )
+                self.assertIsNotNone(partial)
+                assert partial is not None
+
+                exporter: Any = object.__new__(export.ChatExporter)
+                exporter.output_dir = output
+                exporter.files_dir = output / "files"
+                exporter.error_log_path = output / "media-errors.jsonl"
+                exporter.chat_id = 7
+                exporter.args = SimpleNamespace(
+                    max_file_size=0,
+                    retries=0,
+                    jitter=0.0,
+                    media_stall_timeout=0.25,
+                    media_progress_interval=0.0,
+                )
+                exporter.pacer = Pacer()
+                exporter.stats = export.ExportStats()
+                exporter.media_cache = {}
+                exporter.media_asset_cache = {}
+                exporter.media_reuse_cache = dict(partial.media_reuse_assets)
+                exporter.referenced_files = set()
+                target = export.DownloadTarget(
+                    obj=object(),
+                    kind="document",
+                    subtype="sticker",
+                    role="message.media.document",
+                    message_id=3,
+                    cache_key="document:900",
+                    extension=".webp",
+                    expected_size=expected_size,
+                    metadata={
+                        "type": "sticker",
+                        "id": 900,
+                        "access_hash": 901,
+                        "mime": "image/webp",
+                    },
+                    original_name="renamed-sticker.webp",
+                    source_chat_id=7,
+                    category_hint=(
+                        target_category if target_category != "stickers" else None
+                    ),
+                )
+                api = DownloadApi(downloaded_payload)
+
+                record = asyncio.run(exporter.download_target(api, target, 4))
+
+                self.assertEqual(api.calls, 1)
+                self.assertEqual(record["status"], "downloaded")
+                self.assertNotEqual(record["file"], relative_file)
+                self.assertEqual(
+                    (output / record["file"]).read_bytes(),
+                    downloaded_payload,
+                )
+                self.assertEqual(media_path.read_bytes(), cached_payload)
 
     def test_partial_jsonl_truncates_only_recoverable_tail_failures(self):
         first = {
@@ -2374,6 +3883,278 @@ class ExportSchemaTests(unittest.TestCase):
             self.assertIsNone(partial)
             self.assertRegex(stderr.getvalue().lower(), r"interrupted.*jsonl")
             self.assertIn("published", stderr.getvalue().lower())
+
+    def test_published_failed_attachment_stages_safe_prefix_and_statuses(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            messages_path = output / "7.jsonl"
+            unavailable_row = {
+                "id": 1,
+                "source": 7,
+                "author": 7,
+                "created": 10,
+                "attachments": [
+                    {
+                        "type": "story",
+                        "status": "unavailable",
+                        "reason": "story_expired",
+                    }
+                ],
+            }
+            failed_row = {
+                "id": 2,
+                "source": 7,
+                "author": 7,
+                "created": 20,
+                "attachments": [
+                    {
+                        "type": "image",
+                        "id": 200,
+                        "status": "failed",
+                        "reason": "flood_wait_limit",
+                    }
+                ],
+            }
+            later_row = {
+                "id": 3,
+                "source": 7,
+                "author": 7,
+                "created": 30,
+                "data": "later",
+            }
+            lines = [
+                json.dumps(row, separators=(",", ":")).encode("utf-8") + b"\n"
+                for row in (unavailable_row, failed_row, later_row)
+            ]
+            published = b"".join(lines)
+            messages_path.write_bytes(published)
+            existing = export.ExistingExportState(
+                metadata={
+                    "summary": {
+                        "complete_accessible": False,
+                        "attachments": {"failed": 1, "unavailable": 1},
+                    }
+                },
+                message_count=3,
+                byte_size=len(published),
+                sha256=export.hashlib.sha256(published).hexdigest(),
+                checkpoints={(7, 0): 3},
+                first_created_epoch=10,
+                last_created_epoch=30,
+                has_undated_messages=False,
+                peers={},
+                peer_avatars=[],
+                media_assets={},
+            )
+
+            repair = export.scan_published_failure_repair(messages_path, existing)
+
+            self.assertIsNotNone(repair)
+            assert repair is not None
+            self.assertEqual(repair.first_failed_message_id, 2)
+            self.assertEqual(repair.original_message_count, 3)
+            self.assertEqual(repair.base.message_count, 1)
+            self.assertEqual(repair.base.byte_size, len(lines[0]))
+            self.assertEqual(repair.base.checkpoints, {(7, 0): 1})
+            export.stage_published_failure_repair(messages_path, repair)
+            partial_path = messages_path.with_suffix(messages_path.suffix + ".part")
+            self.assertEqual(partial_path.read_bytes(), lines[0])
+            self.assertEqual(messages_path.read_bytes(), published)
+
+            partial = export.load_partial_export(
+                messages_path,
+                repair.base,
+                expected_chat_id=7,
+                include_published_attachment_errors=True,
+            )
+
+            self.assertIsNotNone(partial)
+            assert partial is not None
+            self.assertEqual(partial.message_count, 1)
+            self.assertEqual(partial.checkpoints, {(7, 0): 1})
+            self.assertEqual(
+                partial.attachment_error_statuses,
+                {"unavailable": 1},
+            )
+            self.assertEqual(messages_path.read_bytes(), published)
+
+    def test_repeated_published_failure_repair_keeps_repaired_partial_suffix(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            messages_path = output / "7.jsonl"
+            media_path = output / "files" / "media" / "repaired.jpg"
+            media_path.parent.mkdir(parents=True)
+            media_path.write_bytes(b"repaired media")
+            first_row = {
+                "id": 1,
+                "source": 7,
+                "author": 7,
+                "created": 10,
+                "data": "safe prefix",
+            }
+            failed_row = {
+                "id": 2,
+                "source": 7,
+                "author": 7,
+                "created": 20,
+                "attachments": [
+                    {
+                        "type": "image",
+                        "id": 200,
+                        "status": "failed",
+                        "reason": "download_failed",
+                    }
+                ],
+            }
+            later_row = {
+                "id": 3,
+                "source": 7,
+                "author": 7,
+                "created": 30,
+                "data": "old published suffix",
+            }
+            repaired_row = {
+                "id": 2,
+                "source": 7,
+                "author": 7,
+                "created": 20,
+                "attachments": [
+                    {
+                        "type": "image",
+                        "id": 200,
+                        "access_hash": 201,
+                        "mime": "image/jpeg",
+                        "file": "files/media/repaired.jpg",
+                        "hash": export.file_sha256(media_path),
+                    }
+                ],
+            }
+            published_lines = [
+                json.dumps(row, separators=(",", ":")).encode("utf-8") + b"\n"
+                for row in (first_row, failed_row, later_row)
+            ]
+            published = b"".join(published_lines)
+            messages_path.write_bytes(published)
+            existing = export.ExistingExportState(
+                metadata={
+                    "summary": {
+                        "complete_accessible": False,
+                        "attachments": {"failed": 1},
+                    }
+                },
+                message_count=3,
+                byte_size=len(published),
+                sha256=export.hashlib.sha256(published).hexdigest(),
+                checkpoints={(7, 0): 3},
+                first_created_epoch=10,
+                last_created_epoch=30,
+                has_undated_messages=False,
+                peers={},
+                peer_avatars=[],
+                media_assets={},
+            )
+            repair = export.scan_published_failure_repair(messages_path, existing)
+            self.assertIsNotNone(repair)
+            assert repair is not None
+            export.stage_published_failure_repair(messages_path, repair)
+            partial_path = messages_path.with_suffix(messages_path.suffix + ".part")
+            repaired_line = (
+                json.dumps(repaired_row, separators=(",", ":")).encode("utf-8")
+                + b"\n"
+            )
+            partial_path.write_bytes(published_lines[0] + repaired_line)
+
+            # A second invocation must preserve work newer than the published
+            # failed row instead of restaging the old safe prefix over it.
+            export.stage_published_failure_repair(messages_path, repair)
+            self.assertEqual(
+                partial_path.read_bytes(),
+                published_lines[0] + repaired_line,
+            )
+            partial = export.load_partial_export(
+                messages_path,
+                repair.base,
+                expected_chat_id=7,
+                include_published_attachment_errors=True,
+            )
+
+            self.assertIsNotNone(partial)
+            assert partial is not None
+            self.assertEqual(partial.message_count, 2)
+            self.assertEqual(partial.checkpoints, {(7, 0): 2})
+            self.assertEqual(
+                partial.referenced_files,
+                {"files/media/repaired.jpg"},
+            )
+            self.assertTrue(partial.media_assets)
+            self.assertEqual(messages_path.read_bytes(), published)
+
+    def test_published_failed_avatar_stages_complete_message_base(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            messages_path = output / "7.jsonl"
+            rows = [
+                {
+                    "id": message_id,
+                    "source": 7,
+                    "author": 7,
+                    "created": message_id * 10,
+                }
+                for message_id in (1, 2)
+            ]
+            published = b"".join(
+                json.dumps(row, separators=(",", ":")).encode("utf-8") + b"\n"
+                for row in rows
+            )
+            messages_path.write_bytes(published)
+            existing = export.ExistingExportState(
+                metadata={
+                    "summary": {
+                        "complete_accessible": False,
+                        "attachments": {"failed": 1},
+                    }
+                },
+                message_count=2,
+                byte_size=len(published),
+                sha256=export.hashlib.sha256(published).hexdigest(),
+                checkpoints={(7, 0): 2},
+                first_created_epoch=10,
+                last_created_epoch=20,
+                has_undated_messages=False,
+                peers={},
+                peer_avatars=[
+                    {
+                        "type": "avatar",
+                        "id": 99,
+                        "owner_id": 7,
+                        "status": "failed",
+                        "reason": "download_failed",
+                    }
+                ],
+                media_assets={},
+            )
+
+            repair = export.scan_published_failure_repair(messages_path, existing)
+
+            self.assertIsNotNone(repair)
+            assert repair is not None
+            self.assertIsNone(repair.first_failed_message_id)
+            self.assertEqual(repair.failed_avatar_count, 1)
+            self.assertEqual(repair.base.message_count, 2)
+            export.stage_published_failure_repair(messages_path, repair)
+            partial_path = messages_path.with_suffix(messages_path.suffix + ".part")
+            self.assertEqual(partial_path.read_bytes(), published)
+            self.assertEqual(messages_path.read_bytes(), published)
+            partial = export.load_partial_export(
+                messages_path,
+                repair.base,
+                expected_chat_id=7,
+                include_published_attachment_errors=True,
+            )
+            self.assertIsNotNone(partial)
+            assert partial is not None
+            self.assertEqual(partial.message_count, 2)
+            self.assertEqual(partial.checkpoints, {(7, 0): 2})
 
     def test_writer_and_resume_use_id(self):
         # Preview download selection changed behavior, not the JSON contract;

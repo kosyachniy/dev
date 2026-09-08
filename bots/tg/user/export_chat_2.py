@@ -53,7 +53,16 @@ incremental update: it checks each chat/topic history boundary, processes only
 higher-ID messages, and preserves/reuses existing media.  Use ``--overwrite``
 to rebuild all message state, including edits, deletions, and changed reactions.
 An interrupted normal export resumes from its validated ``.jsonl.part`` rows;
-an unfinished final row is discarded and requested again.
+an unfinished final row is discarded and requested again. Large document
+``.part`` files resume from their last complete 512 KiB Telegram chunk. Active
+downloads report byte progress. Documents of at least 64 MiB use two ordered,
+concurrent chunk requests; a no-progress watchdog reconnects and retries
+stalled requests without discarding resumable bytes.
+An attachment that exhausts bounded retries pauses the export before its
+message is committed, so an incomplete chat is never advertised as finished.
+Exports produced by an older version with a published ``status: failed`` row
+are repaired automatically from the safe prefix before that row while the old
+final JSONL/metadata pair remains in place until atomic replacement succeeds.
 If Telegram transiently returns constructors from an older API layer, the
 exporter reopens and reinitializes the connection before retrying the request.
 
@@ -112,6 +121,9 @@ SCHEMA_NAME = "telegram-chat-export"
 SCHEMA_VERSION = 14
 HISTORY_PAGE_SIZE = 100  # Telegram list methods normally accept at most 100.
 CUSTOM_EMOJI_BATCH_SIZE = 100  # Official limit for getCustomEmojiDocuments.
+TELEGRAM_DOWNLOAD_CHUNK_SIZE = 512 * 1024
+PARALLEL_DOCUMENT_MIN_SIZE = 64 * 1024 * 1024
+MAX_MEDIA_DOWNLOAD_WORKERS = 2
 UNLIMITED_TAKEOUT_FILE_SIZE = (1 << 63) - 1
 ENV_KEY_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
 LOG_URL_RE = re.compile(r"https?://[^\s'\"<>]+", re.IGNORECASE)
@@ -611,11 +623,19 @@ def type_not_found_error_details(exc: BaseException) -> str:
     )
 
 
-async def reinitialize_telegram_connection(client: Any) -> None:
+async def reinitialize_telegram_connection(
+    client: Any, timeout_seconds: float = 60.0
+) -> None:
     """Reopen the socket so Telethon sends initConnection and its API layer."""
 
-    await cast(Awaitable[Any], client.disconnect())
-    await cast(Awaitable[Any], client.connect())
+    async def reopen() -> None:
+        await cast(Awaitable[Any], client.disconnect())
+        await cast(Awaitable[Any], client.connect())
+
+    if timeout_seconds > 0:
+        await asyncio.wait_for(reopen(), timeout=timeout_seconds)
+    else:
+        await reopen()
 
 
 def is_file_reference_error(exc: BaseException) -> bool:
@@ -658,7 +678,7 @@ def contact_vcard(media: Any) -> bytes:
 
 
 class Pacer:
-    """Conservative local pacing; Telegram does not publish fixed quotas."""
+    """Optional local pacing plus explicit Telegram-directed flood waits."""
 
     def __init__(
         self,
@@ -677,9 +697,13 @@ class Pacer:
         self.flood_reserve = max(0.0, flood_reserve)
 
     async def sleep(self, base: float) -> None:
+        # Zero means zero. Previously global jitter turned every disabled
+        # success-path delay into a random sleep, which made --media-delay 0
+        # and --history-delay 0 unexpectedly slow.
+        if base <= 0:
+            return
         delay = base + (random.uniform(0.0, self.jitter) if self.jitter else 0.0)
-        if delay > 0:
-            await asyncio.sleep(delay)
+        await asyncio.sleep(delay)
 
     async def after_history(self) -> None:
         await self.sleep(self.history_delay)
@@ -691,13 +715,17 @@ class Pacer:
         await self.sleep(self.media_delay)
 
     async def after_chunk(self) -> None:
-        # Telethon invokes an async progress callback after each downloaded
-        # part, which lets us add reserve pacing without reimplementing file
-        # DC migration, CDN validation, or aligned MTProto chunking.
-        await self.sleep(self.chunk_delay)
+        # A slow Telegram response already paces the next sequential request.
+        # Keep this optional delay exact: applying the global retry jitter to
+        # every 256/512 KiB chunk silently adds minutes to large downloads.
+        if self.chunk_delay > 0:
+            await asyncio.sleep(self.chunk_delay)
 
     async def flood_wait(self, seconds: int, label: str) -> None:
-        delay = max(0, seconds) + self.flood_reserve
+        # Telegram/Telethon have observed FLOOD_WAIT_0 in practice. One second
+        # is the only local minimum; otherwise obey the server value exactly
+        # unless the caller explicitly configured reserve/jitter.
+        delay = max(1, seconds) + self.flood_reserve
         if self.jitter:
             delay += random.uniform(0.0, self.jitter)
         print(f"Telegram flood limit for {label}; sleeping {delay:.1f}s", flush=True)
@@ -4117,6 +4145,7 @@ class AttachmentCollector:
 
 
 CheckpointKey = tuple[int, int]
+MediaReuseKey = tuple[str, str, int, int, str, int]
 
 
 @dataclass
@@ -4149,8 +4178,19 @@ class PartialExportState:
     last_order_key: Optional[tuple[int, int]]
     referenced_files: set[str]
     media_assets: dict[str, dict[str, Any]]
+    media_reuse_assets: dict[MediaReuseKey, dict[str, Any]]
     attachment_error_statuses: dict[str, int]
     digest: Any = field(repr=False)
+
+
+@dataclass
+class PublishedFailureRepair:
+    """Validated prefix used to repair a previously published failed asset."""
+
+    base: ExistingExportState
+    original_message_count: int
+    first_failed_message_id: Optional[int]
+    failed_avatar_count: int
 
 
 def checkpoint_key_from_source(source: HistorySource) -> CheckpointKey:
@@ -4160,6 +4200,52 @@ def checkpoint_key_from_source(source: HistorySource) -> CheckpointKey:
 def attachment_asset_key(record: Mapping[str, Any]) -> Optional[str]:
     value = record.get("asset_key")
     return str(value) if value else None
+
+
+def attachment_media_reuse_key(
+    record: Mapping[str, Any],
+    *,
+    category: Optional[str] = None,
+    file_size: Optional[int] = None,
+) -> Optional[MediaReuseKey]:
+    """Identify the same saved Telegram media without a private cache key.
+
+    Message JSONL intentionally omits ``asset_key``. These public Telegram
+    fields plus the selected file size let an interrupted export reconstruct a
+    safe, category-scoped reuse index instead of downloading the first repeated
+    document or photo again after every restart.
+    """
+
+    if category is None:
+        relative_file = record.get("file")
+        if not is_current_attachment_path(relative_file):
+            return None
+        category = Path(str(relative_file)).parts[1]
+    attachment_type = record.get("type")
+    media_id = record.get("id")
+    access_hash = record.get("access_hash")
+    if (
+        category not in ATTACHMENT_CATEGORIES
+        or not isinstance(attachment_type, str)
+        or not attachment_type
+        or type(media_id) is not int
+        or type(access_hash) is not int
+    ):
+        return None
+    selected_size = (
+        file_size if file_size is not None else record.get("downloaded_size")
+    )
+    if type(selected_size) is not int or selected_size <= 0:
+        return None
+    mime = record.get("mime")
+    return (
+        category,
+        attachment_type,
+        media_id,
+        access_hash,
+        str(mime) if mime else "",
+        selected_size,
+    )
 
 
 def is_current_attachment_path(value: Any) -> bool:
@@ -4627,6 +4713,295 @@ def load_existing_export(
     )
 
 
+def message_has_attachment_status(
+    message: Mapping[str, Any], status: str
+) -> bool:
+    return any(
+        isinstance(attachment, Mapping)
+        and attachment.get("status") == status
+        for attachment in message.get("attachments") or []
+    )
+
+
+def published_summary_attachment_count(
+    existing: ExistingExportState, status: str
+) -> int:
+    summary = existing.metadata.get("summary")
+    attachments = summary.get("attachments") if isinstance(summary, Mapping) else None
+    value = attachments.get(status) if isinstance(attachments, Mapping) else None
+    return value if type(value) is int and value > 0 else 0
+
+
+def scan_published_failure_repair(
+    messages_path: Path,
+    existing: ExistingExportState,
+) -> Optional[PublishedFailureRepair]:
+    """Find the safe prefix before the first published failed attachment.
+
+    Older exporter versions could publish a row whose attachment had
+    ``status: failed`` and then advance the incremental checkpoint beyond it.
+    Scan only exports whose summary is incomplete, validate the complete JSONL
+    against its metadata, and derive a structural base immediately before the
+    first retryable row. Failed peer avatars live in metadata rather than a
+    message row, so their repair base is the complete message file.
+    """
+
+    summary = existing.metadata.get("summary")
+    complete_accessible = bool(
+        summary.get("complete_accessible", True)
+        if isinstance(summary, Mapping)
+        else True
+    )
+    summary_failed = published_summary_attachment_count(existing, "failed")
+    failed_avatar_count = sum(
+        1
+        for avatar in existing.peer_avatars
+        if avatar.get("status") == "failed"
+    )
+    if complete_accessible and summary_failed == 0 and failed_avatar_count == 0:
+        return None
+
+    checkpoints: dict[CheckpointKey, int] = {}
+    first_created_epoch: Optional[int] = None
+    last_created_epoch: Optional[int] = None
+    has_undated = False
+    previous_order_key: Optional[tuple[int, int]] = None
+    message_count = 0
+    byte_size = 0
+    digest = hashlib.sha256()
+    retained_files: set[str] = set()
+    first_failed_message_id: Optional[int] = None
+    repair_snapshot: Optional[
+        tuple[
+            int,
+            int,
+            Any,
+            dict[CheckpointKey, int],
+            Optional[int],
+            Optional[int],
+            bool,
+            Optional[tuple[int, int]],
+            set[str],
+        ]
+    ] = None
+
+    with messages_path.open("rb") as messages:
+        for line_number, line in enumerate(messages, start=1):
+            if not line.endswith(b"\n"):
+                raise RuntimeError(
+                    f"Existing JSONL line {line_number} has no terminating newline"
+                )
+            try:
+                message = json.loads(line)
+                if not isinstance(message, Mapping):
+                    raise ValueError("row is not a message object")
+                validate_message_contract(message)
+            except (
+                UnicodeDecodeError,
+                json.JSONDecodeError,
+                TypeError,
+                ValueError,
+            ) as exc:
+                raise RuntimeError(
+                    f"Invalid existing JSONL message on line {line_number}: "
+                    f"{error_text(exc)}"
+                ) from exc
+
+            if repair_snapshot is None and message_has_attachment_status(
+                message, "failed"
+            ):
+                first_failed_message_id = int(message["id"])
+                repair_snapshot = (
+                    message_count,
+                    byte_size,
+                    digest.copy(),
+                    dict(checkpoints),
+                    first_created_epoch,
+                    last_created_epoch,
+                    has_undated,
+                    previous_order_key,
+                    set(retained_files),
+                )
+
+            message_id = int(message["id"])
+            history_source = effective_message_history_source(message)
+            if history_source is None:
+                raise RuntimeError(
+                    f"Invalid existing JSONL message on line {line_number}: "
+                    "history_source/source does not identify a history stream"
+                )
+            topic = message.get("monoforum_topic")
+            topic_peer_id = (
+                int(topic.get("peer_id") or 0) if isinstance(topic, Mapping) else 0
+            )
+            checkpoint_key = (history_source, topic_peer_id)
+            if message_id <= checkpoints.get(checkpoint_key, 0):
+                raise RuntimeError(
+                    f"Invalid existing JSONL message on line {line_number}: "
+                    "message IDs must increase within each history source"
+                )
+            checkpoints[checkpoint_key] = message_id
+
+            created_value = message.get("created")
+            created = created_value if type(created_value) is int else None
+            order_key = (1, 0) if created is None else (0, created)
+            if previous_order_key is not None and order_key < previous_order_key:
+                raise RuntimeError(
+                    f"Invalid existing JSONL message on line {line_number}: "
+                    "messages must be ordered oldest-to-newest by created"
+                )
+            previous_order_key = order_key
+            if created is None:
+                has_undated = True
+            else:
+                first_created_epoch = (
+                    created
+                    if first_created_epoch is None
+                    else min(first_created_epoch, created)
+                )
+                last_created_epoch = (
+                    created
+                    if last_created_epoch is None
+                    else max(last_created_epoch, created)
+                )
+
+            if repair_snapshot is None:
+                for attachment in message.get("attachments") or []:
+                    if isinstance(attachment, Mapping) and attachment.get("file"):
+                        retained_files.add(str(attachment["file"]))
+            digest.update(line)
+            byte_size += len(line)
+            message_count += 1
+
+    if (
+        message_count != existing.message_count
+        or byte_size != existing.byte_size
+        or digest.hexdigest() != existing.sha256
+        or checkpoints != existing.checkpoints
+        or first_created_epoch != existing.first_created_epoch
+        or last_created_epoch != existing.last_created_epoch
+        or has_undated != existing.has_undated_messages
+    ):
+        raise RuntimeError(
+            "Existing JSONL content does not match its metadata; use --overwrite "
+            "to rebuild it"
+        )
+
+    if repair_snapshot is None:
+        if failed_avatar_count == 0:
+            # The export is incomplete for another reason (history access,
+            # max-file policy, or metadata), not because a retryable asset row
+            # was incorrectly published.
+            return None
+        repair_snapshot = (
+            message_count,
+            byte_size,
+            digest.copy(),
+            dict(checkpoints),
+            first_created_epoch,
+            last_created_epoch,
+            has_undated,
+            previous_order_key,
+            set(retained_files),
+        )
+
+    (
+        repair_count,
+        repair_bytes,
+        repair_digest,
+        repair_checkpoints,
+        repair_first_created,
+        repair_last_created,
+        repair_has_undated,
+        _repair_last_order_key,
+        repair_files,
+    ) = repair_snapshot
+    avatar_files = {
+        str(avatar["file"])
+        for avatar in existing.peer_avatars
+        if avatar.get("file")
+    }
+    retained_asset_files = repair_files | avatar_files
+    retained_media_assets = {
+        asset_key: asset
+        for asset_key, asset in existing.media_assets.items()
+        if str(asset.get("file") or "") in retained_asset_files
+    }
+    base = ExistingExportState(
+        metadata=existing.metadata,
+        message_count=repair_count,
+        byte_size=repair_bytes,
+        sha256=repair_digest.hexdigest(),
+        checkpoints=repair_checkpoints,
+        first_created_epoch=repair_first_created,
+        last_created_epoch=repair_last_created,
+        has_undated_messages=repair_has_undated,
+        peers=existing.peers,
+        peer_avatars=existing.peer_avatars,
+        media_assets=retained_media_assets,
+    )
+    return PublishedFailureRepair(
+        base=base,
+        original_message_count=existing.message_count,
+        first_failed_message_id=first_failed_message_id,
+        failed_avatar_count=failed_avatar_count,
+    )
+
+
+def stage_published_failure_repair(
+    messages_path: Path,
+    repair: PublishedFailureRepair,
+) -> None:
+    """Atomically create a repair work file without moving the final pair."""
+
+    partial_path = messages_path.with_suffix(messages_path.suffix + ".part")
+    if partial_path.exists():
+        return
+    temporary_path = partial_path.with_suffix(partial_path.suffix + ".repair-copy")
+    temporary_path.unlink(missing_ok=True)
+    copied = 0
+    digest = hashlib.sha256()
+    try:
+        with messages_path.open("rb") as source, temporary_path.open("xb") as target:
+            remaining = repair.base.byte_size
+            while remaining:
+                chunk = source.read(min(1024 * 1024, remaining))
+                if not chunk:
+                    raise RuntimeError(
+                        "Existing JSONL ended before the validated repair boundary"
+                    )
+                target.write(chunk)
+                digest.update(chunk)
+                copied += len(chunk)
+                remaining -= len(chunk)
+            target.flush()
+            os.fsync(target.fileno())
+        if copied != repair.base.byte_size or digest.hexdigest() != repair.base.sha256:
+            raise RuntimeError("Existing JSONL changed while preparing its repair")
+        os.replace(temporary_path, partial_path)
+        try:
+            directory_fd = os.open(messages_path.parent, os.O_RDONLY)
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
+        except OSError:
+            pass
+    except BaseException:
+        temporary_path.unlink(missing_ok=True)
+        raise
+
+    if repair.first_failed_message_id is not None:
+        detail = f" before failed message {repair.first_failed_message_id}"
+    else:
+        detail = " to retry failed peer avatars"
+    print(
+        f"Prepared automatic repair{detail}; retained "
+        f"{repair.base.message_count} validated messages in {partial_path}",
+        flush=True,
+    )
+
+
 class _PartialMediaValidationError(ValueError):
     """A committed partial row references media that is no longer complete."""
 
@@ -4638,6 +5013,7 @@ def load_partial_export(
     *,
     overwrite: bool = False,
     allowed_checkpoint_keys: Optional[set[CheckpointKey]] = None,
+    include_published_attachment_errors: bool = False,
 ) -> Optional[PartialExportState]:
     """Validate and recover an interrupted ``.jsonl.part`` append.
 
@@ -4695,6 +5071,7 @@ def load_partial_export(
     digest = hashlib.sha256()
     referenced_files: set[str] = set()
     media_assets = dict(existing.media_assets) if existing is not None else {}
+    media_reuse_assets: dict[MediaReuseKey, dict[str, Any]] = {}
     attachment_error_statuses: dict[str, int] = {}
     verified_file_hashes: dict[str, str] = {}
     prefix_state_checked = existing is None or base_byte_size == 0
@@ -4766,6 +5143,7 @@ def load_partial_export(
 
         row_files: set[str] = set()
         row_media_assets: dict[str, dict[str, Any]] = {}
+        row_media_reuse_assets: dict[MediaReuseKey, dict[str, Any]] = {}
         try:
             for attachment in attachments:
                 if not isinstance(attachment, Mapping) or not attachment.get("file"):
@@ -4789,6 +5167,23 @@ def load_partial_export(
                         "saved attachment content does not match its hash"
                     )
                 row_files.add(relative_file)
+                downloaded_size = (
+                    messages_path.parent / relative_file
+                ).stat().st_size
+                reuse_key = attachment_media_reuse_key(
+                    normalized,
+                    file_size=downloaded_size,
+                )
+                if reuse_key is not None:
+                    row_media_reuse_assets.setdefault(
+                        reuse_key,
+                        {
+                            "file": relative_file,
+                            "hash": attachment_hash,
+                            "downloaded_size": downloaded_size,
+                            "first_message": message_id,
+                        },
+                    )
                 if retryable_partial_row:
                     resumed_asset_key = "resumed-file:" + hashlib.sha256(
                         relative_file.encode("utf-8")
@@ -4800,9 +5195,7 @@ def load_partial_export(
                             resumed_asset_key,
                             attachment,
                         ),
-                        "downloaded_size": (
-                            messages_path.parent / relative_file
-                        ).stat().st_size,
+                        "downloaded_size": downloaded_size,
                         "first_message": message_id,
                     }
         except _PartialMediaValidationError as exc:
@@ -4834,7 +5227,9 @@ def load_partial_export(
         previous_order_key = order_key
         referenced_files.update(row_files)
         media_assets.update(row_media_assets)
-        if retryable_partial_row:
+        for reuse_key, reuse_asset in row_media_reuse_assets.items():
+            media_reuse_assets.setdefault(reuse_key, reuse_asset)
+        if retryable_partial_row or include_published_attachment_errors:
             for attachment in attachments:
                 if not isinstance(attachment, Mapping):
                     continue
@@ -4947,6 +5342,7 @@ def load_partial_export(
         last_order_key=previous_order_key,
         referenced_files=referenced_files,
         media_assets=media_assets,
+        media_reuse_assets=media_reuse_assets,
         attachment_error_statuses=attachment_error_statuses,
         digest=digest,
     )
@@ -5074,6 +5470,7 @@ class JsonlExportWriter:
         self.last_created_epoch: Optional[int] = None
         self.has_undated_messages = False
         self.last_order_key: Optional[tuple[int, int]] = None
+        self.media_reuse_assets: dict[MediaReuseKey, dict[str, Any]] = {}
         self.closed = False
         self.published = False
 
@@ -5119,6 +5516,7 @@ class JsonlExportWriter:
             self.last_created_epoch = partial.last_created_epoch
             self.has_undated_messages = partial.has_undated_messages
             self.last_order_key = partial.last_order_key
+            self.media_reuse_assets = dict(partial.media_reuse_assets)
             self.output = self.messages_partial_path.open("ab")
             print(
                 f"Resuming {self.messages_partial_path} after "
@@ -5144,6 +5542,7 @@ class JsonlExportWriter:
         referenced_media_files: dict[str, str] = {}
         referenced_media_records: dict[str, list[dict[str, Any]]] = {}
         verified_file_hashes: dict[str, str] = {}
+        media_reuse_assets: dict[MediaReuseKey, dict[str, Any]] = {}
         first_created_epoch: Optional[int] = None
         last_created_epoch: Optional[int] = None
         has_undated = False
@@ -5280,6 +5679,21 @@ class JsonlExportWriter:
                             raise ValueError(
                                 "saved attachment content does not match its hash"
                             )
+                        downloaded_size = int(normalized["downloaded_size"])
+                        reuse_key = attachment_media_reuse_key(
+                            normalized,
+                            file_size=downloaded_size,
+                        )
+                        if reuse_key is not None:
+                            media_reuse_assets.setdefault(
+                                reuse_key,
+                                {
+                                    "file": relative_file,
+                                    "hash": attachment_hash,
+                                    "downloaded_size": downloaded_size,
+                                    "first_message": message_id,
+                                },
+                            )
                         previous_hash = referenced_media_files.setdefault(
                             relative_file,
                             attachment_hash,
@@ -5358,6 +5772,7 @@ class JsonlExportWriter:
         self.last_created_epoch = last_created_epoch
         self.has_undated_messages = has_undated
         self.last_order_key = previous_order_key
+        self.media_reuse_assets = media_reuse_assets
 
     def fsync_output_directory(self) -> None:
         try:
@@ -5690,6 +6105,8 @@ class ChatExporter:
         self.stats = ExportStats()
         self.media_cache: dict[str, dict[str, Any]] = {}
         self.media_asset_cache: dict[str, dict[str, Any]] = {}
+        self.media_reuse_cache: dict[MediaReuseKey, dict[str, Any]] = {}
+        self.referenced_asset_keys: set[str] = set()
         self.referenced_files: set[str] = set()
         self.emoji_documents: dict[int, Any] = {}
         self.unresolved_emoji: set[int] = set()
@@ -6228,6 +6645,8 @@ class ChatExporter:
             "error_type": record.get("error_type"),
             "error": record.get("error"),
             "attempts": record.get("attempts"),
+            "partial_bytes": record.get("partial_bytes"),
+            "partial_file": record.get("partial_file"),
             "flood_wait_history": record.get("flood_wait_history"),
             "file_reference_refresh": record.get("file_reference_refresh"),
         }
@@ -6449,6 +6868,139 @@ class ChatExporter:
         diagnostic.setdefault("result", "source_no_longer_returns_media")
         return None
 
+    async def download_document_parallel(
+        self,
+        target: DownloadTarget,
+        partial_path: Path,
+        resume_offset: int,
+        expected_size: int,
+        progress_callback: Callable[[int, int], Awaitable[None]],
+        *,
+        workers: int,
+    ) -> None:
+        """Download a document with two in-flight, ordered chunk requests.
+
+        Telethon multiplexes both iterators over its borrowed sender for the
+        document's data center. A complete round is validated before either
+        chunk is appended, so the partial file always remains a contiguous,
+        512 KiB-aligned prefix that another run can safely resume.
+        """
+
+        chunk_size = TELEGRAM_DOWNLOAD_CHUNK_SIZE
+        if resume_offset < 0 or resume_offset >= expected_size:
+            raise ValueError("parallel document offset is outside the file")
+        if resume_offset % chunk_size:
+            raise ValueError("parallel document offset is not chunk-aligned")
+
+        existing_size = partial_path.stat().st_size if partial_path.exists() else 0
+        if existing_size != resume_offset:
+            raise RuntimeError(
+                f"media partial has {existing_size} bytes, expected {resume_offset}"
+            )
+
+        remaining_chunks = (
+            expected_size - resume_offset + chunk_size - 1
+        ) // chunk_size
+        worker_count = min(
+            max(1, int(workers)),
+            MAX_MEDIA_DOWNLOAD_WORKERS,
+            remaining_chunks,
+        )
+        lane_counts = [
+            (remaining_chunks + worker_count - 1 - lane) // worker_count
+            for lane in range(worker_count)
+        ]
+        streams: list[Any] = []
+        active_tasks: list[asyncio.Task[bytes]] = []
+
+        async def read_exact(stream: Any, offset: int, size: int) -> bytes:
+            try:
+                raw_chunk = await stream.__anext__()
+            except StopAsyncIteration as exc:
+                raise RuntimeError(
+                    f"Telegram ended document stream at offset {offset}"
+                ) from exc
+            chunk = bytes(raw_chunk)
+            if len(chunk) != size:
+                raise RuntimeError(
+                    f"Telegram returned {len(chunk)} bytes at offset {offset}, "
+                    f"expected {size}"
+                )
+            return chunk
+
+        async def close_stream(stream: Any) -> None:
+            try:
+                result = stream.close()
+                if inspect.isawaitable(result):
+                    await result
+            except BaseException:
+                # A cancellation can happen before Telethon assigns the
+                # iterator's sender. Cleanup must not mask the real failure.
+                pass
+
+        try:
+            for lane, lane_count in enumerate(lane_counts):
+                kwargs: dict[str, Any] = {
+                    "offset": resume_offset + lane * chunk_size,
+                    "stride": worker_count * chunk_size,
+                    "limit": lane_count,
+                    "request_size": chunk_size,
+                    "chunk_size": chunk_size,
+                    "file_size": expected_size,
+                }
+                if target.dc_id is not None:
+                    kwargs["dc_id"] = int(target.dc_id)
+                streams.append(self.base_client.iter_download(target.obj, **kwargs))
+
+            mode = "ab" if resume_offset else "wb"
+            with partial_path.open(mode) as output:
+                rounds = max(lane_counts)
+                for round_index in range(rounds):
+                    offsets_and_sizes: list[tuple[int, int]] = []
+                    active_tasks = []
+                    for lane, stream in enumerate(streams):
+                        if round_index >= lane_counts[lane]:
+                            continue
+                        offset = (
+                            resume_offset
+                            + (round_index * worker_count + lane) * chunk_size
+                        )
+                        size = min(chunk_size, expected_size - offset)
+                        offsets_and_sizes.append((offset, size))
+                        active_tasks.append(
+                            asyncio.create_task(read_exact(stream, offset, size))
+                        )
+                    try:
+                        chunks = await asyncio.gather(*active_tasks)
+                    except BaseException:
+                        for task in active_tasks:
+                            if not task.done():
+                                task.cancel()
+                        await asyncio.gather(*active_tasks, return_exceptions=True)
+                        raise
+                    finally:
+                        active_tasks = []
+
+                    for chunk, (offset, _size) in zip(chunks, offsets_and_sizes):
+                        if output.tell() != offset:
+                            raise RuntimeError(
+                                f"non-contiguous media write at offset {offset}; "
+                                f"partial ends at {output.tell()}"
+                            )
+                        output.write(chunk)
+                        await progress_callback(output.tell(), expected_size)
+        finally:
+            for task in active_tasks:
+                if not task.done():
+                    task.cancel()
+            if active_tasks:
+                await asyncio.gather(*active_tasks, return_exceptions=True)
+            if streams:
+                await asyncio.gather(
+                    *(close_stream(stream) for stream in streams),
+                    return_exceptions=True,
+                )
+
     async def download_target(
         self, api: Any, target: DownloadTarget, ordinal: int
     ) -> dict[str, Any]:
@@ -6456,6 +7008,12 @@ class ChatExporter:
         category = attachment_category(target)
         record["category"] = category
         record["asset_key"] = target.cache_key
+        if not hasattr(self, "media_reuse_cache"):
+            # Keep direct/unit construction of ChatExporter compatible while
+            # production instances initialize this in __init__.
+            self.media_reuse_cache = {}
+        if not hasattr(self, "referenced_asset_keys"):
+            self.referenced_asset_keys = set()
         if target.protected:
             record.update(status="protected", reason="telegram_content_protection")
             return record
@@ -6490,6 +7048,14 @@ class ChatExporter:
             )
             self.media_cache[cache_slot] = cache
             self.media_asset_cache.setdefault(target.cache_key, cache)
+            self.referenced_asset_keys.add(target.cache_key)
+            reuse_key = attachment_media_reuse_key(
+                record,
+                category=category,
+                file_size=int(cache.get("downloaded_size") or 0),
+            )
+            if reuse_key is not None:
+                self.media_reuse_cache.setdefault(reuse_key, cache)
 
         def clone_file(source: Path, destination: Path) -> None:
             temporary = destination.with_suffix(destination.suffix + ".reuse.part")
@@ -6530,9 +7096,38 @@ class ChatExporter:
             return record
 
         asset = self.media_asset_cache.get(target.cache_key)
+        reused_from_resume_index = False
+        reuse_key = attachment_media_reuse_key(
+            record,
+            category=category,
+            file_size=(
+                int(target.expected_size)
+                if target.expected_size is not None
+                else None
+            ),
+        )
+        if asset is None and reuse_key is not None:
+            asset = self.media_reuse_cache.get(reuse_key)
+            reused_from_resume_index = asset is not None
         if asset:
             asset_path = self.output_dir / str(asset["file"])
             if usable_file(asset_path):
+                if reused_from_resume_index:
+                    cache = {
+                        "file": str(asset["file"]),
+                        "hash": asset.get("hash") or file_sha256(asset_path),
+                        "downloaded_size": asset_path.stat().st_size,
+                        "first_message": asset.get("first_message"),
+                    }
+                    remember_asset(cache)
+                    self.referenced_files.add(str(cache["file"]))
+                    record.update(
+                        status="reused",
+                        reused_from=asset.get("first_message"),
+                        reused_asset_from=asset["file"],
+                        **cache,
+                    )
+                    return record
                 clone_file(asset_path, final_path)
                 cloned_hash = file_sha256(final_path)
                 if asset.get("hash") and asset["hash"] != cloned_hash:
@@ -6560,120 +7155,336 @@ class ChatExporter:
                         **cache,
                     )
                     return record
+            elif reused_from_resume_index and reuse_key is not None:
+                self.media_reuse_cache.pop(reuse_key, None)
 
         partial_path = final_path.with_suffix(final_path.suffix + ".part")
         current_target = target
         attempts = 0
+        transient_failures = 0
+        flood_responses = 0
+        flood_progress_bytes = 0
         flood_wait_history: list[dict[str, Any]] = []
         reference_refreshes: list[dict[str, Any]] = []
-        while True:
-            partial_path.unlink(missing_ok=True)
+        reference_error_offset: Optional[int] = None
+        reference_errors_at_offset = 0
+        force_full_downloader = False
+
+        def partial_byte_count() -> int:
             try:
+                if partial_path.is_symlink() or not partial_path.is_file():
+                    return 0
+                return partial_path.stat().st_size
+            except OSError:
+                return 0
 
-                async def pace_chunk(_downloaded: int, _total: int) -> None:
-                    await self.pacer.after_chunk()
+        def retain_partial_details(output: dict[str, Any], resumable: bool) -> None:
+            partial_bytes = partial_byte_count()
+            if resumable and partial_bytes:
+                output["partial_bytes"] = partial_bytes
+                output["partial_file"] = relative_path + ".part"
 
-                if current_target.kind == "bytes":
-                    partial_path.write_bytes(bytes(current_target.obj))
-                    result: Any = str(partial_path)
-                elif current_target.kind == "contact":
-                    partial_path.write_bytes(contact_vcard(current_target.obj))
-                    result = str(partial_path)
-                elif current_target.kind == "profile_photo":
-                    result = await self.base_client.download_profile_photo(
-                        current_target.obj,
-                        file=str(partial_path),
-                        download_big=True,
-                    )
-                elif current_target.kind == "web_document":
-                    if tl_name(current_target.obj) == "WebDocumentNoProxy":
-                        timeout = aiohttp.ClientTimeout(
-                            total=None,
-                            sock_connect=60,
-                            sock_read=60,
+        while True:
+            resumable = bool(
+                current_target.kind == "document"
+                and current_target.thumb is None
+                and current_target.expected_size is not None
+                and int(current_target.expected_size) > 0
+            )
+            resume_offset = 0
+            use_parallel_download = False
+            stall_timeout = float(
+                getattr(self.args, "media_stall_timeout", 120.0)
+            )
+            progress_interval = float(
+                getattr(self.args, "media_progress_interval", 30.0)
+            )
+            try:
+                if resumable and partial_path.is_symlink():
+                    raise RuntimeError(f"Unsafe media partial path {partial_path}")
+                if resumable and partial_path.exists():
+                    if not partial_path.is_file():
+                        raise RuntimeError(
+                            f"Unsafe media partial path {partial_path}"
                         )
-                        async with aiohttp.ClientSession(timeout=timeout) as session:
-                            async with session.get(
-                                current_target.obj.url,
-                                headers={"Accept-Encoding": "identity"},
-                            ) as response:
-                                response.raise_for_status()
-                                with partial_path.open("wb") as output:
-                                    async for chunk in response.content.iter_chunked(
-                                        512 * 1024
-                                    ):
-                                        output.write(chunk)
-                                        await self.pacer.after_chunk()
+                    expected_size = int(current_target.expected_size or 0)
+                    partial_size = partial_path.stat().st_size
+                    if partial_size > expected_size:
+                        partial_path.unlink()
+                    elif partial_size == expected_size:
+                        resume_offset = partial_size
                     else:
-                        # Ordinary WebDocument URLs must be fetched through
-                        # Telegram; only WebDocumentNoProxy authorizes a direct
-                        # request to the origin server.
-                        location = types.InputWebFileLocation(
-                            url=current_target.obj.url,
-                            access_hash=int(current_target.obj.access_hash),
+                        aligned_size = (
+                            partial_size
+                            - partial_size % TELEGRAM_DOWNLOAD_CHUNK_SIZE
                         )
-                        offset = 0
-                        request_size = 512 * 1024
-                        webfile_dc_id = await self.get_webfile_dc_id()
-                        home_dc_id = int(
-                            getattr(self.base_client.session, "dc_id", 0) or 0
-                        )
-                        sender = (
-                            None
-                            if home_dc_id == webfile_dc_id
-                            else await self.base_client._borrow_exported_sender(
-                                webfile_dc_id
+                        if aligned_size != partial_size:
+                            with partial_path.open("r+b") as partial:
+                                partial.truncate(aligned_size)
+                            print(
+                                f"Discarded {partial_size - aligned_size} incomplete "
+                                f"media bytes from {relative_path}.part",
+                                flush=True,
                             )
+                        resume_offset = aligned_size
+                elif not resumable:
+                    partial_path.unlink(missing_ok=True)
+
+                loop = asyncio.get_running_loop()
+                last_progress_at = loop.time()
+                last_progress_bytes = resume_offset
+                expected_progress_size = int(current_target.expected_size or 0)
+                remaining_chunks = (
+                    expected_progress_size
+                    - resume_offset
+                    + TELEGRAM_DOWNLOAD_CHUNK_SIZE
+                    - 1
+                ) // TELEGRAM_DOWNLOAD_CHUNK_SIZE
+                configured_workers = max(
+                    1,
+                    int(getattr(self.args, "media_download_workers", 1)),
+                )
+                parallel_workers = min(
+                    configured_workers,
+                    MAX_MEDIA_DOWNLOAD_WORKERS,
+                    remaining_chunks,
+                )
+                use_parallel_download = bool(
+                    resumable
+                    and not force_full_downloader
+                    and expected_progress_size >= PARALLEL_DOCUMENT_MIN_SIZE
+                    and parallel_workers > 1
+                )
+
+                def progress_description(downloaded: int, total: int) -> str:
+                    if total > 0:
+                        percentage = min(100.0, downloaded * 100.0 / total)
+                        return f"{downloaded}/{total} bytes ({percentage:.1f}%)"
+                    return f"{downloaded} bytes"
+
+                if resume_offset:
+                    worker_text = (
+                        f" with {parallel_workers} concurrent chunk requests"
+                        if use_parallel_download
+                        else ""
+                    )
+                    print(
+                        f"Resuming {relative_path} at "
+                        f"{progress_description(resume_offset, expected_progress_size)}"
+                        f"{worker_text}",
+                        flush=True,
+                    )
+                elif expected_progress_size >= 64 * 1024 * 1024:
+                    watchdog_text = (
+                        f"; {stall_timeout:g}s no-progress timeout"
+                        if stall_timeout > 0
+                        else ""
+                    )
+                    worker_text = (
+                        f"; {parallel_workers} concurrent chunk requests"
+                        if use_parallel_download
+                        else ""
+                    )
+                    print(
+                        f"Downloading {relative_path} "
+                        f"({expected_progress_size} bytes{worker_text}"
+                        f"{watchdog_text})",
+                        flush=True,
+                    )
+
+                async with asyncio.timeout(
+                    stall_timeout if stall_timeout > 0 else None
+                ) as watchdog:
+
+                    async def pace_chunk(downloaded: int, total: int) -> None:
+                        nonlocal last_progress_at, last_progress_bytes
+                        if stall_timeout > 0 and not watchdog.expired():
+                            watchdog.reschedule(None)
+                        downloaded = int(downloaded or 0)
+                        total = int(total or expected_progress_size or 0)
+                        now = loop.time()
+                        if (
+                            progress_interval > 0
+                            and downloaded > last_progress_bytes
+                            and now - last_progress_at >= progress_interval
+                        ):
+                            print(
+                                f"Downloading {relative_path}: "
+                                f"{progress_description(downloaded, total)}",
+                                flush=True,
+                            )
+                            last_progress_at = now
+                            last_progress_bytes = downloaded
+                        await self.pacer.after_chunk()
+                        if stall_timeout > 0 and not watchdog.expired():
+                            watchdog.reschedule(loop.time() + stall_timeout)
+
+                    if current_target.kind == "bytes":
+                        partial_path.write_bytes(bytes(current_target.obj))
+                        result: Any = str(partial_path)
+                    elif current_target.kind == "contact":
+                        partial_path.write_bytes(contact_vcard(current_target.obj))
+                        result = str(partial_path)
+                    elif current_target.kind == "profile_photo":
+                        result = await self.base_client.download_profile_photo(
+                            current_target.obj,
+                            file=str(partial_path),
+                            download_big=True,
+                        )
+                    elif current_target.kind == "web_document":
+                        if tl_name(current_target.obj) == "WebDocumentNoProxy":
+                            timeout = aiohttp.ClientTimeout(
+                                total=None,
+                                sock_connect=60,
+                                sock_read=60,
+                            )
+                            async with aiohttp.ClientSession(timeout=timeout) as session:
+                                async with session.get(
+                                    current_target.obj.url,
+                                    headers={"Accept-Encoding": "identity"},
+                                ) as response:
+                                    response.raise_for_status()
+                                    with partial_path.open("wb") as output:
+                                        async for chunk in response.content.iter_chunked(
+                                            TELEGRAM_DOWNLOAD_CHUNK_SIZE
+                                        ):
+                                            output.write(chunk)
+                                            await pace_chunk(
+                                                output.tell(),
+                                                expected_progress_size,
+                                            )
+                        else:
+                            # Ordinary WebDocument URLs must be fetched through
+                            # Telegram; only WebDocumentNoProxy authorizes a direct
+                            # request to the origin server.
+                            location = types.InputWebFileLocation(
+                                url=current_target.obj.url,
+                                access_hash=int(current_target.obj.access_hash),
+                            )
+                            offset = 0
+                            request_size = TELEGRAM_DOWNLOAD_CHUNK_SIZE
+                            webfile_dc_id = await self.get_webfile_dc_id()
+                            home_dc_id = int(
+                                getattr(self.base_client.session, "dc_id", 0) or 0
+                            )
+                            sender = (
+                                None
+                                if home_dc_id == webfile_dc_id
+                                else await self.base_client._borrow_exported_sender(
+                                    webfile_dc_id
+                                )
+                            )
+                            try:
+                                with partial_path.open("wb") as output:
+                                    while True:
+                                        request = functions.upload.GetWebFileRequest(
+                                            location=location,
+                                            offset=offset,
+                                            limit=request_size,
+                                        )
+                                        response = (
+                                            await self.base_client(request)
+                                            if sender is None
+                                            else await self.base_client._call(
+                                                sender,
+                                                request,
+                                            )
+                                        )
+                                        chunk = bytes(
+                                            getattr(response, "bytes", b"") or b""
+                                        )
+                                        if not chunk:
+                                            break
+                                        output.write(chunk)
+                                        offset += len(chunk)
+                                        await pace_chunk(
+                                            offset,
+                                            expected_progress_size,
+                                        )
+                                        if len(chunk) < request_size or (
+                                            current_target.expected_size is not None
+                                            and offset >= current_target.expected_size
+                                        ):
+                                            break
+                            finally:
+                                if sender is not None:
+                                    await self.base_client._return_exported_sender(
+                                        sender
+                                    )
+                        result = str(partial_path)
+                    elif current_target.kind == "file_location":
+                        await api.download_file(
+                            current_target.obj,
+                            file=str(partial_path),
+                            file_size=current_target.expected_size,
+                            progress_callback=pace_chunk,
+                            dc_id=current_target.dc_id,
+                        )
+                        result = str(partial_path)
+                    elif resumable and resume_offset == expected_progress_size:
+                        # A previous run received every byte but was interrupted
+                        # before the atomic rename and JSONL commit.
+                        result = str(partial_path)
+                    elif use_parallel_download:
+                        await self.download_document_parallel(
+                            current_target,
+                            partial_path,
+                            resume_offset,
+                            expected_progress_size,
+                            pace_chunk,
+                            workers=parallel_workers,
+                        )
+                        result = str(partial_path)
+                    elif resumable and resume_offset:
+                        expected_size = int(current_target.expected_size or 0)
+                        stream = self.base_client.iter_download(
+                            current_target.obj,
+                            offset=resume_offset,
+                            request_size=TELEGRAM_DOWNLOAD_CHUNK_SIZE,
+                            chunk_size=TELEGRAM_DOWNLOAD_CHUNK_SIZE,
+                            file_size=expected_size,
+                            **(
+                                {"dc_id": int(current_target.dc_id)}
+                                if current_target.dc_id is not None
+                                else {}
+                            ),
                         )
                         try:
-                            with partial_path.open("wb") as output:
-                                while True:
-                                    request = functions.upload.GetWebFileRequest(
-                                        location=location,
-                                        offset=offset,
-                                        limit=request_size,
+                            with partial_path.open("ab") as output:
+                                async for raw_chunk in stream:
+                                    chunk = bytes(raw_chunk)
+                                    remaining = (
+                                        expected_size - output.tell()
                                     )
-                                    response = (
-                                        await self.base_client(request)
-                                        if sender is None
-                                        else await self.base_client._call(
-                                            sender,
-                                            request,
-                                        )
-                                    )
-                                    chunk = bytes(
-                                        getattr(response, "bytes", b"") or b""
-                                    )
-                                    if not chunk:
+                                    if remaining <= 0:
                                         break
-                                    output.write(chunk)
-                                    offset += len(chunk)
-                                    await self.pacer.after_chunk()
-                                    if len(chunk) < request_size or (
-                                        current_target.expected_size is not None
-                                        and offset >= current_target.expected_size
-                                    ):
+                                    output.write(chunk[:remaining])
+                                    await pace_chunk(
+                                        output.tell(),
+                                        expected_progress_size,
+                                    )
+                                    if output.tell() >= expected_progress_size:
                                         break
-                        finally:
-                            if sender is not None:
-                                await self.base_client._return_exported_sender(sender)
-                    result = str(partial_path)
-                elif current_target.kind == "file_location":
-                    await api.download_file(
-                        current_target.obj,
-                        file=str(partial_path),
-                        file_size=current_target.expected_size,
-                        progress_callback=pace_chunk,
-                        dc_id=current_target.dc_id,
-                    )
-                    result = str(partial_path)
-                else:
-                    result = await api.download_media(
-                        current_target.obj,
-                        file=str(partial_path),
-                        thumb=current_target.thumb,
-                        progress_callback=pace_chunk,
-                    )
+                        except BaseException:
+                            # A cancellation may land while Telethon is still
+                            # initializing a cross-DC iterator, before close()
+                            # has a sender to release. Never let that cleanup
+                            # error hide the primary stall/cancellation.
+                            try:
+                                await stream.close()
+                            except BaseException:
+                                pass
+                            raise
+                        else:
+                            await stream.close()
+                        result = str(partial_path)
+                    else:
+                        result = await api.download_media(
+                            current_target.obj,
+                            file=str(partial_path),
+                            thumb=current_target.thumb,
+                            progress_callback=pace_chunk,
+                        )
                 if result is None or not partial_path.is_file():
                     raise RuntimeError("Telegram returned no downloadable file")
                 actual_size = partial_path.stat().st_size
@@ -6707,21 +7518,35 @@ class ChatExporter:
 
             except (errors.FloodWaitError, errors.FloodPremiumWaitError) as exc:
                 attempts += 1
+                current_flood_progress = partial_byte_count()
+                if current_flood_progress > flood_progress_bytes:
+                    # Intermittent limits during a large, progressing file are
+                    # independent streaks; only repeated no-progress waits are
+                    # bounded together.
+                    flood_responses = 0
+                flood_progress_bytes = current_flood_progress
+                flood_responses += 1
                 self.stats.flood_waits += 1
                 telegram_wait_seconds = max(
                     0, int(getattr(exc, "seconds", 0) or 0)
                 )
                 flood_wait_history.append(
                     {
-                        "attempt": attempts,
+                        "attempt": len(flood_wait_history) + 1,
+                        "consecutive_without_progress": flood_responses,
                         "error_type": type(exc).__name__,
                         "error": error_text(exc),
                         "telegram_wait_seconds": telegram_wait_seconds,
                         "request_type": tl_name(getattr(exc, "request", None)),
                     }
                 )
-                partial_path.unlink(missing_ok=True)
-                if attempts > self.args.retries:
+                if not resumable:
+                    partial_path.unlink(missing_ok=True)
+                # A flood response is an instruction to wait, not itself a
+                # failed retry. Honor retries+1 bounded wait instructions and
+                # fail only if the following final probe is also flooded.
+                max_flood_waits = max(1, int(self.args.retries) + 1)
+                if flood_responses > max_flood_waits:
                     record.update(
                         status="failed",
                         reason="flood_wait_limit",
@@ -6730,33 +7555,62 @@ class ChatExporter:
                         attempts=attempts,
                         flood_wait_history=flood_wait_history,
                     )
+                    retain_partial_details(record, resumable)
                     self.log_media_issue(target, record, relative_path)
                     print(
                         f"Failed {target.role} in message {target.message_id} "
-                        f"(media {target.metadata.get('id')}) after {attempts} "
+                        f"(media {target.metadata.get('id')}) after "
+                        f"{flood_responses} "
                         f"flood-limit responses: {error_text(exc)}",
                         file=sys.stderr,
                         flush=True,
                     )
-                    if target.kind != "contact":
-                        await self.pacer.after_media()
                     return record
                 await self.pacer.flood_wait(
                     telegram_wait_seconds,
                     (
                         f"media {target.role} in message {target.message_id} "
                         f"(media {target.metadata.get('id')}, "
-                        f"retry {attempts}/{self.args.retries})"
+                        f"wait {flood_responses}/{max_flood_waits})"
                     ),
                 )
             except Exception as exc:
+                cdn_restart = bool(
+                    resumable
+                    and (resume_offset or use_parallel_download)
+                    and type(exc).__name__ == "_CdnRedirect"
+                )
+                if cdn_restart:
+                    # iter_download intentionally exposes this private signal;
+                    # download_media owns the encrypted CDN continuation. This
+                    # is a downloader-mode switch, not a failed retry.
+                    partial_path.unlink(missing_ok=True)
+                    force_full_downloader = True
+                    print(
+                        f"Telegram redirected media to CDN; restarting "
+                        f"{target.role} with Telethon's CDN downloader",
+                        flush=True,
+                    )
+                    continue
+
                 attempts += 1
                 if is_file_reference_error(exc):
+                    current_reference_offset = (
+                        partial_byte_count() if resumable else None
+                    )
+                    if current_reference_offset == reference_error_offset:
+                        reference_errors_at_offset += 1
+                    else:
+                        reference_error_offset = current_reference_offset
+                        reference_errors_at_offset = 1
                     diagnostic: dict[str, Any] = {
                         "attempt": len(reference_refreshes) + 1,
                         "trigger_error_type": type(exc).__name__,
+                        "partial_bytes": current_reference_offset,
+                        "consecutive_at_offset": reference_errors_at_offset,
                     }
-                    if len(reference_refreshes) >= 2:
+                    reference_refresh_limit = max(1, int(self.args.retries))
+                    if reference_errors_at_offset > reference_refresh_limit:
                         diagnostic.update(
                             result="refresh_limit_reached",
                             file_reference_before=file_reference_fingerprint(
@@ -6767,9 +7621,23 @@ class ChatExporter:
                         refreshed = None
                     else:
                         self.stats.file_reference_refreshes += 1
-                        refreshed = await self.refresh_target(
-                            api, current_target, diagnostic
-                        )
+                        try:
+                            async with asyncio.timeout(
+                                stall_timeout if stall_timeout > 0 else None
+                            ):
+                                refreshed = await self.refresh_target(
+                                    api, current_target, diagnostic
+                                )
+                        except asyncio.TimeoutError:
+                            diagnostic.update(
+                                result="refresh_error",
+                                error_type="TimeoutError",
+                                error=(
+                                    "No file-reference refresh response for "
+                                    f"{stall_timeout:g} seconds"
+                                ),
+                            )
+                            refreshed = None
                     if refreshed is not None:
                         before = diagnostic.get("file_reference_before")
                         after = file_reference_fingerprint(refreshed.obj)
@@ -6791,27 +7659,47 @@ class ChatExporter:
                             "result", "source_no_longer_returns_media"
                         )
                     reference_refreshes.append(diagnostic)
-                    partial_path.unlink(missing_ok=True)
                     refresh_failed = diagnostic.get("result") == "refresh_error"
+                    refresh_limited = (
+                        diagnostic.get("result") == "refresh_limit_reached"
+                    )
+                    retryable_refresh_failure = refresh_failed or refresh_limited
+                    if not (resumable and retryable_refresh_failure):
+                        partial_path.unlink(missing_ok=True)
                     record.update(
-                        status="failed" if refresh_failed else "unavailable",
+                        status=(
+                            "failed"
+                            if retryable_refresh_failure
+                            else "unavailable"
+                        ),
                         reason=(
                             "file_reference_refresh_failed"
                             if refresh_failed
-                            else "expired_file_reference_not_refreshable"
+                            else (
+                                "file_reference_refresh_limit"
+                                if refresh_limited
+                                else "expired_file_reference_not_refreshable"
+                            )
                         ),
                         error_type=type(exc).__name__,
                         error=error_text(exc),
                         attempts=attempts,
                         file_reference_refresh=reference_refreshes,
                     )
+                    retain_partial_details(record, resumable)
                     self.log_media_issue(target, record, relative_path)
                     print(
-                        f"Unavailable {target.role} in message {target.message_id}: "
+                        f"{'Failed' if retryable_refresh_failure else 'Unavailable'} "
+                        f"{target.role} in message {target.message_id}: "
                         + (
                             "refresh request failed"
                             if refresh_failed
-                            else "Telegram no longer returns a fresh file reference"
+                            else (
+                                "file-reference retry limit reached without byte "
+                                "progress; partial kept"
+                                if refresh_limited
+                                else "Telegram no longer returns a fresh file reference"
+                            )
                         ),
                         file=sys.stderr,
                         flush=True,
@@ -6831,6 +7719,7 @@ class ChatExporter:
                     self.log_media_issue(target, record, relative_path)
                     await self.pacer.after_media()
                     return record
+                transient_failures += 1
                 retryable = isinstance(
                     exc,
                     (
@@ -6843,29 +7732,55 @@ class ChatExporter:
                         aiohttp.ClientError,
                     ),
                 )
-                if retryable and attempts <= self.args.retries:
+                if retryable and transient_failures <= self.args.retries:
                     self.stats.transient_retries += 1
-                    delay = min(60.0, 2.0**attempts) + random.uniform(
+                    delay = min(60.0, 2.0**transient_failures) + random.uniform(
                         0.0, self.args.jitter
                     )
-                    print(
-                        f"Download retry {attempts}/{self.args.retries} for {target.role} "
-                        f"after {type(exc).__name__}; sleeping {delay:.1f}s",
-                        flush=True,
-                    )
+                    stalled = isinstance(exc, asyncio.TimeoutError)
+                    if stalled:
+                        stalled_bytes = partial_byte_count()
+                        print(
+                            f"Media download stalled for {stall_timeout:g}s at "
+                            f"{stalled_bytes} bytes in message {target.message_id} "
+                            f"{target.role}; reconnecting, then retrying "
+                            f"{transient_failures}/{self.args.retries} in "
+                            f"{delay:.1f}s",
+                            flush=True,
+                        )
+                        await reinitialize_telegram_connection(self.base_client)
+                    else:
+                        print(
+                            f"Download retry {transient_failures}/"
+                            f"{self.args.retries} for "
+                            f"{target.role} after {type(exc).__name__}; "
+                            f"sleeping {delay:.1f}s",
+                            flush=True,
+                        )
                     await asyncio.sleep(delay)
                     continue
-                partial_path.unlink(missing_ok=True)
+                stalled = isinstance(exc, asyncio.TimeoutError)
+                if not resumable:
+                    partial_path.unlink(missing_ok=True)
                 record.update(
                     status="failed",
-                    reason="download_failed",
+                    reason="download_stalled" if stalled else "download_failed",
                     error_type=type(exc).__name__,
-                    error=error_text(exc),
+                    error=(
+                        f"No media byte progress for {stall_timeout:g} seconds"
+                        if stalled
+                        else error_text(exc)
+                    ),
                     attempts=attempts,
                 )
+                if reference_refreshes:
+                    record["file_reference_refresh"] = reference_refreshes
+                retain_partial_details(record, resumable)
                 self.log_media_issue(target, record, relative_path)
+                failure_detail = str(record.get("error") or type(exc).__name__)
                 print(
-                    f"Failed {target.role}: {error_text(exc)}",
+                    f"Failed {target.role} in message {target.message_id} "
+                    f"(media {target.metadata.get('id')}): {failure_detail}",
                     file=sys.stderr,
                     flush=True,
                 )
@@ -7370,7 +8285,15 @@ class ChatExporter:
             self.args.overwrite,
             self.chat_id,
         )
-        self.incremental = self.existing_export is not None
+        published_failure_repair = (
+            scan_published_failure_repair(messages_path, self.existing_export)
+            if self.existing_export is not None
+            else None
+        )
+        self.incremental = (
+            self.existing_export is not None
+            and published_failure_repair is None
+        )
         if self.existing_export is not None:
             previous_chat = self.existing_export.metadata.get("chat")
             previous_scope = (
@@ -7410,20 +8333,43 @@ class ChatExporter:
                 avatar_path = self.output_dir / str(relative)
                 if avatar_path.is_file() and not avatar_path.is_symlink():
                     self.existing_avatar_keys.add((int(owner_id), int(photo_id)))
+        if published_failure_repair is not None:
+            stage_published_failure_repair(
+                messages_path,
+                published_failure_repair,
+            )
+        resume_base = (
+            published_failure_repair.base
+            if published_failure_repair is not None
+            else self.existing_export
+        )
         partial_state = load_partial_export(
             messages_path,
-            self.existing_export,
+            resume_base,
             self.chat_id,
             overwrite=self.args.overwrite,
             allowed_checkpoint_keys={
                 checkpoint_key_from_source(source)
                 for source in self.history_sources
             },
+            include_published_attachment_errors=(
+                published_failure_repair is not None
+            ),
         )
+        if published_failure_repair is not None and partial_state is None:
+            raise RuntimeError(
+                "Cannot safely resume the published failed-download repair; "
+                "the existing .jsonl.part does not match its validated base"
+            )
         self.resuming_partial = partial_state is not None
         if partial_state is not None:
             self.referenced_files.update(partial_state.referenced_files)
             self.media_asset_cache.update(partial_state.media_assets)
+            self.referenced_asset_keys.update(partial_state.media_assets)
+        if published_failure_repair is not None:
+            self.referenced_asset_keys.update(
+                published_failure_repair.base.media_assets
+            )
         header = {
             "schema": SCHEMA_NAME,
             "schema_version": SCHEMA_VERSION,
@@ -7454,6 +8400,7 @@ class ChatExporter:
             existing=self.existing_export,
             partial=partial_state,
         )
+        self.media_reuse_cache.update(writer.media_reuse_assets)
         if self.existing_export is not None:
             # Validation may repair the cache to another surviving categorized
             # copy of the same asset.
@@ -7538,6 +8485,21 @@ class ChatExporter:
                     source,
                     message_range,
                 )
+                failed_attachments = [
+                    attachment
+                    for attachment in attachments
+                    if attachment.get("status") == "failed"
+                ]
+                if failed_attachments:
+                    failed_attachment = failed_attachments[0]
+                    raise RuntimeError(
+                        "Paused at message "
+                        f"{int(getattr(message, 'id', 0) or 0)} because "
+                        f"{failed_attachment.get('type', 'attachment')} "
+                        f"{failed_attachment.get('id', '')} could not be "
+                        "downloaded after bounded retries; rerun the same "
+                        "command to resume from this message"
+                    )
                 writer.write_message(
                     self.serialize_message(message, attachments, source)
                 )
@@ -7552,6 +8514,18 @@ class ChatExporter:
                 await push_next(source_index)
 
             new_avatar_records = await self.download_peer_avatars(api)
+            failed_avatars = [
+                avatar
+                for avatar in new_avatar_records
+                if avatar.get("status") == "failed"
+            ]
+            if failed_avatars:
+                failed_avatar = failed_avatars[0]
+                raise RuntimeError(
+                    "Paused because peer avatar "
+                    f"{failed_avatar.get('id', '')} could not be downloaded "
+                    "after bounded retries; rerun the same command to resume"
+                )
             merged_avatars: dict[tuple[Any, ...], dict[str, Any]] = {}
             for avatar in [*self.peer_avatar_records, *new_avatar_records]:
                 identity = (
@@ -7598,9 +8572,26 @@ class ChatExporter:
             previous_history_complete = bool(
                 previous_summary.get("history_complete", True)
             )
+            previous_metadata_failures_value = previous_summary.get(
+                "metadata_failures", 0
+            )
+            previous_metadata_failures = (
+                previous_metadata_failures_value
+                if type(previous_metadata_failures_value) is int
+                and previous_metadata_failures_value > 0
+                else 0
+            )
+            combined_history_complete = (
+                previous_history_complete and self.history_complete
+            )
+            effective_metadata_failures = self.stats.metadata_failures + (
+                previous_metadata_failures
+                if published_failure_repair is not None
+                else 0
+            )
             current_complete_accessible = (
-                self.history_complete
-                and self.stats.metadata_failures == 0
+                combined_history_complete
+                and effective_metadata_failures == 0
                 and failed == 0
                 and skipped == 0
             )
@@ -7609,20 +8600,28 @@ class ChatExporter:
                 and protected == 0
                 and unavailable == 0
             )
-            complete_accessible = (
-                previous_complete_accessible and current_complete_accessible
-            )
-            fully_complete = previous_fully_complete and current_fully_complete
-            combined_history_complete = (
-                previous_history_complete and self.history_complete
-            )
+            if published_failure_repair is not None:
+                # The old false value was caused by the failed row that this
+                # run just replayed. Recompute against the retained prefix and
+                # repaired suffix instead of making incompleteness permanent.
+                complete_accessible = current_complete_accessible
+                fully_complete = current_fully_complete
+            else:
+                complete_accessible = (
+                    previous_complete_accessible and current_complete_accessible
+                )
+                fully_complete = previous_fully_complete and current_fully_complete
             existing_messages = (
-                self.existing_export.message_count
-                if self.existing_export is not None
-                else 0
+                published_failure_repair.original_message_count
+                if published_failure_repair is not None
+                else (
+                    self.existing_export.message_count
+                    if self.existing_export is not None
+                    else 0
+                )
             )
             total_messages = writer.message_count
-            messages_added = total_messages - existing_messages
+            messages_added = max(0, total_messages - existing_messages)
             previous_limitations = previous_summary.get("limitations") or []
             limitations = list(
                 dict.fromkeys(
@@ -7649,10 +8648,24 @@ class ChatExporter:
                 "complete_accessible": complete_accessible,
                 "history_complete": combined_history_complete,
                 "monoforum_scope": self.monoforum_scope,
-                "mode": "incremental" if self.incremental else "full",
+                "mode": (
+                    "repair"
+                    if published_failure_repair is not None
+                    else ("incremental" if self.incremental else "full")
+                ),
                 "messages": total_messages,
                 "messages_existing": existing_messages,
                 "messages_added": messages_added,
+                **(
+                    {
+                        "messages_reprocessed": (
+                            total_messages
+                            - published_failure_repair.base.message_count
+                        )
+                    }
+                    if published_failure_repair is not None
+                    else {}
+                ),
                 "empty_messages_skipped": self.stats.empty_messages_skipped,
                 "history_requests": self.stats.history_requests,
                 "metadata_requests": self.stats.metadata_requests,
@@ -7662,35 +8675,54 @@ class ChatExporter:
                 "file_reference_refresh_successes": (
                     self.stats.file_reference_refresh_successes
                 ),
-                "metadata_failures": self.stats.metadata_failures,
+                "metadata_failures": effective_metadata_failures,
                 "attachments": dict(sorted(attachment_stats.items())),
                 "attachment_categories": dict(
                     sorted(self.stats.attachment_categories.items())
                 ),
                 "bytes_downloaded": self.stats.bytes_downloaded,
                 "attachment_stats_scope": (
-                    "current_process_plus_resumed_partial_error_statuses"
-                    if partial_state is not None
-                    else "current_run_new_messages_and_avatars"
+                    "retained_prefix_statuses_and_reprocessed_suffix"
+                    if published_failure_repair is not None
+                    else (
+                        "current_process_plus_resumed_partial_error_statuses"
+                        if partial_state is not None
+                        else "current_run_new_messages_and_avatars"
+                    )
                 ),
                 "started_at": unix_timestamp(started),
                 "finished_at": unix_timestamp(finished),
                 "duration_seconds": round((finished - started).total_seconds(), 3),
                 "limitations": limitations,
             }
+            if failed:
+                raise RuntimeError(
+                    f"Export still contains {failed} retryable failed "
+                    "attachment(s); final output was not published"
+                )
+            publication_media_assets = self.media_asset_cache
+            if published_failure_repair is not None:
+                publication_media_assets = {
+                    asset_key: asset
+                    for asset_key, asset in self.media_asset_cache.items()
+                    if asset_key in self.referenced_asset_keys
+                }
             # Publish both message JSONL and its metadata completion marker
             # before pruning. A failed write leaves attachments untouched.
             writer.finish(
                 self.peers,
                 self.peer_avatar_records,
-                self.media_asset_cache,
+                publication_media_assets,
                 summary,
             )
             stale_files_removed = 0
             if not self.incremental and fully_complete:
                 stale_files_removed = self.prune_stale_files()
+            finished_label = (
+                "Finished repair" if published_failure_repair is not None else "Finished"
+            )
             print(
-                f"Finished: added {messages_added} messages "
+                f"{finished_label}: added {messages_added} messages "
                 f"({total_messages} total) -> {messages_path} "
                 f"(metadata: {metadata_path.name}; "
                 f"{failed} failed downloads, "
@@ -7974,35 +9006,65 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--history-delay",
         type=float,
-        default=3.5,
-        help="Reserve delay after each 100-message history page",
+        default=0.0,
+        help="Optional delay after each 100-message history page",
     )
     parser.add_argument(
         "--metadata-delay",
         type=float,
-        default=1.0,
-        help="Reserve delay after story/custom-emoji/split-range requests",
+        default=0.0,
+        help="Optional delay after story/custom-emoji/split-range requests",
     )
     parser.add_argument(
         "--media-delay",
         type=float,
-        default=0.75,
-        help="Reserve delay between sequential attachment downloads",
+        default=0.0,
+        help="Optional delay between sequential attachment downloads",
     )
     parser.add_argument(
         "--chunk-delay",
         type=float,
-        default=0.15,
-        help="Reserve delay after each Telethon media download part",
+        default=0.0,
+        help="Optional exact delay after each media chunk; normally unnecessary",
     )
     parser.add_argument(
-        "--jitter", type=float, default=0.5, help="Random extra seconds added to delays"
+        "--media-download-workers",
+        type=int,
+        default=2,
+        metavar="1|2",
+        help=(
+            "Concurrent ordered chunk requests for documents of at least 64 MiB; "
+            "use 1 to disable"
+        ),
+    )
+    parser.add_argument(
+        "--media-stall-timeout",
+        type=float,
+        default=120.0,
+        metavar="SECONDS",
+        help=(
+            "Retry when a media download makes no byte progress for this long; "
+            "0 disables the watchdog"
+        ),
+    )
+    parser.add_argument(
+        "--media-progress-interval",
+        type=float,
+        default=30.0,
+        metavar="SECONDS",
+        help="Print active media byte progress at most this often; 0 disables",
+    )
+    parser.add_argument(
+        "--jitter",
+        type=float,
+        default=0.0,
+        help="Optional random extra seconds added to configured delays",
     )
     parser.add_argument(
         "--flood-reserve",
         type=float,
-        default=5.0,
-        help="Extra seconds added to Telegram's exact FLOOD_WAIT value",
+        default=0.0,
+        help="Optional extra seconds added to Telegram's FLOOD_WAIT value",
     )
     parser.add_argument(
         "--retries",
@@ -8033,6 +9095,8 @@ def validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> 
         "metadata_delay",
         "media_delay",
         "chunk_delay",
+        "media_stall_timeout",
+        "media_progress_interval",
         "jitter",
         "flood_reserve",
     ):
@@ -8040,6 +9104,11 @@ def validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> 
             parser.error(f"--{name.replace('_', '-')} cannot be negative")
     if args.retries < 0 or args.max_file_size < 0 or args.log_every < 0:
         parser.error("--retries, --max-file-size and --log-every cannot be negative")
+    if not 1 <= args.media_download_workers <= MAX_MEDIA_DOWNLOAD_WORKERS:
+        parser.error(
+            f"--media-download-workers must be between 1 and "
+            f"{MAX_MEDIA_DOWNLOAD_WORKERS}"
+        )
 
 
 async def async_main(args: argparse.Namespace) -> int:
@@ -8095,7 +9164,7 @@ async def async_main(args: argparse.Namespace) -> int:
                     "Telegram requires a takeout security wait of "
                     f"{exc.seconds}s. Re-run after Unix timestamp "
                     f"{unix_timestamp(ready)}, or omit --takeout "
-                    "to use conservatively paced normal history calls.",
+                    "to use normal history calls.",
                     file=sys.stderr,
                 )
                 return 3

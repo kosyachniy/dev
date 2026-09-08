@@ -1,2 +1,2 @@
-Telethon==1.30.3
+Telethon>=1.44.0,<2
 libdev==0.67
