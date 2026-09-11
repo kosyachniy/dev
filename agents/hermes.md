@@ -14,7 +14,7 @@ sudo apt upgrade -y
 
 3. Install packages
 ```
-sudo apt install -y tmux make nginx git gh htop ripgrep jq nodejs npm mkcert ca-certificates curl wget openssl python3 unzip zip xz-utils build-essential sqlite3 rsync openssh-client util-linux
+sudo apt install -y tmux make nginx git gh htop ripgrep jq nodejs npm mkcert ca-certificates curl wget openssl python3 unzip zip xz-utils build-essential sqlite3 rsync openssh-client util-linux ffmpeg
 curl -LsSf https://astral.sh/uv/install.sh \
   | env UV_INSTALL_DIR="/usr/local/bin" UV_NO_MODIFY_PATH=1 sh
 ```
@@ -483,6 +483,430 @@ git add .
 git commit -m "Pilot"
 git push --set-upstream origin main
 ```
+
+10. AutoCommit script
+```
+cat > ~/.local/bin/git-autocommit <<'EOF'
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+REPO="/srv/hermes/data"
+LOCK="$HOME/.cache/hermes-data-git.lock"
+
+mkdir -p "$HOME/.cache"
+
+exec 9>"$LOCK"
+flock -n 9 || exit 0
+
+cd "$REPO"
+
+# Не коммитим файлы прямо во время активной записи.
+if find vault workspace \
+  -type f \
+  -mmin -1 \
+  -print -quit \
+  | grep -q .; then
+  exit 0
+fi
+
+git add -A -- \
+  vault \
+  workspace \
+  .gitignore
+
+if ! git diff --cached --quiet; then
+  git commit \
+    -m "auto: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+fi
+
+# Push выполняется только если remote уже настроен.
+if git remote get-url origin >/dev/null 2>&1; then
+  for attempt in 1 2 3; do
+    if git push origin main; then
+      exit 0
+    fi
+
+    sleep $((attempt * 10))
+  done
+
+  exit 1
+fi
+EOF
+
+chmod 700 \
+  ~/.local/bin/git-autocommit
+```
+
+11. AutoCommit service
+```
+cat > ~/.config/systemd/user/git-autocommit.service <<'EOF'
+[Unit]
+Description=Auto-commit Hermes knowledge base
+
+[Service]
+Type=oneshot
+ExecStart=/home/hermes/.local/bin/git-autocommit
+
+UMask=0077
+NoNewPrivileges=true
+EOF
+```
+
+12. AutoCommit timer
+```
+cat > ~/.config/systemd/user/git-autocommit.timer <<'EOF'
+[Unit]
+Description=Git autocommit every five minutes
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=5min
+RandomizedDelaySec=30
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+```
+
+13. AutoCommit run
+```
+systemctl --user daemon-reload
+
+systemctl --user enable --now \
+  git-autocommit.timer
+```
+
+14. AutoCommit test
+```
+systemctl --user start \
+  git-autocommit.service
+
+journalctl --user \
+  -u git-autocommit.service \
+  -n 100 \
+  --no-pager
+```
+
+# Set Up Hermes
+
+1. Create bot
+@BotFather
+
+2. Write message to bot
+
+3. Install
+```
+curl -fsSL \
+  https://hermes-agent.nousresearch.com/install.sh \
+  | bash -s -- --skip-browser
+```
+
+4. Restart
+```
+source ~/.profile
+hash -r
+```
+
+# Browser (`root` user)
+
+1. Install
+```
+npx playwright install-deps chromium
+```
+
+2.
+```
+sudo -iu hermes
+```
+
+3.
+```
+cd /home/hermes/.hermes/hermes-agent
+npx playwright install chromium
+```
+
+4.
+```
+exit
+```
+
+5. Docker
+```
+apt update
+
+apt install -y \
+  docker.io \
+  docker-compose-v2
+
+systemctl enable --now docker
+```
+
+6.
+```
+mkdir -p /opt/searxng/core-config
+cd /opt/searxng
+```
+
+7.
+```
+curl -fsSLO \
+  https://raw.githubusercontent.com/searxng/searxng/master/container/docker-compose.yml
+
+curl -fsSLO \
+  https://raw.githubusercontent.com/searxng/searxng/master/container/.env.example
+
+cp .env.example .env
+```
+
+8.
+```
+cat >> /opt/searxng/.env <<'EOF'
+
+SEARXNG_HOST=127.0.0.1
+SEARXNG_PORT=8080
+EOF
+```
+
+9. Turn on JSON API
+```
+cat > /opt/searxng/core-config/settings.yml <<'EOF'
+use_default_settings: true
+
+general:
+  debug: false
+  instance_name: "Hermes SearXNG"
+
+search:
+  safe_search: 0
+  formats:
+    - html
+    - json
+
+server:
+  limiter: false
+  image_proxy: true
+
+valkey:
+  url: valkey://valkey:6379/0
+EOF
+```
+
+10.
+```
+SECRET="$(openssl rand -hex 32)"
+echo "$SECRET"
+```
+
+11.
+```
+cat > /opt/searxng/core-config/settings.yml <<EOF
+use_default_settings: true
+
+general:
+  debug: false
+  instance_name: "Hermes SearXNG"
+
+search:
+  safe_search: 0
+  formats:
+    - html
+    - json
+
+server:
+  secret_key: "$SECRET"
+  limiter: false
+  image_proxy: true
+
+valkey:
+  url: valkey://valkey:6379/0
+EOF
+```
+
+12.
+```
+cd /opt/searxng
+
+docker compose pull
+docker compose up -d
+```
+
+13.
+```
+sudo -iu hermes
+```
+
+14.
+```
+hermes config set web.backend searxng
+hermes config set web.search_backend searxng
+hermes config set web.extract_backend firecrawl
+hermes config set web.keyless_fallback true
+hermes config set web.keyless_rescue true
+hermes config set web.provider_tier.exa free
+hermes config set web.provider_tier.parallel free
+hermes config set web.provider_tier.firecrawl free
+```
+
+# Set Up LLM (`hermes` user)
+
+1.
+```
+mkdir -p ~/.hermes
+
+touch ~/.hermes/.env
+chmod 600 ~/.hermes/.env
+```
+
+2.
+```
+sed -i \
+  '/^OBSIDIAN_VAULT_PATH=/d' \
+  ~/.hermes/.env
+```
+
+3.
+```
+echo \
+  'OBSIDIAN_VAULT_PATH=/srv/hermes/data/vault' \
+  >> ~/.hermes/.env
+```
+
+4.
+```
+hermes config set \
+  terminal.backend local
+
+hermes config set \
+  terminal.cwd /srv/hermes/data/workspace
+```
+
+5.
+```
+hermes config set \
+  approvals.mode smart
+
+hermes config set \
+  approvals.cron_mode deny
+
+hermes config set \
+  memory.write_approval true
+
+hermes config set \
+  skills.write_approval true
+```
+
+6.
+```
+cat > /srv/hermes/data/workspace/AGENTS.md <<'EOF'
+# Alex Personal AI Workspace
+
+## Canonical knowledge base
+
+The canonical human-readable knowledge base is:
+
+`/srv/hermes/data/vault`
+
+This is an Obsidian-compatible Markdown vault synchronized by Syncthing.
+
+Hermes reads and writes the files directly.
+Syncthing is only the transport layer between devices.
+
+## Before answering
+
+Search the vault before answering questions about:
+
+- Alex's projects
+- previous decisions
+- architecture
+- research
+- plans
+- people
+- meetings
+- comparisons
+- personal systems
+
+## Capturing knowledge
+
+New unsorted knowledge goes to:
+
+`/srv/hermes/data/vault/01 Inbox`
+
+Before creating a durable note:
+
+1. Search for an existing relevant note.
+2. Update it only when it is clearly canonical.
+3. Otherwise create a new note in `01 Inbox`.
+4. Use ordinary Markdown.
+5. Use descriptive human-readable filenames.
+6. Add YAML frontmatter for durable notes.
+7. Add relevant `[[wikilinks]]`.
+8. Preserve dates and source information.
+9. Never invent missing facts or sources.
+
+## Editing policy
+
+Allowed normally:
+
+- create a new note
+- append a dated section
+- add links
+- fix obvious formatting
+
+Require explicit approval before:
+
+- deleting notes
+- moving or renaming established notes
+- merging notes
+- rewriting large sections
+- changing an established decision
+- modifying more than 10 existing notes
+
+## Conflict safety
+
+Before modifying an existing note:
+
+1. Read its current content.
+2. Check whether a `.sync-conflict-*` copy exists.
+3. Avoid writing over a note that was modified very recently.
+4. Prefer a new Inbox note when uncertain.
+
+## Secrets
+
+Never store in the vault:
+
+- passwords
+- API keys
+- Telegram bot tokens
+- cookies
+- auth headers
+- private keys
+- recovery codes
+- raw secret-bearing configs
+
+## Git
+
+The VPS is the only Git writer.
+
+Never:
+
+- force push
+- rewrite published history
+- edit `.git` directly
+EOF
+```
+
+# Holographic
+
+1. Select
+```
+hermes memory setup
+```
+- Holographic
+
+#
+
 
 # Rules
 1.
