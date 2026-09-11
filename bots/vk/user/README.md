@@ -1,3 +1,34 @@
+# Convert a VK backup conversation to JSONL
+
+Run from the repository's `bots/` directory (Python 3.9+, no extra dependencies):
+
+```sh
+python3 vk/user/export_chat.py vk/user/213802528
+```
+
+This reads all `messages*.html` files in the conversation folder and writes
+`vk/user/213802528.jsonl`, ordered from oldest to newest. The compact message
+format matches `tg/user/export_chat_2.py`: `data`, `source`, `author`, `id`,
+`attachments`, integer Unix `created`/`edited` timestamps, `type`, and `flags.out`.
+Empty optional fields are omitted. Windows-1251 and UTF-8 archives are supported.
+
+`source` comes from the folder name; the author of outgoing messages (`Вы`)
+comes from the archive's `jd` metadata. Override these with `--source-id` and
+`--self-id` when needed. Dates in the HTML do not specify a timezone;
+`--timezone Europe/Moscow` is the default and accounts for historical offsets.
+Use `--timezone UTC` or another IANA timezone if appropriate for your archive.
+Use `-o /path/to/chat.jsonl` to choose another destination.
+
+Attachment URLs and descriptions are preserved in `attachments[].content`,
+along with counts for forwarded-message placeholders. Missing attachment details
+are marked `unavailable`; media is not downloaded. Original pages are preserved.
+Rerunning replaces the JSONL only after every page has parsed successfully;
+identical duplicate messages are skipped and conflicting duplicates cause an error.
+
+```sh
+python3 -m unittest discover -s vk/user -p 'test_export_chat.py'
+```
+
 #  Получение токена пользователя
 
 7076877

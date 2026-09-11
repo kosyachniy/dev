@@ -58,8 +58,10 @@ an unfinished final row is discarded and requested again. Large document
 downloads report byte progress. Documents of at least 64 MiB use two ordered,
 concurrent chunk requests; a no-progress watchdog reconnects and retries
 stalled requests without discarding resumable bytes.
-An attachment that exhausts bounded retries pauses the export before its
-message is committed, so an incomplete chat is never advertised as finished.
+An attachment that exhausts ordinary bounded retries pauses the export before
+its message is committed. Repeated media ``FLOOD_WAIT`` responses without byte
+progress are treated as a Telegram-side unavailable asset after three retries,
+recorded in the media-error log, and skipped so later messages can be exported.
 Exports produced by an older version with a published ``status: failed`` row
 are repaired automatically from the safe prefix before that row while the old
 final JSONL/metadata pair remains in place until atomic replacement succeeds.
@@ -95,7 +97,16 @@ import sys
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import Any, AsyncIterator, Awaitable, Callable, Iterable, Mapping, Optional, cast
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Iterable,
+    Mapping,
+    Optional,
+    cast,
+)
 from urllib.parse import urlsplit, urlunsplit
 
 try:
@@ -124,6 +135,7 @@ CUSTOM_EMOJI_BATCH_SIZE = 100  # Official limit for getCustomEmojiDocuments.
 TELEGRAM_DOWNLOAD_CHUNK_SIZE = 512 * 1024
 PARALLEL_DOCUMENT_MIN_SIZE = 64 * 1024 * 1024
 MAX_MEDIA_DOWNLOAD_WORKERS = 2
+MAX_MEDIA_FLOOD_RETRIES_WITHOUT_PROGRESS = 3
 UNLIMITED_TAKEOUT_FILE_SIZE = (1 << 63) - 1
 ENV_KEY_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
 LOG_URL_RE = re.compile(r"https?://[^\s'\"<>]+", re.IGNORECASE)
@@ -1331,9 +1343,7 @@ def optional_false_fields(value: Any) -> frozenset[str]:
         cached = frozenset()
     else:
         cached = frozenset(
-            name
-            for name, parameter in parameters.items()
-            if parameter.default is None
+            name for name, parameter in parameters.items() if parameter.default is None
         )
     _OPTIONAL_FALSE_FIELDS[value_type] = cached
     return cached
@@ -1412,13 +1422,9 @@ def compact_media_reference(value: Any) -> Any:
             }
         )
     if name in {"InputDocument", "InputDocumentEmpty"}:
-        return sparse_json(
-            {"type": "file", "id": getattr(value, "id", None)}
-        )
+        return sparse_json({"type": "file", "id": getattr(value, "id", None)})
     if name in {"InputPhoto", "InputPhotoEmpty"}:
-        return sparse_json(
-            {"type": "photo", "id": getattr(value, "id", None)}
-        )
+        return sparse_json({"type": "photo", "id": getattr(value, "id", None)})
     return JSON_OMIT
 
 
@@ -1913,12 +1919,7 @@ def markdown_v2_without_escapes(value: str) -> str:
             link_target = True
             position += 2
             continue
-        if (
-            character == "*"
-            and not inline_code
-            and not fenced_code
-            and not link_target
-        ):
+        if character == "*" and not inline_code and not fenced_code and not link_target:
             result.append("**")
             position += 1
             continue
@@ -2211,7 +2212,9 @@ def render_text_with_entities(text: str, entities: Iterable[Any]) -> RenderedTex
             return RenderedText(raw, f"`{markdown_v2_code(raw)}`", bool(raw))
         if name == "MessageEntityPre":
             language = str(getattr(entity, "language", None) or "")
-            language = language if re.fullmatch(r"[A-Za-z0-9_+-]{1,32}", language) else ""
+            language = (
+                language if re.fullmatch(r"[A-Za-z0-9_+-]{1,32}", language) else ""
+            )
             prefix = f"```{language}\n" if language else "```\n"
             return RenderedText(
                 raw,
@@ -2499,7 +2502,13 @@ def render_page_block(value: Any) -> RenderedText:
             quoted_markdown_v2(rendered.markdown_v2) if rendered.plain else "",
             non_linkable=rendered.non_linkable,
         )
-    if name in {"PageBlockPhoto", "PageBlockVideo", "PageBlockAudio", "PageBlockMap", "InputPageBlockMap"}:
+    if name in {
+        "PageBlockPhoto",
+        "PageBlockVideo",
+        "PageBlockAudio",
+        "PageBlockMap",
+        "InputPageBlockMap",
+    }:
         return render_page_caption(getattr(value, "caption", None))
     if name == "PageBlockCover":
         return render_page_block(getattr(value, "cover", None))
@@ -2567,9 +2576,7 @@ def render_page_block(value: Any) -> RenderedText:
             rows.append(
                 RenderedText(
                     " | ".join(cell.plain for cell in cells if cell.plain),
-                    " \\| ".join(
-                        cell.markdown_v2 for cell in cells if cell.plain
-                    ),
+                    " \\| ".join(cell.markdown_v2 for cell in cells if cell.plain),
                 )
             )
         return join_rendered(
@@ -2599,7 +2606,9 @@ def render_page_block(value: Any) -> RenderedText:
                 title_rendered,
                 RenderedText(
                     str(getattr(article, "description", None) or ""),
-                    markdown_v2_escape(str(getattr(article, "description", None) or "")),
+                    markdown_v2_escape(
+                        str(getattr(article, "description", None) or "")
+                    ),
                 ),
                 RenderedText(
                     str(getattr(article, "author", None) or ""),
@@ -2650,10 +2659,9 @@ def rendered_message_content(message: Any) -> RenderedText:
             return
         existing_index = matching_positions[occurrence]
         existing = segments[existing_index]
-        if (
-            existing.markdown_v2 == markdown_v2_escape(existing.plain)
-            and segment.markdown_v2 != markdown_v2_escape(segment.plain)
-        ):
+        if existing.markdown_v2 == markdown_v2_escape(
+            existing.plain
+        ) and segment.markdown_v2 != markdown_v2_escape(segment.plain):
             segments[existing_index] = RenderedText(
                 existing.plain,
                 segment.markdown_v2,
@@ -2673,7 +2681,11 @@ def rendered_message_content(message: Any) -> RenderedText:
         add(render_page_block(block), "rich_message")
 
     media = getattr(message, "media", None)
-    webpage = getattr(media, "webpage", None) if tl_name(media) == "MessageMediaWebPage" else None
+    webpage = (
+        getattr(media, "webpage", None)
+        if tl_name(media) == "MessageMediaWebPage"
+        else None
+    )
     page = getattr(webpage, "cached_page", None)
     if webpage is not None:
         for field_name in ("site_name", "title", "description", "author"):
@@ -3036,8 +3048,8 @@ class AttachmentCollector:
         else:
             payload = normalized
             normalized_type = None
-        attachment_type = type_override or normalized_type or content_type_name(
-            tl_name(value)
+        attachment_type = (
+            type_override or normalized_type or content_type_name(tl_name(value))
         )
         payload = strip_physical_attachment_content(payload)
         record = sparse_json(
@@ -3057,7 +3069,9 @@ class AttachmentCollector:
         )
         if not record:
             return
-        key = json.dumps(record, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        key = json.dumps(
+            record, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        )
         if key not in self._record_keys:
             self._record_keys.add(key)
             self.records.append(record)
@@ -3328,8 +3342,7 @@ class AttachmentCollector:
             effect = max(
                 effects,
                 key=lambda item: (
-                    int(getattr(item, "w", 0) or 0)
-                    * int(getattr(item, "h", 0) or 0),
+                    int(getattr(item, "w", 0) or 0) * int(getattr(item, "h", 0) or 0),
                     int(getattr(item, "size", 0) or 0),
                 ),
             )
@@ -3353,9 +3366,7 @@ class AttachmentCollector:
                     metadata={
                         "type": "premium_sticker_effect",
                         "id": media_id,
-                        "access_hash": getattr(
-                            selected_document, "access_hash", None
-                        ),
+                        "access_hash": getattr(selected_document, "access_hash", None),
                         "mime": "application/x-tgsticker",
                         "title": title or attributes.get("title"),
                         "sticker_alt": attributes.get("sticker_alt"),
@@ -4342,9 +4353,7 @@ def validate_message_contract(message: Mapping[str, Any]) -> None:
         raise ValueError("top-level formatted is not allowed; keep text in data")
     report_delivery_until = message.get("report_delivery_until")
     if report_delivery_until is not None and type(report_delivery_until) is not int:
-        raise ValueError(
-            "report_delivery_until must be an integer timestamp or null"
-        )
+        raise ValueError("report_delivery_until must be an integer timestamp or null")
 
     forwarded = message.get("forwarded")
     if forwarded is not None:
@@ -4389,7 +4398,9 @@ def validate_message_contract(message: Mapping[str, Any]) -> None:
         file_value = attachment.get("file")
         if file_value is not None:
             if not is_current_attachment_path(file_value):
-                raise ValueError("attachment.file must be inside a current files category")
+                raise ValueError(
+                    "attachment.file must be inside a current files category"
+                )
             attachment_hash = attachment.get("hash")
             if not isinstance(attachment_hash, str) or not re.fullmatch(
                 r"[0-9a-f]{64}", attachment_hash
@@ -4450,7 +4461,9 @@ def parse_checkpoint_metadata(value: Any) -> dict[CheckpointKey, int]:
         if topic_peer_id_value is not None and (
             type(topic_peer_id_value) is not int or topic_peer_id_value == 0
         ):
-            raise ValueError("history checkpoint topic must be null or non-zero integer")
+            raise ValueError(
+                "history checkpoint topic must be null or non-zero integer"
+            )
         if type(max_message_id) is not int or max_message_id <= 0:
             raise ValueError("history checkpoint message IDs must be positive integers")
         topic_peer_id = topic_peer_id_value or 0
@@ -4516,7 +4529,9 @@ def load_existing_export(
     if metadata_value.get("messages_format") != "jsonl":
         raise RuntimeError("Existing messages file is not declared as JSONL")
     if metadata_value.get("messages_order") != "oldest_to_newest_by_created_at":
-        raise RuntimeError("Existing JSONL does not use the required chronological order")
+        raise RuntimeError(
+            "Existing JSONL does not use the required chronological order"
+        )
     if metadata_value.get("order") != metadata_value["messages_order"]:
         raise RuntimeError("Existing metadata order fields do not match")
     if type(metadata_value.get("exported_at")) is not int:
@@ -4524,13 +4539,8 @@ def load_existing_export(
     if not isinstance(metadata_value.get("telethon_version"), str):
         raise RuntimeError("Existing metadata field telethon_version is invalid")
     telegram_layer = metadata_value.get("telegram_layer")
-    if (
-        type(telegram_layer) is not int
-        or telegram_layer != SUPPORTED_TELEGRAM_LAYER
-    ):
-        raise RuntimeError(
-            "Existing metadata uses a different Telegram schema layer"
-        )
+    if type(telegram_layer) is not int or telegram_layer != SUPPORTED_TELEGRAM_LAYER:
+        raise RuntimeError("Existing metadata uses a different Telegram schema layer")
     chat_value = metadata_value.get("chat")
     if (
         not isinstance(chat_value, Mapping)
@@ -4578,9 +4588,7 @@ def load_existing_export(
         ):
             raise RuntimeError(f"Existing metadata field {field_name} is invalid")
     if type(metadata_value.get("messages_have_undated")) is not bool:
-        raise RuntimeError(
-            "Existing metadata field messages_have_undated is invalid"
-        )
+        raise RuntimeError("Existing metadata field messages_have_undated is invalid")
     media_assets_value = metadata_value.get("media_assets")
     if not isinstance(media_assets_value, Mapping) or any(
         not isinstance(asset_key, str) or not isinstance(asset, Mapping)
@@ -4713,12 +4721,9 @@ def load_existing_export(
     )
 
 
-def message_has_attachment_status(
-    message: Mapping[str, Any], status: str
-) -> bool:
+def message_has_attachment_status(message: Mapping[str, Any], status: str) -> bool:
     return any(
-        isinstance(attachment, Mapping)
-        and attachment.get("status") == status
+        isinstance(attachment, Mapping) and attachment.get("status") == status
         for attachment in message.get("attachments") or []
     )
 
@@ -4754,9 +4759,7 @@ def scan_published_failure_repair(
     )
     summary_failed = published_summary_attachment_count(existing, "failed")
     failed_avatar_count = sum(
-        1
-        for avatar in existing.peer_avatars
-        if avatar.get("status") == "failed"
+        1 for avatar in existing.peer_avatars if avatar.get("status") == "failed"
     )
     if complete_accessible and summary_failed == 0 and failed_avatar_count == 0:
         return None
@@ -4917,9 +4920,7 @@ def scan_published_failure_repair(
         repair_files,
     ) = repair_snapshot
     avatar_files = {
-        str(avatar["file"])
-        for avatar in existing.peer_avatars
-        if avatar.get("file")
+        str(avatar["file"]) for avatar in existing.peer_avatars if avatar.get("file")
     }
     retained_asset_files = repair_files | avatar_files
     retained_media_assets = {
@@ -5108,8 +5109,7 @@ def load_partial_export(
         attachments = message.get("attachments") or []
         retryable_partial_row = line_start >= base_byte_size
         if retryable_partial_row and any(
-            isinstance(attachment, Mapping)
-            and attachment.get("status") == "failed"
+            isinstance(attachment, Mapping) and attachment.get("status") == "failed"
             for attachment in attachments
         ):
             return False
@@ -5167,9 +5167,7 @@ def load_partial_export(
                         "saved attachment content does not match its hash"
                     )
                 row_files.add(relative_file)
-                downloaded_size = (
-                    messages_path.parent / relative_file
-                ).stat().st_size
+                downloaded_size = (messages_path.parent / relative_file).stat().st_size
                 reuse_key = attachment_media_reuse_key(
                     normalized,
                     file_size=downloaded_size,
@@ -5185,9 +5183,10 @@ def load_partial_export(
                         },
                     )
                 if retryable_partial_row:
-                    resumed_asset_key = "resumed-file:" + hashlib.sha256(
-                        relative_file.encode("utf-8")
-                    ).hexdigest()
+                    resumed_asset_key = (
+                        "resumed-file:"
+                        + hashlib.sha256(relative_file.encode("utf-8")).hexdigest()
+                    )
                     row_media_assets[resumed_asset_key] = {
                         "file": relative_file,
                         "hash": attachment_hash,
@@ -5243,7 +5242,11 @@ def load_partial_export(
         message_count += 1
         byte_size += len(line)
         digest.update(line)
-        if existing is not None and byte_size > base_byte_size and not prefix_state_checked:
+        if (
+            existing is not None
+            and byte_size > base_byte_size
+            and not prefix_state_checked
+        ):
             raise RuntimeError(
                 "Interrupted JSONL row crosses the published export boundary"
             )
@@ -5259,7 +5262,9 @@ def load_partial_export(
             offset += len(line)
             if not line.endswith(b"\n"):
                 if pending is not None:
-                    pending_line, pending_message, pending_number, pending_start = pending
+                    pending_line, pending_message, pending_number, pending_start = (
+                        pending
+                    )
                     if not commit_row(
                         pending_line,
                         pending_message,
@@ -5278,7 +5283,12 @@ def load_partial_export(
                 if not isinstance(decoded, Mapping):
                     raise ValueError("row is not a message object")
                 validate_message_contract(decoded)
-            except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError) as exc:
+            except (
+                UnicodeDecodeError,
+                json.JSONDecodeError,
+                TypeError,
+                ValueError,
+            ) as exc:
                 raise RuntimeError(
                     f"Invalid interrupted JSONL message on line {line_number}: "
                     f"{error_text(exc)}"
@@ -5370,8 +5380,7 @@ def recover_pending_export_publication(
         state = json.loads(marker_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise RuntimeError(
-            f"Cannot read export publication journal {marker_path}: "
-            f"{error_text(exc)}"
+            f"Cannot read export publication journal {marker_path}: {error_text(exc)}"
         ) from exc
     required_keys = (
         "messages_had_previous",
@@ -5609,9 +5618,7 @@ class JsonlExportWriter:
 
                     created = message.get("created")
                     if created is not None and type(created) is not int:
-                        raise ValueError(
-                            "created must be an integer timestamp or null"
-                        )
+                        raise ValueError("created must be an integer timestamp or null")
                     order_key = (1, 0) if created is None else (0, created)
                     if (
                         previous_order_key is not None
@@ -5652,7 +5659,9 @@ class JsonlExportWriter:
                         if not isinstance(attachment.get("type"), str) or not str(
                             attachment["type"]
                         ):
-                            raise ValueError("attachment type must be a non-empty string")
+                            raise ValueError(
+                                "attachment type must be a non-empty string"
+                            )
                         if not attachment.get("file"):
                             continue
                         if not is_current_attachment_path(attachment["file"]):
@@ -5792,9 +5801,7 @@ class JsonlExportWriter:
         }
 
     def write_publication_marker(self, state: Mapping[str, bool]) -> None:
-        with self.publication_marker_partial_path.open(
-            "w", encoding="utf-8"
-        ) as output:
+        with self.publication_marker_partial_path.open("w", encoding="utf-8") as output:
             json.dump(dict(state), output, separators=(",", ":"))
             output.write("\n")
             output.flush()
@@ -6168,9 +6175,7 @@ class ChatExporter:
                         f"{details} during {label} after "
                         f"{attempts} responses; exhausted {self.args.retries} retries"
                     ) from None
-                delay = min(60.0, 2.0**attempts) + random.uniform(
-                    0.0, self.args.jitter
-                )
+                delay = min(60.0, 2.0**attempts) + random.uniform(0.0, self.args.jitter)
                 print(
                     f"{details} during {label}; reconnecting and retrying "
                     f"{attempts}/{self.args.retries} in {delay:.1f}s",
@@ -6686,9 +6691,7 @@ class ChatExporter:
             if refresh_url:
                 preview = await self.rpc(
                     lambda: self.base_client(
-                        functions.messages.GetWebPagePreviewRequest(
-                            message=refresh_url
-                        )
+                        functions.messages.GetWebPagePreviewRequest(message=refresh_url)
                     ),
                     f"refresh web preview for message {target.message_id}",
                 )
@@ -7101,9 +7104,7 @@ class ChatExporter:
             record,
             category=category,
             file_size=(
-                int(target.expected_size)
-                if target.expected_size is not None
-                else None
+                int(target.expected_size) if target.expected_size is not None else None
             ),
         )
         if asset is None and reuse_key is not None:
@@ -7193,9 +7194,7 @@ class ChatExporter:
             )
             resume_offset = 0
             use_parallel_download = False
-            stall_timeout = float(
-                getattr(self.args, "media_stall_timeout", 120.0)
-            )
+            stall_timeout = float(getattr(self.args, "media_stall_timeout", 120.0))
             progress_interval = float(
                 getattr(self.args, "media_progress_interval", 30.0)
             )
@@ -7204,9 +7203,7 @@ class ChatExporter:
                     raise RuntimeError(f"Unsafe media partial path {partial_path}")
                 if resumable and partial_path.exists():
                     if not partial_path.is_file():
-                        raise RuntimeError(
-                            f"Unsafe media partial path {partial_path}"
-                        )
+                        raise RuntimeError(f"Unsafe media partial path {partial_path}")
                     expected_size = int(current_target.expected_size or 0)
                     partial_size = partial_path.stat().st_size
                     if partial_size > expected_size:
@@ -7215,8 +7212,7 @@ class ChatExporter:
                         resume_offset = partial_size
                     else:
                         aligned_size = (
-                            partial_size
-                            - partial_size % TELEGRAM_DOWNLOAD_CHUNK_SIZE
+                            partial_size - partial_size % TELEGRAM_DOWNLOAD_CHUNK_SIZE
                         )
                         if aligned_size != partial_size:
                             with partial_path.open("r+b") as partial:
@@ -7338,14 +7334,18 @@ class ChatExporter:
                                 sock_connect=60,
                                 sock_read=60,
                             )
-                            async with aiohttp.ClientSession(timeout=timeout) as session:
+                            async with aiohttp.ClientSession(
+                                timeout=timeout
+                            ) as session:
                                 async with session.get(
                                     current_target.obj.url,
                                     headers={"Accept-Encoding": "identity"},
                                 ) as response:
                                     response.raise_for_status()
                                     with partial_path.open("wb") as output:
-                                        async for chunk in response.content.iter_chunked(
+                                        async for (
+                                            chunk
+                                        ) in response.content.iter_chunked(
                                             TELEGRAM_DOWNLOAD_CHUNK_SIZE
                                         ):
                                             output.write(chunk)
@@ -7453,9 +7453,7 @@ class ChatExporter:
                             with partial_path.open("ab") as output:
                                 async for raw_chunk in stream:
                                     chunk = bytes(raw_chunk)
-                                    remaining = (
-                                        expected_size - output.tell()
-                                    )
+                                    remaining = expected_size - output.tell()
                                     if remaining <= 0:
                                         break
                                     output.write(chunk[:remaining])
@@ -7526,10 +7524,7 @@ class ChatExporter:
                     flood_responses = 0
                 flood_progress_bytes = current_flood_progress
                 flood_responses += 1
-                self.stats.flood_waits += 1
-                telegram_wait_seconds = max(
-                    0, int(getattr(exc, "seconds", 0) or 0)
-                )
+                telegram_wait_seconds = max(0, int(getattr(exc, "seconds", 0) or 0))
                 flood_wait_history.append(
                     {
                         "attempt": len(flood_wait_history) + 1,
@@ -7542,13 +7537,13 @@ class ChatExporter:
                 )
                 if not resumable:
                     partial_path.unlink(missing_ok=True)
-                # A flood response is an instruction to wait, not itself a
-                # failed retry. Honor retries+1 bounded wait instructions and
-                # fail only if the following final probe is also flooded.
-                max_flood_waits = max(1, int(self.args.retries) + 1)
+                # Honor exactly three consecutive no-progress retry waits. If
+                # the final probe is still flood-limited, this one Telegram
+                # asset is unavailable and later messages continue normally.
+                max_flood_waits = MAX_MEDIA_FLOOD_RETRIES_WITHOUT_PROGRESS
                 if flood_responses > max_flood_waits:
                     record.update(
-                        status="failed",
+                        status="unavailable",
                         reason="flood_wait_limit",
                         error_type=type(exc).__name__,
                         error=error_text(exc),
@@ -7558,14 +7553,16 @@ class ChatExporter:
                     retain_partial_details(record, resumable)
                     self.log_media_issue(target, record, relative_path)
                     print(
-                        f"Failed {target.role} in message {target.message_id} "
+                        f"Skipping unavailable {target.role} in message "
+                        f"{target.message_id} "
                         f"(media {target.metadata.get('id')}) after "
-                        f"{flood_responses} "
-                        f"flood-limit responses: {error_text(exc)}",
+                        f"{max_flood_waits} retries and {flood_responses} "
+                        f"flood-limit responses: {error_text(exc)}; continuing",
                         file=sys.stderr,
                         flush=True,
                     )
                     return record
+                self.stats.flood_waits += 1
                 await self.pacer.flood_wait(
                     telegram_wait_seconds,
                     (
@@ -7668,9 +7665,7 @@ class ChatExporter:
                         partial_path.unlink(missing_ok=True)
                     record.update(
                         status=(
-                            "failed"
-                            if retryable_refresh_failure
-                            else "unavailable"
+                            "failed" if retryable_refresh_failure else "unavailable"
                         ),
                         reason=(
                             "file_reference_refresh_failed"
@@ -7945,9 +7940,7 @@ class ChatExporter:
         )
         if author is None or author == 0:
             author = (
-                self.self_id
-                if bool(getattr(message, "out", False))
-                else message_source
+                self.self_id if bool(getattr(message, "out", False)) else message_source
             )
         flags = {
             key: True
@@ -8015,12 +8008,8 @@ class ChatExporter:
             "report_delivery_until": unix_timestamp(
                 getattr(message, "report_delivery_until_date", None)
             ),
-            "schedule_repeat_period": getattr(
-                message, "schedule_repeat_period", None
-            ),
-            "summary_from_language": getattr(
-                message, "summary_from_language", None
-            ),
+            "schedule_repeat_period": getattr(message, "schedule_repeat_period", None),
+            "summary_from_language": getattr(message, "summary_from_language", None),
             "flags": flags,
         }
         if source.marked_id != message_source:
@@ -8231,9 +8220,7 @@ class ChatExporter:
                     if message_id <= last_seen_message_id:
                         continue
                     created_epoch = unix_timestamp(getattr(message, "date", None))
-                    order_key = (
-                        (1, 0) if created_epoch is None else (0, created_epoch)
-                    )
+                    order_key = (1, 0) if created_epoch is None else (0, created_epoch)
                     if (
                         previous_order_key is not None
                         and order_key < previous_order_key
@@ -8262,9 +8249,8 @@ class ChatExporter:
                 for message in page:
                     yield message, message_range, range_index, next_offset
 
-                if (
-                    highest_id >= upper_bound
-                    or isinstance(response, types.messages.Messages)
+                if highest_id >= upper_bound or isinstance(
+                    response, types.messages.Messages
                 ):
                     break
                 offset_id = next_offset
@@ -8291,8 +8277,7 @@ class ChatExporter:
             else None
         )
         self.incremental = (
-            self.existing_export is not None
-            and published_failure_repair is None
+            self.existing_export is not None and published_failure_repair is None
         )
         if self.existing_export is not None:
             previous_chat = self.existing_export.metadata.get("chat")
@@ -8349,12 +8334,9 @@ class ChatExporter:
             self.chat_id,
             overwrite=self.args.overwrite,
             allowed_checkpoint_keys={
-                checkpoint_key_from_source(source)
-                for source in self.history_sources
+                checkpoint_key_from_source(source) for source in self.history_sources
             },
-            include_published_attachment_errors=(
-                published_failure_repair is not None
-            ),
+            include_published_attachment_errors=(published_failure_repair is not None),
         )
         if published_failure_repair is not None and partial_state is None:
             raise RuntimeError(
@@ -8387,8 +8369,7 @@ class ChatExporter:
                 "migration": self.migration,
                 "monoforum_scope": self.monoforum_scope,
                 "history_sources": [
-                    history_source_metadata(source)
-                    for source in self.history_sources
+                    history_source_metadata(source) for source in self.history_sources
                 ],
             },
         }
@@ -8504,7 +8485,10 @@ class ChatExporter:
                     self.serialize_message(message, attachments, source)
                 )
                 self.stats.messages += 1
-                if self.args.log_every and writer.message_count % self.args.log_every == 0:
+                if (
+                    self.args.log_every
+                    and writer.message_count % self.args.log_every == 0
+                ):
                     print(
                         f"Exported {writer.message_count} messages "
                         f"(source {source_index}/{len(self.history_sources)}, "
@@ -8596,9 +8580,7 @@ class ChatExporter:
                 and skipped == 0
             )
             current_fully_complete = (
-                current_complete_accessible
-                and protected == 0
-                and unavailable == 0
+                current_complete_accessible and protected == 0 and unavailable == 0
             )
             if published_failure_repair is not None:
                 # The old false value was caused by the failed row that this
@@ -8659,8 +8641,7 @@ class ChatExporter:
                 **(
                     {
                         "messages_reprocessed": (
-                            total_messages
-                            - published_failure_repair.base.message_count
+                            total_messages - published_failure_repair.base.message_count
                         )
                     }
                     if published_failure_repair is not None
@@ -8719,22 +8700,26 @@ class ChatExporter:
             if not self.incremental and fully_complete:
                 stale_files_removed = self.prune_stale_files()
             finished_label = (
-                "Finished repair" if published_failure_repair is not None else "Finished"
+                "Finished repair"
+                if published_failure_repair is not None
+                else "Finished"
             )
             print(
                 f"{finished_label}: added {messages_added} messages "
                 f"({total_messages} total) -> {messages_path} "
                 f"(metadata: {metadata_path.name}; "
                 f"{failed} failed downloads, "
+                f"{unavailable} unavailable attachments, "
                 f"{stale_files_removed} stale files pruned)",
                 flush=True,
             )
             return summary
         except BaseException:
             writer.close_incomplete()
-            incomplete = ", ".join(
-                str(path) for path in writer.incomplete_paths()
-            ) or "no partial artifact"
+            incomplete = (
+                ", ".join(str(path) for path in writer.incomplete_paths())
+                or "no partial artifact"
+            )
             print(
                 f"Incomplete export work kept at: {incomplete}",
                 file=sys.stderr,
@@ -9070,7 +9055,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--retries",
         type=int,
         default=6,
-        help="Retries for transient RPC/download failures",
+        help="Retries for non-flood transient RPC/download failures",
     )
     parser.add_argument(
         "--log-every",

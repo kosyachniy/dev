@@ -1985,7 +1985,7 @@ class ExportSchemaTests(unittest.TestCase):
             exporter.chat_id = 7
             exporter.args = SimpleNamespace(
                 max_file_size=0,
-                retries=2,
+                retries=6,
                 jitter=0.0,
             )
             exporter.pacer = RecordingPacer()
@@ -1995,27 +1995,28 @@ class ExportSchemaTests(unittest.TestCase):
             exporter.referenced_files = set()
 
             api = DownloadApi()
-            failed = asyncio.run(
+            unavailable = asyncio.run(
                 exporter.download_target(api, target("blocked", 41), 1)
             )
             downloaded = asyncio.run(
                 exporter.download_target(api, target("good", 42), 1)
             )
 
-            # retries=2 permits retries+1=3 directed waits, followed by one
-            # final probe which fails without another sleep.
+            # Media flood retries are capped independently at three directed
+            # waits followed by one final probe. A fourth flood response skips
+            # only this unavailable asset, despite the larger generic budget.
             self.assertEqual(api.calls["blocked"], 4)
-            self.assertEqual(failed["status"], "failed")
-            self.assertEqual(failed["reason"], "flood_wait_limit")
-            self.assertEqual(failed["error_type"], "FloodWaitError")
-            self.assertEqual(failed["attempts"], 4)
-            public_failed = export.public_attachment_record(failed)
+            self.assertEqual(unavailable["status"], "unavailable")
+            self.assertEqual(unavailable["reason"], "flood_wait_limit")
+            self.assertEqual(unavailable["error_type"], "FloodWaitError")
+            self.assertEqual(unavailable["attempts"], 4)
+            public_unavailable = export.public_attachment_record(unavailable)
             self.assertEqual(
-                public_failed,
+                public_unavailable,
                 {
                     "type": "file",
                     "id": 41,
-                    "status": "failed",
+                    "status": "unavailable",
                     "reason": "flood_wait_limit",
                 },
             )
@@ -2025,10 +2026,10 @@ class ExportSchemaTests(unittest.TestCase):
                     "source": 7,
                     "author": 7,
                     "created": 1,
-                    "attachments": [public_failed],
+                    "attachments": [public_unavailable],
                 }
             )
-            self.assertEqual(exporter.stats.flood_waits, 4)
+            self.assertEqual(exporter.stats.flood_waits, 3)
             self.assertEqual(
                 exporter.pacer.flood_waits,
                 [
@@ -2063,7 +2064,7 @@ class ExportSchemaTests(unittest.TestCase):
             self.assertEqual(len(issues), 1)
             self.assertEqual(issues[0]["message_id"], 41)
             self.assertEqual(issues[0]["media_id"], 41)
-            self.assertEqual(issues[0]["status"], "failed")
+            self.assertEqual(issues[0]["status"], "unavailable")
             self.assertEqual(issues[0]["reason"], "flood_wait_limit")
             self.assertEqual(issues[0]["error_type"], "FloodWaitError")
             self.assertIn("wait of 0 seconds", issues[0]["error"])
