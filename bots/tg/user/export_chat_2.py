@@ -15,6 +15,7 @@ Examples:
     export TG_ID=12345
     export TG_HASH=0123456789abcdef0123456789abcdef
     python export_chat_2.py @chat_name
+    python export_chat_2.py @chat_name --no-files
     python export_chat_2.py -1001234567890 --session-string "$TG_SESSION_STRING"
     python export_chat_2.py @large_channel --takeout
 
@@ -52,6 +53,11 @@ Re-running the same command against a valid JSONL/metadata pair performs an
 incremental update: it checks each chat/topic history boundary, processes only
 higher-ID messages, and preserves/reuses existing media.  Use ``--overwrite``
 to rebuild all message state, including edits, deletions, and changed reactions.
+With ``--no-files``, physical attachments and peer avatars retain their compact
+metadata but are marked as intentionally skipped; no new file payload is
+created, and a fresh export does not create ``files/``. Existing files are left
+untouched. Incremental runs do not revisit committed messages, so use
+``--overwrite`` later if previously skipped files should be downloaded.
 An interrupted normal export resumes from its validated ``.jsonl.part`` rows;
 an unfinished final row is discarded and requested again. Large document
 ``.part`` files resume from their last complete 512 KiB Telegram chunk. Active
@@ -131,6 +137,7 @@ SUPPORTED_TELEGRAM_LAYER = 227
 SCHEMA_NAME = "telegram-chat-export"
 SCHEMA_VERSION = 14
 HISTORY_PAGE_SIZE = 100  # Telegram list methods normally accept at most 100.
+DEFAULT_HISTORY_REQUEST_INTERVAL = 1.0
 CUSTOM_EMOJI_BATCH_SIZE = 100  # Official limit for getCustomEmojiDocuments.
 TELEGRAM_DOWNLOAD_CHUNK_SIZE = 512 * 1024
 PARALLEL_DOCUMENT_MIN_SIZE = 64 * 1024 * 1024
@@ -690,7 +697,7 @@ def contact_vcard(media: Any) -> bytes:
 
 
 class Pacer:
-    """Optional local pacing plus explicit Telegram-directed flood waits."""
+    """Per-method pacing plus explicit Telegram-directed flood waits."""
 
     def __init__(
         self,
@@ -707,6 +714,8 @@ class Pacer:
         self.chunk_delay = max(0.0, chunk_delay)
         self.jitter = max(0.0, jitter)
         self.flood_reserve = max(0.0, flood_reserve)
+        self._next_history_request_at: Optional[float] = None
+        self._history_request_lock = asyncio.Lock()
 
     async def sleep(self, base: float) -> None:
         # Zero means zero. Previously global jitter turned every disabled
@@ -717,8 +726,29 @@ class Pacer:
         delay = base + (random.uniform(0.0, self.jitter) if self.jitter else 0.0)
         await asyncio.sleep(delay)
 
-    async def after_history(self) -> None:
-        await self.sleep(self.history_delay)
+    async def before_history_request(self) -> None:
+        """Keep history page starts apart without delaying every message.
+
+        Telethon applies its GetHistory wait start-to-start, so time already
+        spent receiving and processing the previous page counts toward the
+        interval. A zero override remains an explicit way to disable this
+        proactive limit; server-directed FLOOD_WAIT values are still honored.
+        """
+
+        if self.history_delay <= 0:
+            return
+        async with self._history_request_lock:
+            loop = asyncio.get_running_loop()
+            now = loop.time()
+            if self._next_history_request_at is not None:
+                remaining = self._next_history_request_at - now
+                if remaining > 0:
+                    await asyncio.sleep(remaining)
+            started_at = loop.time()
+            interval = self.history_delay
+            if self.jitter:
+                interval += random.uniform(0.0, self.jitter)
+            self._next_history_request_at = started_at + interval
 
     async def after_metadata(self) -> None:
         await self.sleep(self.metadata_delay)
@@ -742,6 +772,19 @@ class Pacer:
             delay += random.uniform(0.0, self.jitter)
         print(f"Telegram flood limit for {label}; sleeping {delay:.1f}s", flush=True)
         await asyncio.sleep(delay)
+
+
+def effective_history_delay(args: argparse.Namespace) -> float:
+    """Resolve automatic history pacing without slowing takeout exports."""
+
+    configured = getattr(args, "history_delay", None)
+    if configured is not None:
+        return float(configured)
+    return (
+        0.0
+        if bool(getattr(args, "takeout", False))
+        else DEFAULT_HISTORY_REQUEST_INTERVAL
+    )
 
 
 @dataclass
@@ -4385,6 +4428,7 @@ def validate_message_contract(message: Mapping[str, Any]) -> None:
             "failed",
             "not_downloadable",
             "protected",
+            "skipped_no_files",
             "skipped_limit",
             "unavailable",
             "unsupported",
@@ -4620,6 +4664,14 @@ def load_existing_export(
     summary_value = metadata_value.get("summary")
     if not isinstance(summary_value, Mapping):
         raise RuntimeError("Existing metadata field summary is invalid")
+    if summary_value.get("file_download_mode", "download") not in {
+        "download",
+        "metadata_only",
+        "mixed",
+    }:
+        raise RuntimeError(
+            "Existing export summary has an unsupported file_download_mode"
+        )
     started_at = summary_value.get("started_at")
     finished_at = summary_value.get("finished_at")
     duration_seconds = summary_value.get("duration_seconds")
@@ -6087,7 +6139,7 @@ class ChatExporter:
         self.error_log_path = output_dir / "media-errors.jsonl"
         self.args = args
         self.pacer = Pacer(
-            args.history_delay,
+            effective_history_delay(args),
             args.metadata_delay,
             args.media_delay,
             args.chunk_delay,
@@ -7019,6 +7071,13 @@ class ChatExporter:
             self.referenced_asset_keys = set()
         if target.protected:
             record.update(status="protected", reason="telegram_content_protection")
+            return record
+
+        if bool(getattr(self.args, "no_files", False)):
+            record.update(
+                status="skipped_no_files",
+                reason="files_disabled_by_option",
+            )
             return record
 
         if self.args.max_file_size and target.expected_size is not None:
@@ -8083,7 +8142,15 @@ class ChatExporter:
             if message_range is not None
             else query
         )
-        response = await self.rpc(lambda: api(request), "message history")
+
+        async def request_history() -> Any:
+            # Keep the gate inside rpc's retry factory so every network
+            # attempt is paced. A completed Telegram-directed wait already
+            # satisfies the deadline and therefore gains no duplicate sleep.
+            await self.pacer.before_history_request()
+            return await api(request)
+
+        response = await self.rpc(request_history, "message history")
         self.stats.history_requests += 1
         return response
 
@@ -8115,7 +8182,6 @@ class ChatExporter:
                     limit=HISTORY_PAGE_SIZE,
                 )
                 self.remember_peers(response)
-                await self.pacer.after_history()
                 messages = list(getattr(response, "messages", None) or [])
                 if not messages:
                     break
@@ -8177,7 +8243,6 @@ class ChatExporter:
                     ascending=True,
                 )
                 self.remember_peers(response)
-                await self.pacer.after_history()
                 raw_page = list(getattr(response, "messages", None) or [])
                 if not raw_page:
                     break
@@ -8257,7 +8322,8 @@ class ChatExporter:
 
     async def export(self, api: Any, use_takeout_ranges: bool) -> dict[str, Any]:
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.files_dir.mkdir(parents=True, exist_ok=True)
+        if not bool(getattr(self.args, "no_files", False)):
+            self.files_dir.mkdir(parents=True, exist_ok=True)
         messages_path = self.output_dir / f"{self.chat_id}.jsonl"
         metadata_path = self.output_dir / f"{self.chat_id}.metadata.json"
         recover_pending_export_publication(messages_path, metadata_path)
@@ -8312,8 +8378,16 @@ class ChatExporter:
             for avatar in self.peer_avatar_records:
                 owner_id = avatar.get("owner_id")
                 photo_id = avatar.get("id")
+                if owner_id is None or photo_id is None:
+                    continue
+                if (
+                    bool(getattr(self.args, "no_files", False))
+                    and avatar.get("status") == "skipped_no_files"
+                ):
+                    self.existing_avatar_keys.add((int(owner_id), int(photo_id)))
+                    continue
                 relative = avatar.get("file")
-                if owner_id is None or photo_id is None or not relative:
+                if not relative:
                     continue
                 avatar_path = self.output_dir / str(relative)
                 if avatar_path.is_file() and not avatar_path.is_symlink():
@@ -8530,6 +8604,9 @@ class ChatExporter:
             skipped = self.stats.attachments.get("skipped_limit", 0) + int(
                 resumed_attachment_errors.get("skipped_limit", 0)
             )
+            skipped_no_files = self.stats.attachments.get(
+                "skipped_no_files", 0
+            ) + int(resumed_attachment_errors.get("skipped_no_files", 0))
             protected = self.stats.attachments.get("protected", 0) + int(
                 resumed_attachment_errors.get("protected", 0)
             )
@@ -8549,6 +8626,19 @@ class ChatExporter:
                 if isinstance(previous_summary_value, Mapping)
                 else {}
             )
+            file_download_modes: set[str] = set()
+            if self.existing_export is not None:
+                previous_file_download_mode = previous_summary.get(
+                    "file_download_mode", "download"
+                )
+                if previous_file_download_mode == "mixed":
+                    file_download_modes.update({"download", "metadata_only"})
+                elif previous_file_download_mode in {"download", "metadata_only"}:
+                    file_download_modes.add(str(previous_file_download_mode))
+                else:
+                    raise RuntimeError(
+                        "Existing export has an unsupported file_download_mode"
+                    )
             previous_complete_accessible = bool(
                 previous_summary.get("complete_accessible", True)
             )
@@ -8580,7 +8670,31 @@ class ChatExporter:
                 and skipped == 0
             )
             current_fully_complete = (
-                current_complete_accessible and protected == 0 and unavailable == 0
+                current_complete_accessible
+                and protected == 0
+                and unavailable == 0
+                and skipped_no_files == 0
+            )
+            if skipped_no_files:
+                file_download_modes.add("metadata_only")
+            if (
+                any(
+                    self.stats.attachments.get(status, 0)
+                    for status in ("downloaded", "existing", "reused")
+                )
+                or (partial_state is not None and partial_state.referenced_files)
+            ):
+                file_download_modes.add("download")
+            if not file_download_modes:
+                file_download_modes.add(
+                    "metadata_only"
+                    if bool(getattr(self.args, "no_files", False))
+                    else "download"
+                )
+            file_download_mode = (
+                "mixed"
+                if len(file_download_modes) > 1
+                else next(iter(file_download_modes))
             )
             if published_failure_repair is not None:
                 # The old false value was caused by the failed row that this
@@ -8621,6 +8735,13 @@ class ChatExporter:
                         "Encrypted Telegram Passport and secure-value payload bodies are redacted.",
                         "Opaque binary bot, payment, callback, game, and authorization-capability tokens are represented by SHA-256 and byte size; poll option tokens are retained.",
                         "Incremental updates add higher-ID messages only; edits, deletions, and reaction changes on existing messages require --overwrite.",
+                        *(
+                            [
+                                "File downloads were disabled with --no-files for all or part of this export; those physical attachments and peer avatars contain metadata only and require --overwrite to backfill."
+                            ]
+                            if file_download_mode != "download"
+                            else []
+                        ),
                         *self.history_limitations,
                     ]
                 )
@@ -8629,6 +8750,7 @@ class ChatExporter:
                 "complete": fully_complete,
                 "complete_accessible": complete_accessible,
                 "history_complete": combined_history_complete,
+                "file_download_mode": file_download_mode,
                 "monoforum_scope": self.monoforum_scope,
                 "mode": (
                     "repair"
@@ -8697,19 +8819,30 @@ class ChatExporter:
                 summary,
             )
             stale_files_removed = 0
-            if not self.incremental and fully_complete:
+            if (
+                not self.incremental
+                and fully_complete
+                and not bool(getattr(self.args, "no_files", False))
+            ):
                 stale_files_removed = self.prune_stale_files()
             finished_label = (
                 "Finished repair"
                 if published_failure_repair is not None
                 else "Finished"
             )
+            no_files_detail = (
+                f", {skipped_no_files} files skipped by --no-files"
+                if bool(getattr(self.args, "no_files", False))
+                or skipped_no_files
+                else ""
+            )
             print(
                 f"{finished_label}: added {messages_added} messages "
                 f"({total_messages} total) -> {messages_path} "
                 f"(metadata: {metadata_path.name}; "
                 f"{failed} failed downloads, "
-                f"{unavailable} unavailable attachments, "
+                f"{unavailable} unavailable attachments"
+                f"{no_files_detail}, "
                 f"{stale_files_removed} stale files pruned)",
                 flush=True,
             )
@@ -8748,7 +8881,7 @@ async def preflight_call(
             return await factory()
         except (errors.FloodWaitError, errors.FloodPremiumWaitError) as exc:
             delay = (
-                int(getattr(exc, "seconds", 0))
+                max(1, int(getattr(exc, "seconds", 0)))
                 + args.flood_reserve
                 + random.uniform(0.0, args.jitter)
             )
@@ -8907,6 +9040,8 @@ def takeout_flags(
     entity: Any,
     max_file_size: int,
     history_sources: Iterable[HistorySource],
+    *,
+    include_files: bool = True,
 ) -> dict[str, Any]:
     kind = chat_kind(entity)
     source_names = {tl_name(source.input_peer) for source in history_sources}
@@ -8918,7 +9053,7 @@ def takeout_flags(
         # group history remains available in the takeout session.
         "megagroups": kind in {"basic_group", "supergroup", "gigagroup", "monoforum"},
         "channels": kind in {"channel", "monoforum"},
-        "files": True,
+        "files": include_files,
         "max_file_size": max_file_size or UNLIMITED_TAKEOUT_FILE_SIZE,
     }
 
@@ -8977,6 +9112,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Ignore incremental checkpoints and rebuild the complete export",
     )
     parser.add_argument(
+        "--no-files",
+        action="store_true",
+        help=(
+            "Export messages and attachment metadata without downloading files "
+            "or avatars; use --overwrite later to backfill skipped files"
+        ),
+    )
+    parser.add_argument(
         "--keep-stale-files",
         action="store_true",
         help="With --overwrite, do not prune files unreferenced by the new export",
@@ -8991,8 +9134,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--history-delay",
         type=float,
-        default=0.0,
-        help="Optional delay after each 100-message history page",
+        default=None,
+        help=(
+            "Minimum seconds between 100-message history request starts "
+            "(default: 1 normally, 0 with --takeout; 0 disables proactive pacing)"
+        ),
     )
     parser.add_argument(
         "--metadata-delay",
@@ -9085,7 +9231,8 @@ def validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> 
         "jitter",
         "flood_reserve",
     ):
-        if getattr(args, name) < 0:
+        value = getattr(args, name)
+        if value is not None and value < 0:
             parser.error(f"--{name.replace('_', '-')} cannot be negative")
     if args.retries < 0 or args.max_file_size < 0 or args.log_every < 0:
         parser.error("--retries, --max-file-size and --log-every cannot be negative")
@@ -9109,7 +9256,8 @@ async def async_main(args: argparse.Namespace) -> int:
         connection_retries=5,
         retry_delay=2,
         auto_reconnect=True,
-        flood_sleep_threshold=0,  # All flood waits are handled with reserve above.
+        # Keep waits visible and counted; rpc/preflight honor Telegram's value.
+        flood_sleep_threshold=0,
     )
 
     await cast(Awaitable[Any], client.connect())
@@ -9138,7 +9286,10 @@ async def async_main(args: argparse.Namespace) -> int:
                 async with client.takeout(
                     finalize=True,
                     **takeout_flags(
-                        entity, args.max_file_size, exporter.history_sources
+                        entity,
+                        args.max_file_size,
+                        exporter.history_sources,
+                        include_files=not args.no_files,
                     ),
                 ) as takeout:
                     summary = await exporter.export(takeout, use_takeout_ranges=True)

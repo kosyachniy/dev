@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import contextlib
 import datetime as dt
@@ -1813,25 +1814,46 @@ class ExportSchemaTests(unittest.TestCase):
                 }
             )
 
-    def test_default_pacing_is_zero_and_zero_base_ignores_global_jitter(self):
+    def test_default_history_pacing_is_one_second_and_file_pacing_is_zero(self):
         parser = export.build_parser()
         args = parser.parse_args(
             ["chat", "--api-id", "1", "--api-hash", "hash"]
         )
+        self.assertFalse(args.no_files)
         self.assertEqual(
             (
-                args.history_delay,
+                export.effective_history_delay(args),
                 args.metadata_delay,
                 args.media_delay,
                 args.chunk_delay,
                 args.jitter,
                 args.flood_reserve,
             ),
-            (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+            (1.0, 0.0, 0.0, 0.0, 0.0, 0.0),
         )
+        self.assertIsNone(args.history_delay)
+
+        takeout_args = parser.parse_args(
+            ["chat", "--api-id", "1", "--api-hash", "hash", "--takeout"]
+        )
+        self.assertEqual(export.effective_history_delay(takeout_args), 0.0)
+
+        explicit_args = parser.parse_args(
+            [
+                "chat",
+                "--api-id",
+                "1",
+                "--api-hash",
+                "hash",
+                "--history-delay",
+                "0.25",
+                "--takeout",
+            ]
+        )
+        self.assertEqual(export.effective_history_delay(explicit_args), 0.25)
 
         pacer = export.Pacer(
-            history_delay=args.history_delay,
+            history_delay=0.0,
             metadata_delay=args.metadata_delay,
             media_delay=args.media_delay,
             chunk_delay=args.chunk_delay,
@@ -1853,7 +1875,7 @@ class ExportSchemaTests(unittest.TestCase):
         try:
             async def pace_success_paths():
                 await pacer.sleep(0.0)
-                await pacer.after_history()
+                await pacer.before_history_request()
                 await pacer.after_metadata()
                 await pacer.after_media()
                 await pacer.after_chunk()
@@ -1864,6 +1886,410 @@ class ExportSchemaTests(unittest.TestCase):
             export.random.uniform = original_uniform
 
         self.assertEqual(sleep_calls, [])
+
+    def test_history_pacing_is_request_start_to_request_start(self):
+        pacer = export.Pacer(
+            history_delay=1.0,
+            metadata_delay=0.0,
+            media_delay=0.0,
+            chunk_delay=0.0,
+            jitter=0.0,
+            flood_reserve=0.0,
+        )
+        sleep_calls = []
+
+        class FakeLoop:
+            current = 100.0
+
+            def time(self):
+                return self.current
+
+        fake_loop = FakeLoop()
+        original_sleep = export.asyncio.sleep
+        original_get_running_loop = export.asyncio.get_running_loop
+
+        async def record_sleep(delay):
+            sleep_calls.append(delay)
+            fake_loop.current += delay
+
+        async def run():
+            export.asyncio.sleep = record_sleep
+            export.asyncio.get_running_loop = lambda: fake_loop
+            try:
+                await pacer.before_history_request()
+                fake_loop.current += 0.25
+                await pacer.before_history_request()
+                fake_loop.current += 1.5
+                await pacer.before_history_request()
+            finally:
+                export.asyncio.sleep = original_sleep
+                export.asyncio.get_running_loop = original_get_running_loop
+
+        asyncio.run(run())
+
+        self.assertEqual(sleep_calls, [0.75])
+
+    def test_history_page_applies_pacing_before_each_network_attempt(self):
+        events = []
+
+        class RecordingPacer:
+            async def before_history_request(self):
+                events.append("paced")
+
+        exporter: Any = object.__new__(export.ChatExporter)
+        exporter.search_own_messages = False
+        exporter.pacer = RecordingPacer()
+        exporter.stats = export.ExportStats()
+
+        async def rpc(factory, label):
+            events.append(label)
+            await factory()
+            return await factory()
+
+        async def api(_request):
+            events.append("sent")
+            return SimpleNamespace(messages=[])
+
+        exporter.rpc = rpc
+        asyncio.run(
+            exporter.history_page(
+                api,
+                self.source(),
+                None,
+                0,
+            )
+        )
+
+        self.assertEqual(
+            events,
+            ["message history", "paced", "sent", "paced", "sent"],
+        )
+        self.assertEqual(exporter.stats.history_requests, 1)
+
+    def test_history_flood_wait_is_not_followed_by_duplicate_pacing_sleep(self):
+        attempts = 0
+        sleep_calls = []
+
+        class FakeLoop:
+            current = 100.0
+
+            def time(self):
+                return self.current
+
+        fake_loop = FakeLoop()
+        exporter: Any = object.__new__(export.ChatExporter)
+        exporter.search_own_messages = False
+        exporter.pacer = export.Pacer(
+            history_delay=1.0,
+            metadata_delay=0.0,
+            media_delay=0.0,
+            chunk_delay=0.0,
+            jitter=0.0,
+            flood_reserve=0.0,
+        )
+        exporter.args = SimpleNamespace(retries=0, jitter=0.0)
+        exporter.stats = export.ExportStats()
+
+        async def api(_request):
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                raise export.errors.FloodWaitError(request=None, capture=26)
+            return SimpleNamespace(messages=[])
+
+        original_sleep = export.asyncio.sleep
+        original_get_running_loop = export.asyncio.get_running_loop
+
+        async def record_sleep(delay):
+            sleep_calls.append(delay)
+            fake_loop.current += delay
+
+        async def run():
+            export.asyncio.sleep = record_sleep
+            export.asyncio.get_running_loop = lambda: fake_loop
+            try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    return await exporter.history_page(
+                        api,
+                        self.source(),
+                        None,
+                        0,
+                    )
+            finally:
+                export.asyncio.sleep = original_sleep
+                export.asyncio.get_running_loop = original_get_running_loop
+
+        response = asyncio.run(run())
+
+        self.assertEqual(response.messages, [])
+        self.assertEqual(attempts, 2)
+        self.assertEqual(sleep_calls, [26.0])
+        self.assertEqual(exporter.stats.flood_waits, 1)
+        self.assertEqual(exporter.stats.history_requests, 1)
+
+    def test_preflight_flood_wait_zero_still_sleeps_one_second(self):
+        attempts = 0
+        sleep_calls = []
+        original_sleep = export.asyncio.sleep
+        original_uniform = export.random.uniform
+
+        async def factory():
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                raise export.errors.FloodWaitError(request=None, capture=0)
+            return "ok"
+
+        async def record_sleep(delay):
+            sleep_calls.append(delay)
+
+        export.asyncio.sleep = record_sleep
+        export.random.uniform = lambda _minimum, _maximum: 0.0
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                result = asyncio.run(
+                    export.preflight_call(
+                        factory,
+                        argparse.Namespace(
+                            flood_reserve=0.0,
+                            jitter=0.0,
+                            retries=0,
+                        ),
+                        "test preflight",
+                    )
+                )
+        finally:
+            export.asyncio.sleep = original_sleep
+            export.random.uniform = original_uniform
+
+        self.assertEqual(result, "ok")
+        self.assertEqual(attempts, 2)
+        self.assertEqual(sleep_calls, [1.0])
+
+    def test_no_files_is_opt_in_and_disables_takeout_file_access(self):
+        parser = export.build_parser()
+        args = parser.parse_args(
+            ["chat", "--api-id", "1", "--api-hash", "hash", "--no-files"]
+        )
+
+        self.assertTrue(args.no_files)
+        flags = export.takeout_flags(
+            types.User(id=7, first_name="Test"),
+            0,
+            [self.source()],
+            include_files=not args.no_files,
+        )
+        self.assertFalse(flags["files"])
+
+    def test_no_files_keeps_media_and_avatar_metadata_without_payloads(self):
+        class UnexpectedApi:
+            async def download_media(self, *_args, **_kwargs):
+                raise AssertionError("--no-files must not call download_media")
+
+        class UnexpectedClient:
+            async def download_profile_photo(self, *_args, **_kwargs):
+                raise AssertionError(
+                    "--no-files must not call download_profile_photo"
+                )
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            exporter: Any = object.__new__(export.ChatExporter)
+            exporter.output_dir = output
+            exporter.files_dir = output / "files"
+            exporter.error_log_path = output / "media-errors.jsonl"
+            exporter.args = SimpleNamespace(no_files=True, max_file_size=0)
+            exporter.base_client = UnexpectedClient()
+            exporter.media_reuse_cache = {}
+            exporter.referenced_asset_keys = set()
+            exporter.stats = export.ExportStats()
+            exporter.existing_avatar_keys = set()
+
+            media_target = export.DownloadTarget(
+                obj="photo",
+                kind="media",
+                subtype="image",
+                role="message.media.photo",
+                message_id=51,
+                cache_key="photo:51",
+                extension=".jpg",
+                expected_size=123,
+                metadata={
+                    "type": "image",
+                    "id": 51,
+                    "access_hash": 52,
+                    "mime": "image/jpeg",
+                    "created": 100,
+                },
+                source_chat_id=7,
+            )
+            media = asyncio.run(
+                exporter.download_target(UnexpectedApi(), media_target, 1)
+            )
+            public_media = export.public_attachment_record(media)
+
+            self.assertEqual(
+                public_media,
+                {
+                    "type": "image",
+                    "id": 51,
+                    "access_hash": 52,
+                    "mime": "image/jpeg",
+                    "created": 100,
+                    "status": "skipped_no_files",
+                    "reason": "files_disabled_by_option",
+                },
+            )
+            export.validate_message_contract(
+                {
+                    "id": 1,
+                    "source": 7,
+                    "author": 7,
+                    "created": 100,
+                    "attachments": [public_media],
+                }
+            )
+
+            peer = SimpleNamespace(
+                first_name="Peer",
+                last_name=None,
+                photo=SimpleNamespace(photo_id=700),
+            )
+            exporter.peer_entities = {7: peer}
+            avatars = asyncio.run(exporter.download_peer_avatars(UnexpectedApi()))
+
+            self.assertEqual(len(avatars), 1)
+            self.assertEqual(avatars[0]["id"], 700)
+            self.assertEqual(avatars[0]["owner_id"], 7)
+            self.assertEqual(avatars[0]["status"], "skipped_no_files")
+            self.assertEqual(avatars[0]["reason"], "files_disabled_by_option")
+            self.assertFalse(exporter.files_dir.exists())
+            self.assertFalse(exporter.error_log_path.exists())
+
+    def test_no_files_export_publishes_messages_as_metadata_only(self):
+        class UnexpectedApi:
+            async def download_media(self, *_args, **_kwargs):
+                raise AssertionError("--no-files must not download message media")
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "7"
+            parser = export.build_parser()
+            args = parser.parse_args(
+                ["chat", "--api-id", "1", "--api-hash", "hash", "--no-files"]
+            )
+            entity = types.User(id=7, access_hash=70, first_name="Chat")
+            self_entity = types.User(id=99, access_hash=990, first_name="Me")
+            base_client: Any = SimpleNamespace()
+            exporter: Any = export.ChatExporter(
+                base_client,
+                self_entity,
+                entity,
+                types.InputPeerUser(7, 70),
+                output,
+                args,
+            )
+            messages = [
+                SimpleNamespace(
+                    id=1,
+                    date=dt.datetime.fromtimestamp(10, tz=dt.timezone.utc),
+                ),
+                SimpleNamespace(
+                    id=2,
+                    date=dt.datetime.fromtimestamp(20, tz=dt.timezone.utc),
+                ),
+            ]
+
+            async def history_ranges(_api, _use_takeout_ranges):
+                return [None]
+
+            async def source_range_high_watermarks(_api, _source, _ranges):
+                return [(None, 2, 1)]
+
+            async def iter_messages(
+                _api,
+                _source,
+                _snapshots,
+                checkpoint,
+                _created_cutoff_epoch,
+            ):
+                for message in messages:
+                    if message.id > checkpoint:
+                        yield message, None, 1, message.id
+
+            async def attachment_records(_api, message, _source, _message_range):
+                if message.id != 1:
+                    return []
+                target = export.DownloadTarget(
+                    obj="photo",
+                    kind="media",
+                    subtype="image",
+                    role="message.media.photo",
+                    message_id=message.id,
+                    cache_key="photo:501",
+                    extension=".jpg",
+                    expected_size=123,
+                    metadata={
+                        "type": "image",
+                        "id": 501,
+                        "access_hash": 502,
+                        "mime": "image/jpeg",
+                        "created": 10,
+                    },
+                    source_chat_id=7,
+                )
+                internal = await exporter.download_target(_api, target, 1)
+                exporter.stats.observe_attachment(internal)
+                return [export.public_attachment_record(internal)]
+
+            async def no_avatars(_api):
+                return []
+
+            def serialize_message(message, attachments, _source):
+                return export.sparse_json(
+                    {
+                        "id": message.id,
+                        "source": 7,
+                        "author": 7,
+                        "created": int(message.date.timestamp()),
+                        "attachments": attachments,
+                    }
+                )
+
+            exporter.history_ranges = history_ranges
+            exporter.source_range_high_watermarks = source_range_high_watermarks
+            exporter.iter_source_messages_ascending = iter_messages
+            exporter.attachment_records = attachment_records
+            exporter.download_peer_avatars = no_avatars
+            exporter.serialize_message = serialize_message
+
+            summary = asyncio.run(exporter.export(UnexpectedApi(), False))
+
+            self.assertTrue(summary["complete_accessible"])
+            self.assertFalse(summary["complete"])
+            self.assertEqual(summary["file_download_mode"], "metadata_only")
+            self.assertEqual(summary["attachments"], {"skipped_no_files": 1})
+            self.assertEqual(summary["bytes_downloaded"], 0)
+            self.assertEqual(0 if summary["complete_accessible"] else 2, 0)
+            rows = [
+                json.loads(line)
+                for line in (output / "7.jsonl").read_text(
+                    encoding="utf-8"
+                ).splitlines()
+            ]
+            self.assertEqual([row["id"] for row in rows], [1, 2])
+            self.assertEqual(
+                rows[0]["attachments"][0]["status"], "skipped_no_files"
+            )
+            self.assertNotIn("file", rows[0]["attachments"][0])
+            metadata = json.loads(
+                (output / "7.metadata.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(
+                metadata["summary"]["file_download_mode"], "metadata_only"
+            )
+            self.assertEqual(metadata["media_assets"], {})
+            self.assertFalse((output / "files").exists())
+            self.assertFalse((output / "7.jsonl.part").exists())
 
     def test_explicit_chunk_delay_is_exact_without_global_jitter(self):
         pacer = export.Pacer(
@@ -3197,13 +3623,8 @@ class ExportSchemaTests(unittest.TestCase):
         self.assertIn("--media-download-workers", stderr.getvalue())
 
     def test_empty_placeholders_advance_history_without_becoming_rows(self):
-        class Pacer:
-            async def after_history(self):
-                return None
-
         source = self.source()
         exporter: Any = object.__new__(export.ChatExporter)
-        exporter.pacer = Pacer()
         exporter.stats = export.ExportStats()
         exporter.remember_peers = lambda _response: None
 
@@ -3319,6 +3740,12 @@ class ExportSchemaTests(unittest.TestCase):
                             "status": "unavailable",
                             "reason": "expired",
                         },
+                        {
+                            "type": "image",
+                            "id": 23,
+                            "status": "skipped_no_files",
+                            "reason": "files_disabled_by_option",
+                        },
                     ],
                 },
             ]
@@ -3337,7 +3764,10 @@ class ExportSchemaTests(unittest.TestCase):
             assert partial is not None
             self.assertEqual(partial.message_count, 2)
             self.assertEqual(partial.checkpoints, {(7, 0): 2})
-            self.assertEqual(partial.attachment_error_statuses, {"unavailable": 1})
+            self.assertEqual(
+                partial.attachment_error_statuses,
+                {"unavailable": 1, "skipped_no_files": 1},
+            )
             self.assertEqual(len(partial.media_assets), 1)
             self.assertEqual(len(partial.media_reuse_assets), 1)
             resumed_asset = next(iter(partial.media_assets.values()))
