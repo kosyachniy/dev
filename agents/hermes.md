@@ -398,197 +398,6 @@ iphone: Enabled
 
 10. `VaultSync`: Open VaultSync
 
-# Git (`hermes` user)
-1. `cd /srv/hermes/data`
-
-2. `git init -b main`
-
-3.
-```
-git config --global user.name "..."
-git config --global user.email "..."
-git config user.name "Life OS"
-git config user.email "agent@vps.local"
-```
-
-4.
-```
-gh auth login
-```
-- GitHub.com
-- SSH
-- new SSH key
-- without passphrase
-- without title
-- Login with a web browser
-
-5. `github.com`: Create repo
-- Private
-
-6. `git remote add origin git@github.com:kosyachniy/brain.git`
-
-7. GitIgnore
-```
-cat > /srv/hermes/data/.gitignore <<'EOF'
-# Syncthing runtime
-vault/.stfolder/
-vault/.stversions/
-vault/.syncthing.*.tmp
-
-# Obsidian device-local state
-vault/.obsidian/
-vault/.trash/
-vault/.DS_Store
-
-# Secrets
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-*.p12
-*.pfx
-
-# Databases / agent runtime
-*.db
-*.db-wal
-*.db-shm
-*.sqlite
-*.sqlite3
-
-# Runtime noise
-*.log
-*.lock
-*.pid
-*.tmp
-*.sock
-
-# Dependencies / caches
-node_modules/
-**/__pycache__/
-**/.pytest_cache/
-**/.mypy_cache/
-
-# OS
-.DS_Store
-Thumbs.db
-EOF
-```
-
-8. `mkdir -p files`
-
-9. Commit
-```
-git add .
-git commit -m "Pilot"
-git push --set-upstream origin main
-```
-
-10. AutoCommit script
-```
-cat > ~/.local/bin/git-autocommit <<'EOF'
-#!/usr/bin/env bash
-
-set -Eeuo pipefail
-
-REPO="/srv/hermes/data"
-LOCK="$HOME/.cache/hermes-data-git.lock"
-
-mkdir -p "$HOME/.cache"
-
-exec 9>"$LOCK"
-flock -n 9 || exit 0
-
-cd "$REPO"
-
-# Не коммитим файлы прямо во время активной записи.
-if find vault workspace \
-  -type f \
-  -mmin -1 \
-  -print -quit \
-  | grep -q .; then
-  exit 0
-fi
-
-git add -A -- \
-  vault \
-  workspace \
-  .gitignore
-
-if ! git diff --cached --quiet; then
-  git commit \
-    -m "auto: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
-fi
-
-# Push выполняется только если remote уже настроен.
-if git remote get-url origin >/dev/null 2>&1; then
-  for attempt in 1 2 3; do
-    if git push origin main; then
-      exit 0
-    fi
-
-    sleep $((attempt * 10))
-  done
-
-  exit 1
-fi
-EOF
-
-chmod 700 \
-  ~/.local/bin/git-autocommit
-```
-
-11. AutoCommit service
-```
-cat > ~/.config/systemd/user/git-autocommit.service <<'EOF'
-[Unit]
-Description=Auto-commit Hermes knowledge base
-
-[Service]
-Type=oneshot
-ExecStart=/home/hermes/.local/bin/git-autocommit
-
-UMask=0077
-NoNewPrivileges=true
-EOF
-```
-
-12. AutoCommit timer
-```
-cat > ~/.config/systemd/user/git-autocommit.timer <<'EOF'
-[Unit]
-Description=Git autocommit every five minutes
-
-[Timer]
-OnBootSec=3min
-OnUnitActiveSec=5min
-RandomizedDelaySec=30
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-EOF
-```
-
-13. AutoCommit run
-```
-systemctl --user daemon-reload
-
-systemctl --user enable --now \
-  git-autocommit.timer
-```
-
-14. AutoCommit test
-```
-systemctl --user start \
-  git-autocommit.service
-
-journalctl --user \
-  -u git-autocommit.service \
-  -n 100 \
-  --no-pager
-```
-
 # Set Up Hermes
 
 1. Create bot
@@ -906,6 +715,654 @@ hermes memory setup
 - Holographic
 
 #
+
+1. hermes user
+```
+hermes gateway install
+hermes gateway start
+```
+
+2. root user
+```
+reboot
+```
+
+3. root user
+```
+fallocate -l 4G /swapfile
+
+chmod 600 /swapfile
+
+mkswap /swapfile
+swapon /swapfile
+```
+
+4. root user
+```
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+```
+
+5. root user
+```
+cat > /etc/sysctl.d/99-swap.conf <<'EOF'
+vm.swappiness=10
+EOF
+
+sysctl --system
+```
+
+6. hermes user
+```
+hermes config set display.memory_notifications verbose
+```
+
+7. Fill AGENTS.md, workspace/AGENTS.md, SOUL.md, USER.md, MEMORY.md
+
+8. Onboarding
+/help
+/new --yes onboarding
+/title onboarding
+/reasoning high --global
+/sethome
+
+9. prompt:
+```
+Проведи мой первичный onboarding как персонального Life OS агента.
+
+У тебя уже есть технический bootstrap:
+- /srv/hermes/data/AGENTS.md
+- /srv/hermes/data/workspace/AGENTS.md
+- ~/.hermes/SOUL.md
+- ~/.hermes/memories/MEMORY.md
+- Obsidian vault: /srv/hermes/data/vault
+
+Считай эти файлы черновой стартовой конфигурацией, а не окончательной истиной о моих предпочтениях.
+
+Сейчас ничего не изменяй и не создавай.
+
+Сначала:
+1. прочитай эти файлы;
+2. посмотри структуру vault и workspace;
+3. кратко скажи, что уже настроено, какие правила там есть и где видишь пробелы/противоречия.
+
+Не читай .env, auth.json, токены, ключи, cookies, SSH private keys и другие secrets.
+
+После этого проведи со мной интервью блоками по 4–7 связанных вопросов. Следующие вопросы адаптируй к моим ответам.
+
+Нужно выяснить:
+- кто я, мои роли, проекты и образ жизни;
+- цели на ближайшее время, год, 3–5 лет и долгосрочно;
+- какие роли должен выполнять Life OS;
+- стиль общения и уровень инициативности;
+- что можно делать автономно, что с уведомлением, что только после подтверждения;
+- правила памяти: USER.md, MEMORY.md, Holographic, sessions, Obsidian;
+- когда создавать/обновлять заметки и как избегать дублей;
+- задачи, проекты, процессы, reviews и reminders;
+- мои правила разработки и инфраструктуры;
+- какие cron/автоматизации и мониторинг нужны;
+- что меня раздражает в AI и какое поведение недопустимо.
+
+Не задавай всё сразу.
+
+После интервью НЕ применяй изменения. Сначала предложи:
+1. полный USER.md;
+2. изменения к SOUL.md;
+3. изменения к MEMORY.md;
+4. изменения к root AGENTS.md;
+5. изменения к workspace/AGENTS.md;
+6. какие факты стоит сохранить в Holographic;
+7. какие cron/skills стоит добавить.
+
+Для каждого изменения объясни зачем оно нужно.
+
+Только после моего явного «применяй» сделай backup, внеси изменения, проверь их и покажи краткий diff.
+
+Начни с анализа текущих файлов и первого блока вопросов.
+```
+
+
+# Git (`hermes` user)
+1. `cd /srv/hermes/data`
+
+2. `git init -b main`
+
+3.
+```
+git config --global user.name "..."
+git config --global user.email "..."
+git config user.name "Life OS"
+git config user.email "agent@vps.local"
+```
+
+4.
+```
+gh auth login
+```
+- GitHub.com
+- SSH
+- new SSH key
+- without passphrase
+- without title
+- Login with a web browser
+
+5. `github.com`: Create repo
+- Private
+
+6. `git remote add origin git@github.com:kosyachniy/brain.git`
+
+7. GitIgnore
+```
+cat > /srv/hermes/data/.gitignore <<'EOF'
+# Syncthing runtime
+vault/.stfolder/
+vault/.stversions/
+vault/.syncthing.*.tmp
+
+# Obsidian device-local state
+vault/.obsidian/
+vault/.trash/
+vault/.DS_Store
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Databases / agent runtime
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Runtime noise
+*.log
+*.lock
+*.pid
+*.tmp
+*.sock
+
+# Dependencies / caches
+node_modules/
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+EOF
+```
+
+8. `mkdir -p files`
+
+9. Commit
+```
+git add .
+git commit -m "Pilot"
+git push --set-upstream origin main
+```
+
+10. Script
+```
+cat > ~/.local/bin/git-autocommit <<'EOF'
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+REPO="/srv/hermes/data"
+HERMES="/home/hermes/.local/bin/hermes"
+LOCK="$HOME/.cache/brain-git.lock"
+
+mkdir -p "$HOME/.cache"
+
+exec 9>"$LOCK"
+flock -n 9 || exit 0
+
+cd "$REPO"
+
+# Не фиксируем файл прямо в момент активной записи.
+if find vault workspace files \
+    -type f \
+    -mmin -1 \
+    -print -quit 2>/dev/null \
+    | grep -q .; then
+    exit 0
+fi
+
+git add -A -- \
+    vault \
+    workspace \
+    files \
+    AGENTS.md \
+    .gitignore
+
+if git diff --cached --quiet; then
+    git push origin main >/dev/null 2>&1 || true
+    exit 0
+fi
+
+STAT="$(git diff --cached --stat | head -50)"
+FILES="$(git diff --cached --name-status | head -100)"
+
+DIFF="$(
+    git diff \
+        --cached \
+        --unified=0 \
+        --no-ext-diff \
+        2>/dev/null \
+        | head -c 12000
+)"
+
+PROMPT="$(cat <<PROMPT
+Generate ONE concise Git commit subject for changes in a personal Life OS / knowledge-base repository.
+
+Rules:
+- output exactly one line;
+- no quotes;
+- no markdown;
+- max 72 characters;
+- describe WHAT changed, not that an autosave happened;
+- use English;
+- prefer prefixes: vault:, brain:, workspace:, files:;
+- do not mention timestamps;
+- do not use generic messages like "update files".
+
+STAT:
+$STAT
+
+FILES:
+$FILES
+
+DIFF SAMPLE:
+$DIFF
+PROMPT
+)"
+
+MESSAGE=""
+
+if [ -x "$HERMES" ]; then
+    MESSAGE="$(
+        "$HERMES" \
+            -z "$PROMPT" \
+            --ignore-rules \
+            -t clarify \
+            2>/dev/null \
+        | head -1 \
+        | tr -d '\r' \
+        || true
+    )"
+fi
+
+MESSAGE="$(
+    printf '%s' "$MESSAGE" \
+      | sed 's/^[[:space:]`"'\'']*//' \
+      | sed 's/[[:space:]`"'\'']*$//' \
+      | cut -c1-72
+)"
+
+if [ -z "$MESSAGE" ]; then
+    CHANGED_COUNT="$(
+        git diff --cached --name-only \
+        | wc -l
+    )"
+
+    MESSAGE="brain: update ${CHANGED_COUNT} files"
+fi
+
+git commit -m "$MESSAGE"
+
+for attempt in 1 2 3; do
+    if git push origin main; then
+        exit 0
+    fi
+
+    sleep $((attempt * 10))
+done
+
+exit 1
+EOF
+
+chmod 700 ~/.local/bin/git-autocommit
+```
+
+11. AutoCommit service
+```
+cat > ~/.config/systemd/user/git-autocommit.service <<'EOF'
+[Unit]
+Description=Auto-commit Hermes knowledge base
+
+[Service]
+Type=oneshot
+ExecStart=/home/hermes/.local/bin/git-autocommit
+
+UMask=0077
+NoNewPrivileges=true
+EOF
+```
+
+12. AutoCommit timer
+```
+cat > ~/.config/systemd/user/git-autocommit.timer <<'EOF'
+[Unit]
+Description=Git autocommit every five minutes
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=5min
+RandomizedDelaySec=30
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+```
+
+13. AutoCommit run
+```
+systemctl --user daemon-reload
+
+systemctl --user enable --now \
+  git-autocommit.timer
+```
+
+14. AutoCommit test
+```
+systemctl --user start \
+  git-autocommit.service
+
+journalctl --user \
+  -u git-autocommit.service \
+  -n 100 \
+  --no-pager
+```
+
+# UV & PNPM
+
+1. root user
+```
+npm install -g pnpm@latest
+```
+
+2. hermes user
+```
+mkdir -p "$HOME/.local/share/pnpm"
+```
+
+3.
+```
+cat >> ~/.profile <<'EOF'
+
+# pnpm
+export PNPM_HOME="$HOME/.local/share/pnpm"
+
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+EOF
+```
+
+4.
+```
+source ~/.profile
+```
+
+5.
+```
+pnpm config set global-bin-dir "$PNPM_HOME"
+```
+
+6.
+```
+cat >> /srv/hermes/data/AGENTS.md <<'EOF'
+
+## Package manager policy
+
+Use the following package managers by default.
+
+### Operating system
+
+For Ubuntu system packages and native libraries:
+
+- use `apt`
+- do not install system libraries through language package managers
+
+Examples:
+
+- `apt install ffmpeg`
+- `apt install libpq-dev`
+
+System package installation requires root privileges or approved sudo.
+
+### Python
+
+Use `uv` as the default Python environment, dependency, tool, and Python-version manager.
+
+For new Python projects prefer:
+
+- `uv init`
+- `uv add <package>`
+- `uv add --dev <package>`
+- `uv sync`
+- `uv run <command>`
+
+For persistent Python CLI tools prefer:
+
+- `uv tool install <tool>`
+
+For one-off Python CLI execution prefer:
+
+- `uvx <tool>`
+
+Do not use `pip install`, `pipx`, Poetry, Pipenv, or manually managed virtualenvs unless:
+
+- the existing project explicitly requires them;
+- an upstream installer only supports them;
+- Alex explicitly requests them.
+
+Do not modify Ubuntu's system Python.
+
+Do not modify the Python environment used internally by Hermes unless performing an explicit Hermes maintenance operation.
+
+### JavaScript / TypeScript
+
+Use `pnpm` as the default Node.js package manager.
+
+For projects prefer:
+
+- `pnpm install`
+- `pnpm add <package>`
+- `pnpm add -D <package>`
+- `pnpm remove <package>`
+- `pnpm exec <command>`
+- `pnpm run <script>`
+
+For one-off Node.js CLI tools prefer:
+
+- `pnpm dlx <tool>`
+
+Avoid `npm install`, `npm install -g`, `npx`, Yarn, and Bun by default unless:
+
+- the existing project already uses another package manager;
+- its lockfile requires another package manager;
+- an upstream installer specifically requires npm or npx;
+- Alex explicitly requests another tool.
+
+### Existing projects
+
+Always respect an existing project's package-manager metadata.
+
+Examples:
+
+- `pnpm-lock.yaml` → use pnpm
+- `package-lock.json` → use npm unless migration is explicitly requested
+- `yarn.lock` → use Yarn unless migration is explicitly requested
+- `uv.lock` → use uv
+- `poetry.lock` → do not silently migrate; follow the existing project
+
+Never rewrite or migrate a project's package-management system merely to match these defaults.
+
+### Reproducibility
+
+Prefer lockfiles and reproducible installs.
+
+Commit:
+
+- `uv.lock`
+- `pnpm-lock.yaml`
+
+Do not commit:
+
+- `.venv/`
+- `node_modules/`
+- package-manager caches
+EOF
+```
+
+7.
+```
+cat >> /srv/hermes/data/workspace/AGENTS.md <<'EOF'
+
+## Development and package-management defaults
+
+Use these defaults for new development and agent-created tooling:
+
+- Ubuntu/system packages and native libraries → `apt`
+- Python projects, dependencies and environments → `uv`
+- persistent Python CLI tools → `uv tool install`
+- one-off Python CLI tools → `uvx`
+- JavaScript/TypeScript projects → `pnpm`
+- one-off Node.js CLI tools → `pnpm dlx`
+
+### Python
+
+Prefer:
+
+- `uv init`
+- `uv add <package>`
+- `uv add --dev <package>`
+- `uv sync`
+- `uv run <command>`
+- `uv tool install <tool>`
+- `uvx <tool>`
+
+Do not use `pip`, `pipx`, Poetry, Pipenv, or manually managed virtualenvs by default.
+
+Never modify Ubuntu's system Python for project work.
+
+Never modify Hermes' internal Python virtual environment except during explicit Hermes maintenance.
+
+### JavaScript / TypeScript
+
+Prefer:
+
+- `pnpm install`
+- `pnpm add <package>`
+- `pnpm add -D <package>`
+- `pnpm remove <package>`
+- `pnpm exec <command>`
+- `pnpm run <script>`
+- `pnpm dlx <tool>`
+
+Do not use npm, npx, Yarn, or Bun by default for new projects.
+
+npm/npx may be used when an upstream installer explicitly requires them.
+
+### Existing projects
+
+Respect the package manager already used by an existing project.
+
+Examples:
+
+- `pnpm-lock.yaml` → pnpm
+- `package-lock.json` → npm
+- `yarn.lock` → Yarn
+- `uv.lock` → uv
+- `poetry.lock` → Poetry unless migration is explicitly approved
+
+Never silently migrate package managers or regenerate lockfiles with another package manager.
+
+### Reproducibility
+
+Commit lockfiles such as:
+
+- `uv.lock`
+- `pnpm-lock.yaml`
+
+Do not commit:
+
+- `.venv/`
+- `node_modules/`
+- package-manager caches
+EOF
+```
+
+8.
+```
+cat >> ~/.hermes/memories/MEMORY.md <<'EOF'
+
+## Development conventions
+
+- Default Python project/dependency manager: `uv`.
+- Default persistent Python CLI manager: `uv tool`; one-shot tools: `uvx`.
+- Default JavaScript/TypeScript package manager: `pnpm`; one-shot tools: `pnpm dlx`.
+- Ubuntu/native system dependencies use `apt`.
+- Existing projects keep their existing package manager unless migration is explicitly requested.
+- Do not modify Ubuntu's system Python for project work.
+- Do not modify Hermes' internal Python environment except during explicit Hermes maintenance.
+EOF
+```
+
+9.
+```
+cat >> /srv/hermes/data/.gitignore <<'EOF'
+
+# Python / uv
+.venv/
+**/.venv/
+.uv/
+**/.uv/
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+**/.pytest_cache/
+.mypy_cache/
+**/.mypy_cache/
+.ruff_cache/
+**/.ruff_cache/
+
+# Node.js / pnpm
+node_modules/
+**/node_modules/
+.pnpm-store/
+**/.pnpm-store/
+EOF
+```
+
+
+# Extra
+
+1. Curator
+```
+hermes config set curator.enabled true
+hermes config set curator.interval_hours 168
+hermes config set curator.min_idle_hours 2
+hermes config set curator.stale_after_days 30
+hermes config set curator.archive_after_days 90
+
+hermes config set curator.consolidate false
+hermes config set curator.prune_builtins false
+
+hermes config set curator.backup.enabled true
+hermes config set curator.backup.keep 5
+```
+
+2. root u
 
 
 # Rules
